@@ -1,0 +1,52 @@
+{
+  "_comment": "SOURCE OF TRUTH for MCP <-> agent-skill parity. The ProductClank agent REST API (/api/v1/agents/*) is canonical; the agent skill and this MCP server are BOTH wrappers over it. Every endpoint the skill documents MUST appear here with an `mcp` status. `scripts/check-skill-parity.mjs` fails CI when the skill references an endpoint that is missing here. Paths are normalized: no origin, no /api/v1 prefix, path params written as {id}.",
+  "skillRepo": "covariance-network/productclank-agent-skill",
+  "skillBranch": "main",
+  "skillDocs": [
+    "productclank-campaigns/references/API_REFERENCE.md",
+    "productclank-campaigns/SKILL.md",
+    "productclank-agent-participation/SKILL.md",
+    "productclank-agent-participation/references/API_REFERENCE.md"
+  ],
+  "statuses": {
+    "live": "Exposed as an MCP tool today.",
+    "planned": "Intended as an MCP tool; not built yet (see `tier`).",
+    "excluded": "Intentionally NOT an MCP tool (see `note`)."
+  },
+  "endpoints": [
+    { "method": "GET",  "path": "/agents/products/search",                 "mcp": "live",    "tool": "search_products" },
+    { "method": "POST", "path": "/agents/campaigns/boost",                 "mcp": "live",    "tool": "boost_post" },
+    { "method": "GET",  "path": "/agents/credits/balance",                 "mcp": "live",    "tool": "check_balance", "note": "MCP reads UserCredits directly via service role (the agent balance endpoint reports the trusted agent's own balance, not the caller's)." },
+
+    { "method": "POST", "path": "/agents/campaigns",                       "mcp": "planned", "tier": 1, "tool": "create_campaign" },
+    { "method": "GET",  "path": "/agents/campaigns",                       "mcp": "planned", "tier": 1, "tool": "list_campaigns" },
+    { "method": "GET",  "path": "/agents/campaigns/{id}",                  "mcp": "planned", "tier": 1, "tool": "get_campaign" },
+    { "method": "POST", "path": "/agents/campaigns/{id}/generate-posts",   "mcp": "planned", "tier": 1, "tool": "generate_posts" },
+    { "method": "POST", "path": "/agents/campaigns/{id}/research",         "mcp": "planned", "tier": 1, "tool": "run_research" },
+    { "method": "GET",  "path": "/agents/campaigns/{id}/research",         "mcp": "planned", "tier": 1, "tool": "get_research" },
+    { "method": "GET",  "path": "/agents/campaigns/{id}/posts",           "mcp": "planned", "tier": 1, "tool": "get_posts" },
+    { "method": "POST", "path": "/agents/campaigns/{id}/review-posts",     "mcp": "planned", "tier": 1, "tool": "review_posts" },
+    { "method": "POST", "path": "/agents/campaigns/{id}/regenerate-replies","mcp": "planned","tier": 1, "tool": "regenerate_replies" },
+    { "method": "POST", "path": "/agents/campaigns/{id}/delegates",        "mcp": "planned", "tier": 1, "tool": "add_delegate" },
+    { "method": "GET",  "path": "/agents/credits/history",                 "mcp": "planned", "tier": 1, "tool": "credit_history" },
+
+    { "method": "GET",  "path": "/agents/participate/feed",               "mcp": "planned", "tier": 2, "tool": "find_opportunities", "note": "Should be user-scoped (exclude posts the caller already claimed) — the agent feed is campaign-scoped today." },
+    { "method": "POST", "path": "/agents/participate/submit",             "mcp": "planned", "tier": 2, "tool": "submit_participation", "note": "BACKEND CHANGE REQUIRED: when caller_user_id is set, author-match the tweet against the CALLER's UserSocial.twitter, not the trusted agent's handle." },
+    { "method": "GET",  "path": "/agents/participate/earnings",           "mcp": "planned", "tier": 2, "tool": "get_earnings" },
+
+    { "method": "POST", "path": "/agents/participate/claim-signature",    "mcp": "excluded", "note": "Tier 3. $PRO pays the AGENT's wallet and is gated on erc8004_agent_id + allowlist; there is no path to pay a human user's wallet yet." },
+    { "method": "POST", "path": "/agents/participate/record-claim",       "mcp": "excluded", "note": "Tier 3. Pairs with claim-signature (agent-wallet-only $PRO claim)." },
+
+    { "method": "POST", "path": "/agents/register",                       "mcp": "excluded", "note": "OAuth connect auto-resolves the user; the connector never registers agents." },
+    { "method": "POST", "path": "/agents/create-link",                    "mcp": "excluded", "note": "Owner-linking is replaced by the OAuth consent flow." },
+    { "method": "GET",  "path": "/agents/me",                             "mcp": "excluded", "note": "Identity comes from the OAuth session, not a tool." },
+    { "method": "POST", "path": "/agents/rotate-key",                     "mcp": "excluded", "note": "Key management is not a connector concern." },
+    { "method": "POST", "path": "/agents/import",                         "mcp": "excluded", "note": "ERC-8004 pre-registration helper; not relevant to the connector." },
+    { "method": "GET",  "path": "/agents/by-user",                        "mcp": "excluded", "note": "Public listing helper; not needed in-connector." },
+    { "method": "POST", "path": "/agents/authorize",                      "mcp": "excluded", "note": "Called server-side by the MCP OAuth /callback (trusted key) to grant per-user billing — not a user-facing tool." },
+    { "method": "DELETE","path": "/agents/authorize",                     "mcp": "excluded", "note": "Authorization revocation is handled via Claude connector settings + webapp." },
+    { "method": "POST", "path": "/agents/credits/topup",                  "mcp": "excluded", "note": "POLICY: keep crypto/USDC top-up OUT of the connector (Anthropic directory bars money movement). Top-up stays on the webapp; the connector only spends a prefunded balance." },
+    { "method": "POST", "path": "/agents/telegram/create-link",           "mcp": "excluded", "note": "Telegram-specific; not relevant to the Claude connector." },
+    { "method": "GET",  "path": "/agents/telegram/lookup",                "mcp": "excluded", "note": "Telegram-specific; not relevant to the Claude connector." }
+  ]
+}
