@@ -1,208 +1,365 @@
 /**
- * OAuth 2.1 endpoint stubs for the ProductClank MCP authorization server.
+ * OAuth 2.1 authorization-server endpoints for the ProductClank MCP connector.
  *
- * TODO: These need full implementation. For now they provide the shape
- * of the endpoints that Claude will call during the connector auth flow.
+ * Identity is delegated to the ProductClank webapp: /oauth/authorize validates
+ * the request and hands the browser to the webapp's /connect/mcp consent page.
+ * After the user logs in and approves, the webapp redirects back to
+ * /oauth/callback with a short-lived HS256 grant identifying the user.
  *
- * Flow:
- * 1. Claude discovers /.well-known/oauth-authorization-server
- * 2. Claude calls POST /oauth/register (dynamic client registration)
- * 3. Claude opens /oauth/authorize in user's browser
- * 4. User logs in / approves → redirect back with auth code
- * 5. Claude calls POST /oauth/token to exchange code for access token
- * 6. Access token maps to user's pck_live_* API key
+ * Flow: register → authorize → (webapp login+consent) → callback → token
  */
 
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import crypto from "node:crypto";
+import { config } from "../config.js";
+import * as store from "./store.js";
+import { verifyGrant } from "../lib/grant.js";
+import * as api from "../lib/productclank-api.js";
 
-// In-memory stores — replace with DB/Redis in production
-const clients = new Map<string, { client_id: string; client_secret: string; redirect_uris: string[] }>();
-const authCodes = new Map<string, { client_id: string; code_challenge: string; redirect_uri: string; scope: string; api_key: string }>();
-const tokens = new Map<string, { api_key: string; client_id: string; scope: string }>();
+function isLoopback(uri: string): boolean {
+  try {
+    const u = new URL(uri);
+    return u.hostname === "localhost" || u.hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A requested redirect_uri must exactly match a registered one. For loopback
+ * (native/CLI clients) the port component is ignored per RFC 8252 §7.3.
+ */
+function redirectUriAllowed(registered: string[], requested: string): boolean {
+  if (registered.includes(requested)) return true;
+  if (!isLoopback(requested)) return false;
+  try {
+    const req = new URL(requested);
+    return registered.some((entry) => {
+      if (!isLoopback(entry)) return false;
+      const reg = new URL(entry);
+      return reg.hostname === req.hostname && reg.pathname === req.pathname;
+    });
+  } catch {
+    return false;
+  }
+}
+
+function redirectError(
+  res: Response,
+  redirectUri: string,
+  state: string | null,
+  error: string,
+  description?: string
+): void {
+  try {
+    const url = new URL(redirectUri);
+    url.searchParams.set("error", error);
+    if (description) url.searchParams.set("error_description", description);
+    if (state) url.searchParams.set("state", state);
+    res.redirect(302, url.toString());
+  } catch {
+    res.status(400).json({ error, error_description: description });
+  }
+}
 
 export function createOAuthEndpoints(): Router {
   const router = Router();
 
-  /**
-   * Dynamic Client Registration (RFC 7591)
-   * Claude auto-registers as an OAuth client.
-   */
-  router.post("/oauth/register", (req, res) => {
-    const { redirect_uris, client_name, token_endpoint_auth_method } = req.body;
-
-    const client_id = `pc_${crypto.randomUUID().replace(/-/g, "")}`;
-    const client_secret = `pcs_${crypto.randomBytes(32).toString("hex")}`;
-
-    clients.set(client_id, {
-      client_id,
-      client_secret,
-      redirect_uris: redirect_uris || [],
-    });
-
-    res.status(201).json({
-      client_id,
-      client_secret,
-      client_name: client_name || "MCP Client",
-      redirect_uris: redirect_uris || [],
-      token_endpoint_auth_method: token_endpoint_auth_method || "client_secret_basic",
-      grant_types: ["authorization_code", "refresh_token"],
-      response_types: ["code"],
-    });
-  });
-
-  /**
-   * Authorization endpoint
-   * User is redirected here to approve the MCP client.
-   *
-   * TODO: Render a proper login/approval page.
-   * For now, returns a placeholder HTML page.
-   */
-  router.get("/oauth/authorize", (req, res) => {
-    const {
-      client_id,
-      redirect_uri,
-      response_type,
-      code_challenge,
-      code_challenge_method,
-      state,
-      scope,
-    } = req.query as Record<string, string>;
-
-    if (response_type !== "code") {
-      res.status(400).json({ error: "unsupported_response_type" });
-      return;
-    }
-
-    // TODO: Replace with real auth page that:
-    // 1. Shows ProductClank login (or verifies existing session)
-    // 2. Shows which scopes the MCP client is requesting
-    // 3. On approval, looks up user's pck_live_* API key
-    // 4. Creates auth code mapped to that API key
-    res.send(`<!DOCTYPE html>
-<html>
-<head><title>ProductClank — Authorize</title></head>
-<body style="font-family: sans-serif; max-width: 500px; margin: 80px auto; text-align: center;">
-  <h1>ProductClank</h1>
-  <p>An application wants to access your ProductClank account.</p>
-  <p><strong>Scopes:</strong> ${scope || "campaigns:read campaigns:write"}</p>
-  <form method="POST" action="/oauth/authorize">
-    <input type="hidden" name="client_id" value="${client_id}" />
-    <input type="hidden" name="redirect_uri" value="${redirect_uri}" />
-    <input type="hidden" name="code_challenge" value="${code_challenge}" />
-    <input type="hidden" name="code_challenge_method" value="${code_challenge_method}" />
-    <input type="hidden" name="state" value="${state}" />
-    <input type="hidden" name="scope" value="${scope}" />
-    <label>
-      <div style="margin: 20px 0;">Your ProductClank API Key:</div>
-      <input type="text" name="api_key" placeholder="pck_live_..." style="width: 100%; padding: 8px; font-size: 14px;" />
-    </label>
-    <br/><br/>
-    <button type="submit" style="padding: 10px 24px; font-size: 16px; cursor: pointer;">Authorize</button>
-  </form>
-</body>
-</html>`);
-  });
-
-  /**
-   * Authorization POST — user submits approval.
-   * Creates an auth code and redirects back to the client.
-   */
-  router.post("/oauth/authorize", (req, res) => {
-    const {
-      client_id,
-      redirect_uri,
-      code_challenge,
-      state,
-      scope,
-      api_key,
-    } = req.body;
-
-    if (!api_key || !api_key.startsWith("pck_live_")) {
-      res.status(400).send("Invalid API key. Must start with pck_live_");
-      return;
-    }
-
-    const code = crypto.randomBytes(32).toString("hex");
-    authCodes.set(code, {
-      client_id,
-      code_challenge: code_challenge || "",
-      redirect_uri,
-      scope: scope || "",
-      api_key,
-    });
-
-    // Auth codes expire after 5 minutes
-    setTimeout(() => authCodes.delete(code), 5 * 60 * 1000);
-
-    const redirectUrl = new URL(redirect_uri);
-    redirectUrl.searchParams.set("code", code);
-    if (state) redirectUrl.searchParams.set("state", state);
-
-    res.redirect(302, redirectUrl.toString());
-  });
-
-  /**
-   * Token endpoint — exchange auth code for access token.
-   * The access token IS the user's pck_live_* API key (or maps to it).
-   */
-  router.post("/oauth/token", (req, res) => {
-    const { grant_type, code, code_verifier, redirect_uri } = req.body;
-
-    if (grant_type !== "authorization_code") {
-      res.status(400).json({ error: "unsupported_grant_type" });
-      return;
-    }
-
-    const authCode = authCodes.get(code);
-    if (!authCode) {
-      res.status(400).json({ error: "invalid_grant", error_description: "Invalid or expired authorization code" });
-      return;
-    }
-
-    // Verify PKCE code_verifier against code_challenge (S256)
-    if (authCode.code_challenge) {
-      const expectedChallenge = crypto
-        .createHash("sha256")
-        .update(code_verifier || "")
-        .digest("base64url");
-
-      if (expectedChallenge !== authCode.code_challenge) {
-        res.status(400).json({ error: "invalid_grant", error_description: "PKCE verification failed" });
+  // ─── Dynamic Client Registration (RFC 7591) ──────────────────────────────
+  router.post("/oauth/register", async (req: Request, res: Response) => {
+    try {
+      const body = (req.body ?? {}) as {
+        redirect_uris?: unknown;
+        client_name?: unknown;
+        token_endpoint_auth_method?: unknown;
+      };
+      if (
+        !Array.isArray(body.redirect_uris) ||
+        body.redirect_uris.length === 0
+      ) {
+        res.status(400).json({
+          error: "invalid_redirect_uri",
+          error_description: "redirect_uris is required",
+        });
         return;
       }
+      const method =
+        typeof body.token_endpoint_auth_method === "string"
+          ? body.token_endpoint_auth_method
+          : "none";
+
+      const client = await store.registerClient({
+        clientName:
+          typeof body.client_name === "string" ? body.client_name : undefined,
+        redirectUris: body.redirect_uris as string[],
+        tokenEndpointAuthMethod: method,
+      });
+
+      res.status(201).json({
+        client_id: client.clientId,
+        ...(client.clientSecret ? { client_secret: client.clientSecret } : {}),
+        client_name: client.clientName ?? undefined,
+        redirect_uris: client.redirectUris,
+        token_endpoint_auth_method: client.tokenEndpointAuthMethod,
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+      });
+    } catch (error) {
+      console.error("[oauth/register]", error);
+      res.status(500).json({ error: "server_error" });
     }
+  });
 
-    // Consume the auth code (one-time use)
-    authCodes.delete(code);
+  // ─── Authorization endpoint ───────────────────────────────────────────────
+  router.get("/oauth/authorize", async (req: Request, res: Response) => {
+    try {
+      const query = req.query as unknown as Record<string, string | undefined>;
+      const clientId = query.client_id;
+      const redirectUri = query.redirect_uri;
+      const responseType = query.response_type;
+      const codeChallenge = query.code_challenge;
+      const codeChallengeMethod = query.code_challenge_method ?? "S256";
+      const scope = query.scope ?? config.oauth.scopesSupported.join(" ");
+      const clientState = query.state ?? null;
 
-    // Create access token that maps to the user's API key
-    const accessToken = `mcp_${crypto.randomBytes(32).toString("hex")}`;
-    const refreshToken = `mcp_rt_${crypto.randomBytes(32).toString("hex")}`;
+      if (!clientId || !redirectUri) {
+        res.status(400).send("Missing client_id or redirect_uri");
+        return;
+      }
+      const client = await store.getClient(clientId);
+      if (!client) {
+        res.status(400).send("Unknown client_id");
+        return;
+      }
+      if (!redirectUriAllowed(client.redirectUris, redirectUri)) {
+        res.status(400).send("redirect_uri is not registered for this client");
+        return;
+      }
+      // From here, protocol errors are reported to the client via redirect.
+      if (responseType !== "code") {
+        redirectError(
+          res,
+          redirectUri,
+          clientState,
+          "unsupported_response_type"
+        );
+        return;
+      }
+      if (!codeChallenge || codeChallengeMethod !== "S256") {
+        redirectError(
+          res,
+          redirectUri,
+          clientState,
+          "invalid_request",
+          "PKCE with S256 is required"
+        );
+        return;
+      }
 
-    tokens.set(accessToken, {
-      api_key: authCode.api_key,
-      client_id: authCode.client_id,
-      scope: authCode.scope,
-    });
+      const loginState = await store.createLoginState({
+        clientId,
+        redirectUri,
+        codeChallenge,
+        codeChallengeMethod,
+        scope,
+        clientState,
+      });
 
-    res.json({
-      access_token: accessToken,
-      token_type: "Bearer",
-      expires_in: 3600,
-      refresh_token: refreshToken,
-      scope: authCode.scope,
-    });
+      const url = new URL("/connect/mcp", config.webappUrl);
+      url.searchParams.set("state", loginState);
+      url.searchParams.set("redirect", `${config.oauth.issuer}/oauth/callback`);
+      res.redirect(302, url.toString());
+    } catch (error) {
+      console.error("[oauth/authorize]", error);
+      res.status(500).send("Authorization error");
+    }
+  });
+
+  // ─── Callback from the webapp (carries a signed grant) ────────────────────
+  router.get("/oauth/callback", async (req: Request, res: Response) => {
+    try {
+      const query = req.query as unknown as Record<string, string | undefined>;
+      const state = query.state;
+      const grant = query.grant;
+      const denied = query.error;
+
+      if (!state) {
+        res.status(400).send("Missing state");
+        return;
+      }
+      const login = await store.consumeLoginState(state);
+      if (!login) {
+        res.status(400).send("Login session expired. Please reconnect.");
+        return;
+      }
+      if (denied) {
+        redirectError(
+          res,
+          login.redirectUri,
+          login.clientState,
+          "access_denied"
+        );
+        return;
+      }
+      if (!grant) {
+        res.status(400).send("Missing grant");
+        return;
+      }
+
+      let userId: string;
+      try {
+        ({ userId } = verifyGrant(grant));
+      } catch (error) {
+        console.error("[oauth/callback] grant verify failed", error);
+        redirectError(
+          res,
+          login.redirectUri,
+          login.clientState,
+          "access_denied",
+          "Invalid grant"
+        );
+        return;
+      }
+
+      // Ensure the trusted connector agent is authorized to bill this user.
+      try {
+        await api.authorizeUser(userId);
+      } catch (error) {
+        console.error("[oauth/callback] authorizeUser failed", error);
+        redirectError(
+          res,
+          login.redirectUri,
+          login.clientState,
+          "server_error",
+          "Could not authorize account"
+        );
+        return;
+      }
+
+      const code = await store.createAuthCode({
+        clientId: login.clientId,
+        userId,
+        redirectUri: login.redirectUri,
+        codeChallenge: login.codeChallenge,
+        codeChallengeMethod: login.codeChallengeMethod,
+        scope: login.scope,
+      });
+
+      const target = new URL(login.redirectUri);
+      target.searchParams.set("code", code);
+      if (login.clientState) target.searchParams.set("state", login.clientState);
+      res.redirect(302, target.toString());
+    } catch (error) {
+      console.error("[oauth/callback]", error);
+      res.status(500).send("Callback error");
+    }
+  });
+
+  // ─── Token endpoint ───────────────────────────────────────────────────────
+  router.post("/oauth/token", async (req: Request, res: Response) => {
+    try {
+      const grantType = (req.body ?? {}).grant_type;
+      if (grantType === "authorization_code") {
+        await handleAuthorizationCode(req, res);
+      } else if (grantType === "refresh_token") {
+        await handleRefreshToken(req, res);
+      } else {
+        res.status(400).json({ error: "unsupported_grant_type" });
+      }
+    } catch (error) {
+      console.error("[oauth/token]", error);
+      res.status(500).json({ error: "server_error" });
+    }
   });
 
   return router;
 }
 
-/**
- * Resolve an MCP access token to a ProductClank API key.
- * Used by tool handlers to make API calls on behalf of the user.
- */
-export function resolveApiKey(accessToken: string): string | null {
-  const tokenData = tokens.get(accessToken);
-  return tokenData?.api_key ?? null;
+async function handleAuthorizationCode(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const body = (req.body ?? {}) as {
+    code?: string;
+    code_verifier?: string;
+    redirect_uri?: string;
+    client_id?: string;
+  };
+  if (!body.code || !body.code_verifier) {
+    res.status(400).json({
+      error: "invalid_request",
+      error_description: "code and code_verifier are required",
+    });
+    return;
+  }
+  const authCode = await store.consumeAuthCode(body.code);
+  if (!authCode) {
+    res.status(400).json({
+      error: "invalid_grant",
+      error_description: "Invalid or expired authorization code",
+    });
+    return;
+  }
+  if (body.redirect_uri && body.redirect_uri !== authCode.redirectUri) {
+    res
+      .status(400)
+      .json({ error: "invalid_grant", error_description: "redirect_uri mismatch" });
+    return;
+  }
+  if (body.client_id && body.client_id !== authCode.clientId) {
+    res
+      .status(400)
+      .json({ error: "invalid_grant", error_description: "client_id mismatch" });
+    return;
+  }
+  // PKCE S256 verification
+  const computed = crypto
+    .createHash("sha256")
+    .update(body.code_verifier)
+    .digest("base64url");
+  if (computed !== authCode.codeChallenge) {
+    res
+      .status(400)
+      .json({ error: "invalid_grant", error_description: "PKCE verification failed" });
+    return;
+  }
+
+  const tokens = await store.issueTokens({
+    clientId: authCode.clientId,
+    userId: authCode.userId,
+    scope: authCode.scope,
+  });
+  res.json({
+    access_token: tokens.accessToken,
+    token_type: "Bearer",
+    expires_in: tokens.expiresIn,
+    refresh_token: tokens.refreshToken,
+    scope: tokens.scope,
+  });
+}
+
+async function handleRefreshToken(req: Request, res: Response): Promise<void> {
+  const body = (req.body ?? {}) as { refresh_token?: string };
+  if (!body.refresh_token) {
+    res.status(400).json({
+      error: "invalid_request",
+      error_description: "refresh_token is required",
+    });
+    return;
+  }
+  const tokens = await store.rotateRefreshToken(body.refresh_token);
+  if (!tokens) {
+    res.status(400).json({
+      error: "invalid_grant",
+      error_description: "Invalid or expired refresh token",
+    });
+    return;
+  }
+  res.json({
+    access_token: tokens.accessToken,
+    token_type: "Bearer",
+    expires_in: tokens.expiresIn,
+    refresh_token: tokens.refreshToken,
+    scope: tokens.scope,
+  });
 }
