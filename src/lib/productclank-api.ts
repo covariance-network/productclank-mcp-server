@@ -1,157 +1,126 @@
 /**
- * ProductClank REST API client.
- * Wraps existing /api/v1/agents/* endpoints so MCP tool handlers
- * can call them with a user's API key.
+ * Thin client for the ProductClank Agent REST API.
+ *
+ * Every call authenticates with the server's single *trusted* agent key
+ * (PRODUCTCLANK_TRUSTED_KEY) and bills the end user via `caller_user_id`. The
+ * trusted key is a server secret — it is never exposed to Claude or to users.
  */
 
 import { config } from "../config.js";
 
 const BASE = config.productclankApiUrl;
 
-interface ApiOptions {
-  apiKey: string;
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body: unknown
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
 }
 
-async function request<T>(
-  path: string,
-  opts: ApiOptions & RequestInit
-): Promise<T> {
-  const { apiKey, ...fetchOpts } = opts;
-  const url = `${BASE}${path}`;
-
-  const res = await fetch(url, {
-    ...fetchOpts,
+async function request<T>(path: string, init: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${config.trustedApiKey}`,
       "Content-Type": "application/json",
-      ...((fetchOpts.headers as Record<string, string>) || {}),
+      ...(init.headers as Record<string, string> | undefined),
     },
   });
 
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`ProductClank API ${res.status}: ${body}`);
+  const text = await res.text();
+  let body: unknown = null;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
   }
 
-  return res.json() as Promise<T>;
+  if (!res.ok) {
+    const message =
+      body && typeof body === "object" && "message" in body
+        ? String((body as { message?: unknown }).message)
+        : `ProductClank API error ${res.status}`;
+    throw new ApiError(message, res.status, body);
+  }
+  return body as T;
 }
 
-// --- Agent ---
+// ─── Authorization (trusted agent → user billing consent) ──────────────────
 
-export function getAgentProfile(opts: ApiOptions) {
-  return request("/agents/me", { ...opts, method: "GET" });
-}
-
-export function registerAgent(
-  data: { name: string; description: string; wallet_address?: string },
-  opts: ApiOptions
-) {
-  return request("/agents/register", {
-    ...opts,
+export function authorizeUser(
+  userId: string
+): Promise<{ success: boolean; authorized: boolean }> {
+  return request("/agents/authorize", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ user_id: userId }),
   });
 }
 
-// --- Products ---
+// ─── Products ──────────────────────────────────────────────────────────────
 
-export function searchProducts(query: string, opts: ApiOptions) {
-  return request(
-    `/agents/products/search?q=${encodeURIComponent(query)}`,
-    { ...opts, method: "GET" }
-  );
+export interface ProductSearchResult {
+  success: boolean;
+  products: Array<{
+    id: string;
+    name: string;
+    tagline?: string;
+    website?: string;
+    twitter?: string;
+    category?: string[];
+  }>;
 }
 
-// --- Campaigns ---
-
-export function createCampaign(
-  data: {
-    product_id: string;
-    title: string;
-    keywords: string[];
-    search_context: string;
-    mention_accounts?: string[];
-    reply_style_tags?: string[];
-    reply_length?: string;
-    min_follower_count?: number;
-    max_post_age_days?: number;
-    reply_guidelines?: string;
-  },
-  opts: ApiOptions
-) {
-  return request("/agents/campaigns", {
-    ...opts,
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export function searchProducts(
+  query: string,
+  limit: number
+): Promise<ProductSearchResult> {
+  const qs = new URLSearchParams({ q: query, limit: String(limit) });
+  return request(`/agents/products/search?${qs.toString()}`, { method: "GET" });
 }
 
-export function listCampaigns(
-  params: { limit?: number; status?: string },
-  opts: ApiOptions
-) {
-  const qs = new URLSearchParams();
-  if (params.limit) qs.set("limit", String(params.limit));
-  if (params.status) qs.set("status", params.status);
-  return request(`/agents/campaigns?${qs}`, { ...opts, method: "GET" });
+// ─── Boost ─────────────────────────────────────────────────────────────────
+
+export interface BoostParams {
+  callerUserId: string;
+  postUrl: string;
+  productId: string;
+  actionType: "replies" | "likes" | "repost";
+  replyGuidelines?: string;
 }
 
-export function getCampaign(campaignId: string, opts: ApiOptions) {
-  return request(`/agents/campaigns/${campaignId}`, {
-    ...opts,
-    method: "GET",
-  });
+export interface BoostResult {
+  success: boolean;
+  campaign: {
+    id: string;
+    campaign_number: string;
+    platform: string;
+    action_type: string;
+    is_reboost: boolean;
+    url: string;
+    admin_url: string;
+  };
+  post: { url: string; author: string; platform: string; text: string };
+  items_generated: number;
+  credits: { credits_used: number; credits_remaining: number };
 }
 
-export function generatePosts(campaignId: string, opts: ApiOptions) {
-  return request(`/agents/campaigns/${campaignId}/generate-posts`, {
-    ...opts,
-    method: "POST",
-  });
-}
-
-export function reviewPosts(
-  campaignId: string,
-  data: {
-    review_rules: string;
-    threshold?: number;
-    dry_run?: boolean;
-    save_rules?: boolean;
-  },
-  opts: ApiOptions
-) {
-  return request(`/agents/campaigns/${campaignId}/review-posts`, {
-    ...opts,
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-export function boostTweet(
-  data: {
-    tweet_url: string;
-    product_id: string;
-    action_type: "replies" | "likes" | "repost";
-  },
-  opts: ApiOptions
-) {
+export function boostPost(params: BoostParams): Promise<BoostResult> {
   return request("/agents/campaigns/boost", {
-    ...opts,
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      caller_user_id: params.callerUserId,
+      post_url: params.postUrl,
+      product_id: params.productId,
+      action_type: params.actionType,
+      ...(params.replyGuidelines
+        ? { reply_guidelines: params.replyGuidelines }
+        : {}),
+    }),
   });
-}
-
-// --- Credits ---
-
-export function getBalance(opts: ApiOptions) {
-  return request("/agents/credits/balance", { ...opts, method: "GET" });
-}
-
-export function getCreditHistory(
-  params: { limit?: number },
-  opts: ApiOptions
-) {
-  const qs = params.limit ? `?limit=${params.limit}` : "";
-  return request(`/agents/credits/history${qs}`, { ...opts, method: "GET" });
 }
