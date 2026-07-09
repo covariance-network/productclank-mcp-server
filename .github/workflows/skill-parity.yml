@@ -1,0 +1,20 @@
+name: skill-parity
+
+# Fails when the agent skill references an agent endpoint that capabilities.json
+# doesn't track — i.e. the skill grew a capability the MCP hasn't accounted for.
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 12 * * 1" # weekly, Monday 12:00 UTC
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check MCP <-> skill parity
+        run: node scripts/check-skill-parity.mjs
