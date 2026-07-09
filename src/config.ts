@@ -19,7 +19,7 @@ const issuer = optional(
 export const config = {
   port: parseInt(process.env.PORT || "3100", 10),
   mcpServerUrl: optional("MCP_SERVER_URL", "http://localhost:3100"),
-  webappUrl: optional("PRODUCTCLANK_WEBAPP_URL", "https://app.productclank.com"),
+  webappUrl: optional("PRODUCTCLANK_WEBAPP_URL", "https://www.productclank.com"),
   productclankApiUrl: optional(
     "PRODUCTCLANK_API_URL",
     "https://api.productclank.com/api/v1"
