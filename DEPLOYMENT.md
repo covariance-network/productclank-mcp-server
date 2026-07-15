@@ -11,7 +11,8 @@ Claude ──HTTPS──▶ mcp.productclank.com/mcp ──REST(trusted key + ca
 ```
 
 Tools exposed: `search_products` (read), `check_balance` (read),
-`boost_post` (write — spends credits).
+`boost_post` (write — spends credits), `suggest_content_campaign` (read — free
+preview), `create_content_campaign` (write — launches a content campaign, 1000cr).
 
 ---
 
@@ -108,7 +109,7 @@ curl -i -X POST https://mcp.productclank.com/mcp \
 npx @modelcontextprotocol/inspector
 ```
 Point it at `https://mcp.productclank.com/mcp`, run the OAuth flow (it opens the
-webapp consent page), then `tools/list` → expect the 3 tools; call
+webapp consent page), then `tools/list` → expect the 5 tools; call
 `search_products`.
 
 **In Claude:** Settings → Connectors → Add custom connector →
