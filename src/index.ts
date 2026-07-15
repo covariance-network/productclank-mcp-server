@@ -35,7 +35,7 @@ app.use(createOAuthEndpoints());
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "ProductClank", version: "0.2.0" });
+  const server = new McpServer({ name: "ProductClank", version: "0.3.0" });
   registerTools(server);
   return server;
 }
@@ -106,7 +106,7 @@ app.delete("/mcp", bearerAuth, (req, res) => {
 
 // ─── Health check ──────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", version: "0.2.0", sessions: transports.size });
+  res.json({ status: "ok", version: "0.3.0", sessions: transports.size });
 });
 
 app.listen(config.port, () => {
