@@ -1,7 +1,7 @@
 {
   "name": "@productclank/mcp-server",
-  "version": "0.2.0",
-  "description": "ProductClank MCP Server — Claude custom connector for boosting social posts",
+  "version": "0.3.0",
+  "description": "ProductClank MCP Server — Claude custom connector for ProductClank campaigns (boost + content)",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
