@@ -16,6 +16,7 @@
   "endpoints": [
     { "method": "GET",  "path": "/agents/products/search",                 "mcp": "live",    "tool": "search_products" },
     { "method": "POST", "path": "/agents/campaigns/boost",                 "mcp": "live",    "tool": "boost_post" },
+    { "method": "POST", "path": "/agents/campaigns/content",               "mcp": "live",    "tool": "create_content_campaign", "note": "Two tools over one endpoint: suggest_content_campaign (dry_run:true, free preview) + create_content_campaign (dry_run:false, launch, 1000cr). Content = Growth Boost / take_action; submissions + judging stay in the webapp (v1)." },
     { "method": "GET",  "path": "/agents/credits/balance",                 "mcp": "live",    "tool": "check_balance", "note": "MCP reads UserCredits directly via service role (the agent balance endpoint reports the trusted agent's own balance, not the caller's)." },
 
     { "method": "POST", "path": "/agents/campaigns",                       "mcp": "planned", "tier": 1, "tool": "create_campaign" },

@@ -14,7 +14,7 @@ import crypto from "node:crypto";
 import { config } from "../config.js";
 import * as store from "./store.js";
 import { verifyGrant } from "../lib/grant.js";
-import * as api from "../lib/productclank-api.js";
+import * as api from "../lib/api/index.js";
 
 function isLoopback(uri: string): boolean {
   try {

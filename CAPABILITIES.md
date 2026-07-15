@@ -33,6 +33,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 |---|---|---|
 | `GET /agents/products/search` | ✅ | `search_products` |
 | `POST /agents/campaigns/boost` | ✅ | `boost_post` |
+| `POST /agents/campaigns/content` | ✅ | `suggest_content_campaign` (free preview) + `create_content_campaign` (1000cr) |
 | `GET /agents/credits/balance` | ✅ | `check_balance` (reads `UserCredits` directly) |
 | `POST /agents/campaigns` | 🔜 T1 | `create_campaign` |
 | `GET /agents/campaigns` | 🔜 T1 | `list_campaigns` |
