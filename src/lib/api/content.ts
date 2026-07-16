@@ -60,6 +60,9 @@ export interface CreateContentCampaignResult {
     product_id: string;
     campaign_type: string;
     status: string;
+    /** Public, on-brand editorial page to share with the community. */
+    public_url: string;
+    /** Per-campaign management page (review submissions, pick winners). */
     admin_url: string;
   };
   credits: {
@@ -67,7 +70,12 @@ export interface CreateContentCampaignResult {
     credits_remaining: number;
     billing_user_id: string;
   };
-  next_step?: { action?: string; admin_url?: string; description?: string };
+  next_step?: {
+    action?: string;
+    public_url?: string;
+    admin_url?: string;
+    description?: string;
+  };
 }
 
 function buildBody(params: ContentCampaignParams, dryRun: boolean) {

@@ -125,10 +125,13 @@ export function registerContentTools(server: McpServer): void {
           campaign_number: result.campaign.campaign_number,
           title: result.campaign.title,
           status: result.campaign.status,
+          // Public, shareable editorial page — give this to the user so they
+          // can share the campaign; admin_url is where they manage it.
+          public_url: result.campaign.public_url,
           admin_url: result.campaign.admin_url,
           credits_used: result.credits.credits_used,
           credits_remaining: result.credits.credits_remaining,
-          note: "Campaign is generating its brief and will auto-activate. Review submissions and pick winners in the ProductClank web app.",
+          note: "Campaign is generating its brief (usually ready in 2–5 minutes) and will auto-activate. Share public_url with the community; review submissions and pick winners at admin_url.",
         });
       } catch (error) {
         // Surface actionable API errors (e.g. insufficient credits) verbatim.
