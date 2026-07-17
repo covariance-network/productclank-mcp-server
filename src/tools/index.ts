@@ -12,10 +12,12 @@ import { registerProductTools } from "./products.js";
 import { registerCreditTools } from "./credits.js";
 import { registerBoostTools } from "./boost.js";
 import { registerContentTools } from "./content.js";
+import { registerContentStudioTools } from "./contentStudio.js";
 
 export function registerTools(server: McpServer): void {
   registerProductTools(server); // search_products
   registerCreditTools(server); // check_balance
   registerBoostTools(server); // boost_post
   registerContentTools(server); // suggest_content_campaign, create_content_campaign
+  registerContentStudioTools(server); // list_content_spaces, write_content_candidates
 }

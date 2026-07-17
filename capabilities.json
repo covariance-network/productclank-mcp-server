@@ -6,7 +6,9 @@
     "productclank-campaigns/references/API_REFERENCE.md",
     "productclank-campaigns/SKILL.md",
     "productclank-agent-participation/SKILL.md",
-    "productclank-agent-participation/references/API_REFERENCE.md"
+    "productclank-agent-participation/references/API_REFERENCE.md",
+    "productclank-content-studio/SKILL.md",
+    "productclank-content-studio/references/API_REFERENCE.md"
   ],
   "statuses": {
     "live": "Exposed as an MCP tool today.",
@@ -18,6 +20,9 @@
     { "method": "POST", "path": "/agents/campaigns/boost",                 "mcp": "live",    "tool": "boost_post" },
     { "method": "POST", "path": "/agents/campaigns/content",               "mcp": "live",    "tool": "create_content_campaign", "note": "Two tools over one endpoint: suggest_content_campaign (dry_run:true, free preview) + create_content_campaign (dry_run:false, launch, 1000cr). Content = Growth Boost / take_action; submissions + judging stay in the webapp (v1)." },
     { "method": "GET",  "path": "/agents/credits/balance",                 "mcp": "live",    "tool": "check_balance", "note": "MCP reads UserCredits directly via service role (the agent balance endpoint reports the trusted agent's own balance, not the caller's)." },
+
+    { "method": "GET",  "path": "/agents/content/spaces",                  "mcp": "live",    "tool": "list_content_spaces", "note": "Content Studio: content-enabled spaces the caller may draft into (owner / account-delegate / campaign-member). Free." },
+    { "method": "POST", "path": "/agents/content/candidates",              "mcp": "live",    "tool": "write_content_candidates", "note": "Content Studio: draft up to 25 unreviewed ContentDraft candidates (source='agent') into a space. FREE, no auto-review, never auto-published — a human reviews/schedules in the webapp. Distinct from campaigns/content (community content campaign)." },
 
     { "method": "POST", "path": "/agents/campaigns",                       "mcp": "planned", "tier": 1, "tool": "create_campaign" },
     { "method": "GET",  "path": "/agents/campaigns",                       "mcp": "planned", "tier": 1, "tool": "list_campaigns" },

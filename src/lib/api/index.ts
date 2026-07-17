@@ -11,3 +11,4 @@ export * from "./authorize.js";
 export * from "./products.js";
 export * from "./boost.js";
 export * from "./content.js";
+export * from "./contentStudio.js";
