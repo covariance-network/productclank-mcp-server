@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.productclank/productclank",
   "title": "ProductClank",
-  "description": "Launch community growth campaigns from your AI assistant: boost posts with real replies, likes, and reposts (X, Instagram, TikTok, LinkedIn, Reddit, Farcaster), run community content campaigns, and draft social content into your pipeline. OAuth sign-in; actions billed in ProductClank credits with per-app daily spend caps.",
+  "description": "Boost posts and launch community growth campaigns from your AI assistant. OAuth, credit-billed.",
   "repository": {
     "url": "https://github.com/covariance-network/productclank-mcp-server",
     "source": "github"
