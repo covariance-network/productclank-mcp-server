@@ -117,7 +117,7 @@ app.get("/health", (_req, res) => {
 app.get("/.well-known/glama.json", (_req, res) => {
   res.json({
     $schema: "https://glama.ai/mcp/schemas/connector.json",
-    maintainers: [{ email: "lior@covariance.network" }],
+    maintainers: [{ email: "0xCovariance@gmail.com" }],
   });
 });
 
