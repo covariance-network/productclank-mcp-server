@@ -35,7 +35,10 @@ export function registerBoostTools(server: McpServer): void {
       },
       annotations: {
         readOnlyHint: false,
-        destructiveHint: true,
+        // Additive: creates a NEW boost campaign; never deletes/overwrites
+        // existing data. (Spends credits, but destructiveHint models data
+        // destruction, not cost — the description handles the spend warning.)
+        destructiveHint: false,
         openWorldHint: true,
       },
     },
