@@ -109,6 +109,18 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", version: "0.3.0", sessions: transports.size });
 });
 
+// ─── Glama connector-ownership proof ───────────────────────────────────────
+// Glama verifies claim of the registry-synced connector listing
+// (glama.ai/mcp/connectors/com.productclank/productclank) by fetching this
+// file from the server's own domain. The email must match the maintainer's
+// Glama account email.
+app.get("/.well-known/glama.json", (_req, res) => {
+  res.json({
+    $schema: "https://glama.ai/mcp/schemas/connector.json",
+    maintainers: [{ email: "lior@covariance.network" }],
+  });
+});
+
 app.listen(config.port, () => {
   console.log(`ProductClank MCP server listening on :${config.port}`);
   console.log(`  MCP endpoint:   ${config.mcpServerUrl}/mcp`);
