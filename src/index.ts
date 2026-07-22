@@ -48,7 +48,42 @@ const bearerAuth = requireBearerAuth({
   resourceMetadataUrl: `${config.oauth.issuer}/.well-known/oauth-protected-resource`,
 });
 
-app.post("/mcp", bearerAuth, async (req, res) => {
+// Discovery / handshake methods that carry no user identity and do nothing on
+// the user's behalf. Allowing these unauthenticated lets any client — including
+// automated directory health checks (e.g. glama.ai) — introspect the tool list
+// without completing the OAuth flow. Every method that acts on a user's data
+// (tools/call, …) still requires a valid access token, and each tool also
+// defends itself via getUserId(...) → NOT_AUTHED, so this only exposes the
+// public tool catalog, never any account or credit action.
+const PUBLIC_MCP_METHODS = new Set([
+  "initialize",
+  "ping",
+  "tools/list",
+  "prompts/list",
+  "resources/list",
+  "resources/templates/list",
+]);
+
+function isPublicMcpMessage(msg: unknown): boolean {
+  if (!msg || typeof msg !== "object") return false;
+  const method = (msg as { method?: unknown }).method;
+  if (typeof method !== "string") return false;
+  return method.startsWith("notifications/") || PUBLIC_MCP_METHODS.has(method);
+}
+
+// Runs bearer auth on every /mcp POST EXCEPT pure discovery requests. Fails
+// closed: a request skips auth only when it is non-empty and *every* JSON-RPC
+// message in it (single or batch) is a public method — so a batch that smuggles
+// a tools/call alongside an initialize is still gated.
+const bearerAuthUnlessDiscovery: express.RequestHandler = (req, res, next) => {
+  const messages = Array.isArray(req.body) ? req.body : [req.body];
+  const allPublic =
+    messages.length > 0 && messages.every(isPublicMcpMessage);
+  if (allPublic) return next();
+  return bearerAuth(req, res, next);
+};
+
+app.post("/mcp", bearerAuthUnlessDiscovery, async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (sessionId && transports.has(sessionId)) {
