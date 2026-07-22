@@ -33,6 +33,50 @@ app.use(createOAuthEndpoints());
 
 // ─── MCP server / transport ────────────────────────────────────────────────
 const transports = new Map<string, StreamableHTTPServerTransport>();
+// Last time (epoch ms) each session serviced a request, for idle cleanup below.
+const lastSeenAt = new Map<string, number>();
+
+function touchSession(sessionId: string): void {
+  lastSeenAt.set(sessionId, Date.now());
+}
+
+function forgetSession(sessionId: string): void {
+  transports.delete(sessionId);
+  lastSeenAt.delete(sessionId);
+}
+
+// Close transports idle longer than the configured TTL. Unauthenticated
+// discovery clients (health checks, glama.ai) open a session via initialize and
+// rarely send a DELETE to close it, so without this sweep those transports —
+// each holding an McpServer instance — would leak until the process restarts.
+function sweepIdleSessions(): void {
+  const now = Date.now();
+  const stale: string[] = [];
+  for (const [sessionId] of transports) {
+    if (now - (lastSeenAt.get(sessionId) ?? 0) > config.session.idleTtlMs) {
+      stale.push(sessionId);
+    }
+  }
+  for (const sessionId of stale) {
+    const transport = transports.get(sessionId);
+    forgetSession(sessionId);
+    try {
+      transport?.close();
+    } catch {
+      // Already closing/closed — nothing to do.
+    }
+  }
+  if (stale.length > 0) {
+    console.log(`Swept ${stale.length} idle MCP session(s)`);
+  }
+}
+
+const sessionSweepTimer = setInterval(
+  sweepIdleSessions,
+  config.session.sweepIntervalMs
+);
+// Don't let the sweep timer keep the process alive on shutdown.
+sessionSweepTimer.unref();
 
 function createMcpServer(): McpServer {
   const server = new McpServer({ name: "ProductClank", version: "0.3.0" });
@@ -87,6 +131,7 @@ app.post("/mcp", bearerAuthUnlessDiscovery, async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (sessionId && transports.has(sessionId)) {
+    touchSession(sessionId);
     await transports.get(sessionId)!.handleRequest(req, res, req.body);
     return;
   }
@@ -98,13 +143,14 @@ app.post("/mcp", bearerAuthUnlessDiscovery, async (req, res) => {
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: (newSessionId) => {
         transports.set(newSessionId, transport);
+        touchSession(newSessionId);
       },
     });
     transport.onclose = () => {
       const sid = [...transports.entries()].find(
         ([, t]) => t === transport
       )?.[0];
-      if (sid) transports.delete(sid);
+      if (sid) forgetSession(sid);
     };
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
@@ -124,6 +170,7 @@ app.get("/mcp", bearerAuth, async (req, res) => {
     res.status(400).json({ error: "Missing or invalid session ID" });
     return;
   }
+  touchSession(sessionId);
   await transports.get(sessionId)!.handleRequest(req, res);
 });
 
@@ -131,8 +178,8 @@ app.delete("/mcp", bearerAuth, (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   if (sessionId && transports.has(sessionId)) {
     const transport = transports.get(sessionId)!;
+    forgetSession(sessionId);
     transport.close();
-    transports.delete(sessionId);
     res.status(200).json({ message: "Session terminated" });
     return;
   }

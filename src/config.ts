@@ -47,6 +47,21 @@ export const config = {
       10
     ),
   },
+
+  session: {
+    // Close an MCP transport that hasn't seen a request in this long. Discovery
+    // clients (health checks, glama.ai) open a session via initialize and
+    // usually never send a DELETE to close it, so without a sweep those
+    // transports would accumulate in memory until the next restart.
+    idleTtlMs: parseInt(
+      optional("MCP_SESSION_IDLE_TTL_MS", String(10 * 60 * 1000)),
+      10
+    ),
+    sweepIntervalMs: parseInt(
+      optional("MCP_SESSION_SWEEP_MS", String(60 * 1000)),
+      10
+    ),
+  },
 };
 
 /**
