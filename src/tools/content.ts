@@ -111,7 +111,10 @@ export function registerContentTools(server: McpServer): void {
       inputSchema: contentInputSchema,
       annotations: {
         readOnlyHint: false,
-        destructiveHint: true,
+        // Additive: creates a NEW content campaign; never deletes/overwrites
+        // existing data. (Spends 1000 credits, but destructiveHint models data
+        // destruction, not cost — the description handles the spend warning.)
+        destructiveHint: false,
         openWorldHint: false,
       },
     },
