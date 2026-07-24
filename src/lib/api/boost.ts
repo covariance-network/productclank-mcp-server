@@ -8,7 +8,8 @@ import { request } from "./client.js";
 export interface BoostParams {
   callerUserId: string;
   postUrl: string;
-  productId: string;
+  /** Optional — link a product. Omit for a tweet-first boost. */
+  productId?: string;
   actionType: "replies" | "likes" | "repost";
   replyGuidelines?: string;
 }
@@ -35,7 +36,7 @@ export function boostPost(params: BoostParams): Promise<BoostResult> {
     body: JSON.stringify({
       caller_user_id: params.callerUserId,
       post_url: params.postUrl,
-      product_id: params.productId,
+      ...(params.productId ? { product_id: params.productId } : {}),
       action_type: params.actionType,
       ...(params.replyGuidelines
         ? { reply_guidelines: params.replyGuidelines }
