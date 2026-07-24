@@ -13,13 +13,18 @@ export function registerBoostTools(server: McpServer): void {
     {
       title: "Boost a social post",
       description:
-        "Rally the ProductClank community to engage with a specific social post. Creates a boost campaign and spends the user's credits: 'replies' generates 10 AI reply drafts (200 credits); 'likes' (30 likes) and 'repost' (10 reposts) cost 300. Supports Twitter/X, Instagram, TikTok, LinkedIn, Reddit, and Farcaster — the platform is auto-detected from the URL. Requires a product_id from search_products. Confirm the action and its credit cost with the user before calling.",
+        "Rally the ProductClank community to engage with a specific social post. Creates a boost campaign and spends the user's credits: 'replies' generates 10 AI reply drafts (200 credits); 'likes' (30 likes) and 'repost' (10 reposts) cost 300. Supports Twitter/X, Instagram, TikTok, LinkedIn, Reddit, and Farcaster — the platform is auto-detected from the URL. product_id is OPTIONAL: link a product (from search_products or create_product) to tailor replies with the product name, or omit it for a tweet-first boost that uses generic amplification language. Confirm the action and its credit cost with the user before calling.",
       inputSchema: {
         post_url: z
           .string()
           .url()
           .describe("Full URL of the post to boost (any supported platform)"),
-        product_id: z.string().describe("Product UUID from search_products"),
+        product_id: z
+          .string()
+          .optional()
+          .describe(
+            "Optional product UUID (from search_products or create_product). Omit for a tweet-first boost."
+          ),
         action_type: z
           .enum(["replies", "likes", "repost"])
           .optional()
