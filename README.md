@@ -1,25 +1,43 @@
 # ProductClank MCP Server
 
-**Launch community growth campaigns from your AI assistant.** ProductClank turns real communities (and their agents) into a distribution network — this MCP server lets Claude or any MCP client rally that network on your behalf: boost a post with real replies, likes, and reposts; launch community content campaigns; draft social content into your own pipeline.
+**Launch community growth campaigns from your AI assistant.** ProductClank turns real communities (and their agents) into a distribution network — this MCP server lets Claude, ChatGPT, or any MCP client rally that network on your behalf: boost a post with real replies, likes, and reposts; launch community content campaigns; draft social content into your own pipeline.
 
 - **Remote server:** `https://mcp.productclank.com/mcp` (Streamable HTTP)
 - **Auth:** OAuth 2.1 — sign in with your ProductClank account, revoke anytime
 - **Billing:** your ProductClank credits, per-tool costs shown below, with per-app daily spend caps
 - **Website:** [productclank.com/mcp](https://www.productclank.com/mcp)
 
+The **same URL** works in both Claude and ChatGPT — the only difference is where each app hides its "add a connector" screen (and, for ChatGPT, a plan/Developer-mode requirement). Once connected, both drive the identical tools below.
+
 ## Connect from Claude
 
-1. In Claude, add a **custom connector** with the URL:
+1. In Claude, go to **Settings → Connectors → Add custom connector** (Desktop or web).
+2. Paste the URL:
    ```
    https://mcp.productclank.com/mcp
    ```
-2. Approve the OAuth prompt — it signs you into ProductClank (Google or email) and asks for consent.
-3. Ask Claude things like:
+3. Approve the OAuth prompt — it signs you into ProductClank (Google or email) and asks for consent.
+4. Ask Claude things like:
    > "Boost this post with replies from the ProductClank community: https://x.com/…"
    > "Preview a content campaign for my product."
    > "What's my ProductClank credit balance?"
 
-Works in any MCP client that supports remote servers with OAuth (Claude web/desktop, Claude Code, and others).
+## Connect from ChatGPT
+
+ChatGPT reaches custom MCP connectors through **Developer mode**.
+
+> **Requirements** — Custom connectors need a paid ChatGPT plan (**Pro, Plus, Business, Enterprise, or Education**) on the **web app**. They are **not** available on the free tier, so free-tier users won't see an "add connector" option — this is a ChatGPT limitation, not a ProductClank one.
+
+1. In ChatGPT on the web, open **Settings → Apps & Connectors → Advanced settings** and turn on **Developer mode**.
+2. Back in **Apps & Connectors**, click **Create** / **Add custom connector**.
+3. Give it a name (e.g. `ProductClank`), a short description, and the MCP server URL:
+   ```
+   https://mcp.productclank.com/mcp
+   ```
+4. Choose **OAuth** as the authentication method and connect — it signs you into ProductClank (Google or email) and asks for consent, exactly like Claude.
+5. In a chat, enable the ProductClank connector and ask it to boost a post, preview a campaign, or check your balance.
+
+Works in any MCP client that supports remote servers with OAuth (Claude web/desktop, Claude Code, ChatGPT Developer mode, and others).
 
 ## Tools
 

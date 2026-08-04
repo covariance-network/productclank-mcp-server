@@ -90,11 +90,20 @@ The webapp ships `/connect/mcp` (consent page) and `/api/connect/mcp/grant`
 
 ## 4. Smoke test
 
-**Metadata reachable:**
+**Metadata reachable — root AND resource-path-suffixed variants:**
 ```bash
 curl https://mcp.productclank.com/.well-known/oauth-authorization-server
 curl https://mcp.productclank.com/.well-known/oauth-protected-resource
+# ChatGPT's connector fetches the /mcp-suffixed paths — these must 200 too:
+curl https://mcp.productclank.com/.well-known/oauth-authorization-server/mcp
+curl https://mcp.productclank.com/.well-known/oauth-protected-resource/mcp
+# oauth-protected-resource must report:  "resource":"https://mcp.productclank.com/mcp"
 ```
+
+> **ChatGPT connect:** Settings → Apps & Connectors → Advanced → enable
+> **Developer mode**, then add a custom connector with the URL above and OAuth.
+> Requires a paid ChatGPT plan (Pro/Plus/Business/Enterprise/Education) on web —
+> the free tier has no custom-connector option.
 
 **Unauthenticated /mcp returns a 401 challenge:**
 ```bash
