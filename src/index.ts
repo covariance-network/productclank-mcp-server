@@ -1,11 +1,12 @@
 /**
  * ProductClank MCP Server
  *
- * Remote MCP server exposing ProductClank "boost" tools as a Claude custom
- * connector over Streamable HTTP, with an OAuth 2.1 authorization server that
- * delegates end-user login to the ProductClank webapp.
+ * Remote MCP server exposing ProductClank "boost" tools as a custom connector
+ * for Claude and ChatGPT (and any spec-compliant MCP client) over Streamable
+ * HTTP, with an OAuth 2.1 authorization server that delegates end-user login to
+ * the ProductClank webapp.
  *
- *   Claude  ←→  MCP server (this)  ←→  ProductClank REST API (trusted agent key)
+ *   Claude / ChatGPT  ←→  MCP server (this)  ←→  ProductClank REST API (trusted key)
  *                     ↕
  *               OAuth 2.1 AS  ──▶  webapp /connect/mcp (login + consent)
  */

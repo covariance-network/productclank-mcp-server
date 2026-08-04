@@ -168,6 +168,10 @@ export function createOAuthEndpoints(): Router {
       const url = new URL("/connect/mcp", config.webappUrl);
       url.searchParams.set("state", loginState);
       url.searchParams.set("redirect", `${config.oauth.issuer}/oauth/callback`);
+      // Pass the connecting client's registered name so the consent screen can
+      // say "Connect to Claude" / "Connect to ChatGPT" instead of a generic
+      // label. The webapp maps this to a safe display string (it's DCR-supplied).
+      if (client.clientName) url.searchParams.set("client", client.clientName);
       res.redirect(302, url.toString());
     } catch (error) {
       console.error("[oauth/authorize]", error);
