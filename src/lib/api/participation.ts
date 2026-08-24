@@ -105,3 +105,79 @@ export function getCreditHistory(params: {
   if (params.offset != null) qs.set("offset", String(params.offset));
   return request(`/agents/credits/history?${qs.toString()}`, { method: "GET" });
 }
+
+// ── Content / take-action campaign participation ────────────────────────────
+// Wraps /agents/participate/campaigns/** — discover briefs, submit proof,
+// track review status. Submissions land PENDING; rewards ship when the
+// campaign owner reviews/concludes.
+
+export interface OpenCampaign {
+  id: string;
+  title: string | null;
+  kind: "content" | "take_action";
+  is_community: boolean;
+  space_id: string | null;
+  reward_type: string | null;
+  reward_amount: number | null;
+  end_date: string | null;
+  participants_count: number;
+  max_participants: number | null;
+  action_message: string | null;
+  description: string | null;
+  url: string;
+}
+
+export function listOpenCampaigns(params: {
+  callerUserId: string;
+  limit?: number;
+  kind?: "content" | "take_action";
+}): Promise<{ success: boolean; campaigns: OpenCampaign[]; total: number }> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  if (params.limit != null) qs.set("limit", String(params.limit));
+  if (params.kind) qs.set("kind", params.kind);
+  return request(`/agents/participate/campaigns?${qs.toString()}`, { method: "GET" });
+}
+
+export function getCampaignBrief(params: {
+  callerUserId: string;
+  campaignId: string;
+}): Promise<{
+  success: boolean;
+  campaign: Record<string, unknown>;
+  my_participation: { submissions_used: number; submissions_allowed: number };
+}> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  return request(`/agents/participate/campaigns/${params.campaignId}?${qs.toString()}`, {
+    method: "GET",
+  });
+}
+
+export function submitCampaignWork(params: {
+  callerUserId: string;
+  campaignId: string;
+  castUrl?: string;
+  description?: string;
+}): Promise<{
+  success: boolean;
+  data: { submission: Record<string, unknown>; message: string };
+}> {
+  return request(`/agents/participate/campaigns/${params.campaignId}/submissions`, {
+    method: "POST",
+    body: JSON.stringify({
+      caller_user_id: params.callerUserId,
+      ...(params.castUrl ? { cast_url: params.castUrl } : {}),
+      ...(params.description ? { description: params.description } : {}),
+    }),
+  });
+}
+
+export function getMyCampaignSubmissions(params: {
+  callerUserId: string;
+  campaignId: string;
+}): Promise<{ success: boolean; submissions: unknown[]; total: number }> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  return request(
+    `/agents/participate/campaigns/${params.campaignId}/my-submissions?${qs.toString()}`,
+    { method: "GET" }
+  );
+}

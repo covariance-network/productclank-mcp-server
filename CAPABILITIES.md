@@ -51,6 +51,10 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/participate/feed` | ✅ | `find_opportunities` |
 | `POST /agents/participate/submit` | ✅ | `submit_participation` (author-match vs the EARNING user's linked X handle) |
 | `GET /agents/participate/earnings` | ✅ | `get_earnings` (caller-scoped reply counts) |
+| `GET /agents/participate/campaigns` | ✅ | `find_open_campaigns` (public + the user's community campaigns) |
+| `GET /agents/participate/campaigns/{id}` | ✅ | `get_campaign_brief` |
+| `POST /agents/participate/campaigns/{id}/submissions` | ✅ | `submit_campaign_work` (pending → owner review → Stars/points) |
+| `GET /agents/participate/campaigns/{id}/my-submissions` | ✅ | `get_my_submissions` |
 | `POST /agents/participate/claim-signature` | 🚫 T3 | $PRO pays agent wallet + ERC-8004/allowlist; no user-wallet path yet |
 | `POST /agents/participate/record-claim` | 🚫 T3 | pairs with claim-signature |
 | `POST /agents/register`, `/create-link`, `/me`, `/rotate-key`, `/import`, `/by-user`, `/authorize` (×2), `/telegram/*` | 🚫 | replaced by OAuth / not a connector concern (see `capabilities.json`) |
