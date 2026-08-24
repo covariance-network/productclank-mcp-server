@@ -17,7 +17,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Defaults to PRIVATE: drafts stay in the user's workbench for their own review and posting. Set visibility:'public' ONLY if the user explicitly wants the ProductClank community to claim and post the replies for them — public drafts enter the earn feed immediately and each network-posted reply bills the user additional credits. After creating, call run_research (free) to validate keywords BEFORE spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Defaults to PRIVATE: drafts stay in the user's workbench for their own review and posting. Set visibility:'public' ONLY if the user explicitly wants the ProductClank community to claim and post the replies for them — public drafts enter the earn feed immediately and each network-posted reply bills the user additional credits. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -71,7 +71,7 @@ export function registerCampaignTools(server: McpServer): void {
           campaign: result.campaign,
           credits: result.credits,
           next_step:
-            "Call run_research (free) to validate keywords and find competitor angles before spending credits on generate_posts.",
+            "Topic research is computing in the background (~30s). Call get_research to read the expanded keywords and competitor angles before spending credits on generate_posts.",
         });
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Campaign creation failed");
