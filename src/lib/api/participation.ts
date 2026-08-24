@@ -1,0 +1,107 @@
+/**
+ * Participation — the connected user EARNS by doing campaign work.
+ *
+ * Wraps /agents/participate/** — feed (free), submit (earns points/credits),
+ * earnings (free). Submissions are attributed to caller_user_id: the backend
+ * author-matches the posted reply against THAT user's linked X handle
+ * (UserSocial.twitter) and awards points/credits to them.
+ */
+
+import { request } from "./client.js";
+
+export interface FeedReply {
+  id: string;
+  replyText: string;
+  actionType: string;
+}
+
+export interface FeedPost {
+  id: string;
+  campaignId: string;
+  campaign: {
+    id: string;
+    campaignNumber: string | null;
+    title: string | null;
+    productId: string | null;
+  } | null;
+  platform: string | null;
+  tweetId: string | null;
+  tweetUrl: string | null;
+  tweetText: string | null;
+  tweetCreatedAt: string | null;
+  author: {
+    username: string | null;
+    displayName: string | null;
+    followerCount: number;
+    verified: boolean;
+  };
+  unclaimedReplies: FeedReply[];
+}
+
+export function getParticipationFeed(params: {
+  limit?: number;
+  offset?: number;
+  campaignId?: string;
+  actionType?: "reply" | "like" | "repost";
+}): Promise<{ success: boolean; posts: FeedPost[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params.limit != null) qs.set("limit", String(params.limit));
+  if (params.offset != null) qs.set("offset", String(params.offset));
+  if (params.campaignId) qs.set("campaignId", params.campaignId);
+  if (params.actionType) qs.set("actionType", params.actionType);
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+  return request(`/agents/participate/feed${suffix}`, { method: "GET" });
+}
+
+export function submitParticipation(params: {
+  callerUserId: string;
+  replyId: string;
+  replyUrl: string;
+}): Promise<{
+  success: boolean;
+  message?: string;
+  replyId?: string;
+  pointsAwarded?: number;
+  creditsAwarded?: number;
+}> {
+  return request("/agents/participate/submit", {
+    method: "POST",
+    body: JSON.stringify({
+      caller_user_id: params.callerUserId,
+      replyId: params.replyId,
+      replyUrl: params.replyUrl,
+    }),
+  });
+}
+
+export interface EarningsResult {
+  success: boolean;
+  userId: string;
+  points: number;
+  credits: number;
+  replies: {
+    submitted: number;
+    approved: number;
+    rejected: number;
+    strikes: number;
+  };
+  proClaim?: Record<string, unknown>;
+}
+
+export function getEarnings(params: {
+  callerUserId: string;
+}): Promise<EarningsResult> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  return request(`/agents/participate/earnings?${qs.toString()}`, { method: "GET" });
+}
+
+export function getCreditHistory(params: {
+  callerUserId: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ success: boolean; transactions: unknown[]; total: number }> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  if (params.limit != null) qs.set("limit", String(params.limit));
+  if (params.offset != null) qs.set("offset", String(params.offset));
+  return request(`/agents/credits/history?${qs.toString()}`, { method: "GET" });
+}
