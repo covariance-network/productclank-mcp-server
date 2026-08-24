@@ -80,7 +80,7 @@ const sessionSweepTimer = setInterval(
 sessionSweepTimer.unref();
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "ProductClank", version: "0.5.0" });
+  const server = new McpServer({ name: "ProductClank", version: "0.5.1" });
   registerTools(server);
   return server;
 }
@@ -189,7 +189,7 @@ app.delete("/mcp", bearerAuth, (req, res) => {
 
 // ─── Health check ──────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", version: "0.5.0", sessions: transports.size });
+  res.json({ status: "ok", version: "0.5.1", sessions: transports.size });
 });
 
 // ─── Glama connector-ownership proof ───────────────────────────────────────

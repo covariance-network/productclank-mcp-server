@@ -17,7 +17,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts community replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). After creating, call run_research (free) to validate keywords BEFORE spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Defaults to PRIVATE: drafts stay in the user's workbench for their own review and posting. Set visibility:'public' ONLY if the user explicitly wants the ProductClank community to claim and post the replies for them — public drafts enter the earn feed immediately and each network-posted reply bills the user additional credits. After creating, call run_research (free) to validate keywords BEFORE spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -42,6 +42,12 @@ export function registerCampaignTools(server: McpServer): void {
           .string()
           .optional()
           .describe("Custom guidelines for reply drafting (defaults are built from the campaign context)"),
+        visibility: z
+          .enum(["public", "private"])
+          .optional()
+          .describe(
+            "Default private (drafts stay in the user's workbench). public = the community earn feed distributes the drafts and network members post them, billing the user per posted reply — ask the user before choosing public."
+          ),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
@@ -59,6 +65,7 @@ export function registerCampaignTools(server: McpServer): void {
           replyStyleTags: args.reply_style_tags,
           replyLength: args.reply_length,
           replyGuidelines: args.reply_guidelines,
+          visibility: args.visibility ?? "private",
         });
         return textResult({
           campaign: result.campaign,
@@ -125,7 +132,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Research the campaign's topic (free)",
       description:
-        "FREE pre-flight before spending credits: analyzes the campaign's keywords/topic, suggests refinements, relevant X lists, and competitors. Cached for 7 days — pass force:true to refresh. Run this after create_campaign and apply what it suggests before generate_posts.",
+        "FREE pre-flight before spending credits: analyzes the campaign's keywords/topic and returns expanded keywords, high-intent phrases, influencer accounts, relevant X lists, and competitors. The EXPANDED KEYWORDS are automatically used by the next generate_posts run — no extra step. Account/phrase monitoring sources are NOT settable via this connector; if the analysis suggests them, tell the user they can optionally add sources later in the workbench (admin_url) — do not treat it as a required step. Cached for 7 days — pass force:true to refresh.",
       inputSchema: {
         campaign_id: z.string(),
         force: z.boolean().optional().describe("Force a fresh analysis even if a cached one exists"),
