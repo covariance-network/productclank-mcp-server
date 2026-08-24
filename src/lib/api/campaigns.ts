@@ -37,6 +37,9 @@ export interface CreateCampaignParams {
   replyGuidelines?: string;
   minFollowerCount?: number;
   maxPostAgeDays?: number;
+  /** private = drafts stay in the owner's workbench; public = community earn
+   *  feed distribution (network replies bill the owner). */
+  visibility?: "public" | "private";
 }
 
 export function createCampaign(params: CreateCampaignParams): Promise<{
@@ -60,6 +63,7 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
       ...(params.replyGuidelines ? { reply_guidelines: params.replyGuidelines } : {}),
       ...(params.minFollowerCount != null ? { min_follower_count: params.minFollowerCount } : {}),
       ...(params.maxPostAgeDays != null ? { max_post_age_days: params.maxPostAgeDays } : {}),
+      ...(params.visibility ? { visibility: params.visibility } : {}),
     }),
   });
 }
