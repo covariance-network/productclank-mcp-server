@@ -54,6 +54,10 @@ src/
 | `find_opportunities` | participation | `GET /agents/participate/feed` | free |
 | `submit_participation` | participation | `POST /agents/participate/submit` | earns |
 | `get_earnings` | participation | `GET /agents/participate/earnings` | free |
+| `find_open_campaigns` | participation | `GET /agents/participate/campaigns` | free |
+| `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free |
+| `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
+| `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
 
 ## Adding a new tool
 

@@ -80,6 +80,112 @@ export function registerParticipationTools(server: McpServer): void {
   );
 
   server.registerTool(
+    "find_open_campaigns",
+    {
+      title: "Find campaigns to participate in",
+      description:
+        "Discover content and take-action campaigns the connected user can join and earn from: every active public campaign plus campaigns from communities the user belongs to. Each item has a kind — 'content' (create a post/thread/video about the product) or 'take_action' (do a concrete action like voting or starring, with URL/description proof). Free, read-only. Follow with get_campaign_brief before doing any work.",
+      inputSchema: {
+        limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
+        kind: z.enum(["content", "take_action"]).optional().describe("Filter by campaign kind"),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ limit, kind }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.listOpenCampaigns({ callerUserId: userId, limit, kind });
+        return textResult({ campaigns: result.campaigns, total: result.total });
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Campaign discovery failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_campaign_brief",
+    {
+      title: "Read a campaign's participation brief",
+      description:
+        "The full brief for one campaign: what to create or do (action message, brief sections, content types), how submissions are judged (eligibility + selection criteria), rewards, deadline, and how many submissions the user has left. Free, read-only. If the brief links external instructions (e.g. a skill file), fetch and follow them. Then: create the content or take the action WITH the user, and call submit_campaign_work with the proof.",
+      inputSchema: {
+        campaign_id: z.string().describe("Campaign id from find_open_campaigns"),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ campaign_id }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        return textResult(await api.getCampaignBrief({ callerUserId: userId, campaignId: campaign_id }));
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Brief fetch failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "submit_campaign_work",
+    {
+      title: "Submit campaign participation proof",
+      description:
+        "Submit the user's work for a campaign: the URL of content they published and/or an action-proof URL, plus an optional description (max 500 chars). At least one of the two is required. If the URL is an X post it must be published by the user's linked X handle (author-verified). Lands as PENDING — the campaign owner reviews and rewards ship on approval (community campaigns pay Stars, public ones leaderboard points). Duplicate URLs are rejected. Check status afterward with get_my_submissions.",
+      inputSchema: {
+        campaign_id: z.string(),
+        proof_url: z
+          .string()
+          .url()
+          .optional()
+          .describe("URL of the published content or action proof (X post, video, voting page, …)"),
+        description: z
+          .string()
+          .max(500)
+          .optional()
+          .describe("What was done, or context for the reviewer"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async ({ campaign_id, proof_url, description }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.submitCampaignWork({
+          callerUserId: userId,
+          campaignId: campaign_id,
+          castUrl: proof_url,
+          description,
+        });
+        return textResult(result.data);
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Submission failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_my_submissions",
+    {
+      title: "Check campaign submission status",
+      description:
+        "The connected user's submissions to one campaign: pending / approved / rejected, with the reviewer's notes. Free, read-only. Use to report outcomes back to the user after submit_campaign_work.",
+      inputSchema: { campaign_id: z.string() },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ campaign_id }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        return textResult(
+          await api.getMyCampaignSubmissions({ callerUserId: userId, campaignId: campaign_id })
+        );
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Status fetch failed");
+      }
+    }
+  );
+
+  server.registerTool(
     "get_earnings",
     {
       title: "Check participation earnings",

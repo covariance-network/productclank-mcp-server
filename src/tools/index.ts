@@ -24,6 +24,6 @@ export function registerTools(server: McpServer): void {
   registerContentTools(server); // suggest_content_campaign, create_content_campaign
   registerContentStudioTools(server); // list_content_spaces, write_content_candidates
   registerCampaignTools(server); // create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, add_delegate
-  registerParticipationTools(server); // find_opportunities, submit_participation, get_earnings
+  registerParticipationTools(server); // find_opportunities, submit_participation, get_earnings, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
   registerPlaybook(server); // grow_product prompt + productclank://capabilities resource
 }

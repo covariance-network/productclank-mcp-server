@@ -93,8 +93,12 @@ export function registerPlaybook(server: McpServer): void {
 ## Earn (participant persona)
 | Tool | Cost |
 |---|---|
-| find_opportunities | free |
+| find_opportunities (reply drafts to post) | free |
 | submit_participation | free — EARNS points/credits for the user |
+| find_open_campaigns (content + take-action campaigns) | free |
+| get_campaign_brief | free |
+| submit_campaign_work | free — EARNS Stars/points on owner approval |
+| get_my_submissions | free |
 | get_earnings | free |
 
 ## Credits
