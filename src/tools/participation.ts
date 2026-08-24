@@ -18,24 +18,26 @@ export function registerParticipationTools(server: McpServer): void {
     {
       title: "Find earning opportunities",
       description:
-        "Browse unclaimed reply drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted reply. Free, read-only. Flow: pick an opportunity → the user posts the reply (verbatim or personalized) from their own X account → call submit_participation with the posted reply's URL. Filter by campaignId or actionType (reply | like | repost).",
+        "Browse unclaimed reply drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted reply. Free, read-only. Flow: pick an opportunity → the user posts the reply (verbatim or personalized) from their own X account → call submit_participation with the posted reply's URL. Returns reply opportunities only — like/repost actions need screenshot proof and are web-only (app.productclank.com/communiply/feed).",
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
         offset: z.number().int().min(0).optional(),
         campaign_id: z.string().optional().describe("Restrict to one campaign"),
-        action_type: z.enum(["reply", "like", "repost"]).optional(),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ limit, offset, campaign_id, action_type }, extra) => {
+    async ({ limit, offset, campaign_id }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
+        // Reply-only: like/repost claims are proven by screenshot and the agent
+        // submit path author-matches the URL as the earner's own tweet — neither
+        // fits the connector, so those opportunities must not be claimable here.
         const result = await api.getParticipationFeed({
           limit,
           offset,
           campaignId: campaign_id,
-          actionType: action_type,
+          actionType: "reply",
         });
         return textResult({ posts: result.posts, total: result.total });
       } catch (error) {
