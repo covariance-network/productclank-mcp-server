@@ -62,6 +62,10 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 |---|---|---|
 | `find_opportunities` | Browse unclaimed reply drafts the user can post to earn | free |
 | `submit_participation` | Submit the posted reply's URL — verified against the user's linked X handle, then points/credits are awarded | earns |
+| `find_open_campaigns` | Discover content & take-action campaigns the user can join — public ones plus their communities' | free |
+| `get_campaign_brief` | Read a campaign's full brief: what to create or do, judging criteria, rewards, deadline, remaining allowance | free |
+| `submit_campaign_work` | Submit the user's work (content URL, action-proof URL, and/or description); X posts are author-verified. Pending → owner review → Stars/points | earns |
+| `get_my_submissions` | Track submission status + the reviewer's notes | free |
 | `get_earnings` | The user's participation totals: points, credits, reply stats | free |
 
 ### Content Studio
