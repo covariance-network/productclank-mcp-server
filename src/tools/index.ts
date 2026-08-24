@@ -13,11 +13,17 @@ import { registerCreditTools } from "./credits.js";
 import { registerBoostTools } from "./boost.js";
 import { registerContentTools } from "./content.js";
 import { registerContentStudioTools } from "./contentStudio.js";
+import { registerCampaignTools } from "./campaigns.js";
+import { registerParticipationTools } from "./participation.js";
+import { registerPlaybook } from "./playbook.js";
 
 export function registerTools(server: McpServer): void {
-  registerProductTools(server); // search_products
-  registerCreditTools(server); // check_balance
+  registerProductTools(server); // search_products, create_product
+  registerCreditTools(server); // check_balance, credit_history
   registerBoostTools(server); // boost_post
   registerContentTools(server); // suggest_content_campaign, create_content_campaign
   registerContentStudioTools(server); // list_content_spaces, write_content_candidates
+  registerCampaignTools(server); // create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, add_delegate
+  registerParticipationTools(server); // find_opportunities, submit_participation, get_earnings
+  registerPlaybook(server); // grow_product prompt + productclank://capabilities resource
 }

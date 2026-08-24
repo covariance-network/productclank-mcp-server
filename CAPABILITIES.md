@@ -32,40 +32,51 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | Endpoint | Status | MCP tool / reason |
 |---|---|---|
 | `GET /agents/products/search` | ✅ | `search_products` |
+| `POST /agents/products` | ✅ | `create_product` (URL-first token-free listing, free) |
 | `POST /agents/campaigns/boost` | ✅ | `boost_post` |
 | `POST /agents/campaigns/content` | ✅ | `suggest_content_campaign` (free preview) + `create_content_campaign` (1000cr) |
 | `GET /agents/content/spaces` | ✅ | `list_content_spaces` (Content Studio) |
 | `POST /agents/content/candidates` | ✅ | `write_content_candidates` (Content Studio — free, human-reviewed drafts) |
 | `GET /agents/credits/balance` | ✅ | `check_balance` (reads `UserCredits` directly) |
-| `POST /agents/campaigns` | 🔜 T1 | `create_campaign` |
-| `GET /agents/campaigns` | 🔜 T1 | `list_campaigns` |
-| `GET /agents/campaigns/{id}` | 🔜 T1 | `get_campaign` |
-| `POST /agents/campaigns/{id}/generate-posts` | 🔜 T1 | `generate_posts` |
-| `POST/GET /agents/campaigns/{id}/research` | 🔜 T1 | `run_research` / `get_research` |
-| `GET /agents/campaigns/{id}/posts` | 🔜 T1 | `get_posts` |
-| `POST /agents/campaigns/{id}/review-posts` | 🔜 T1 | `review_posts` |
-| `POST /agents/campaigns/{id}/regenerate-replies` | 🔜 T1 | `regenerate_replies` |
-| `POST /agents/campaigns/{id}/delegates` | 🔜 T1 | `add_delegate` |
-| `GET /agents/credits/history` | 🔜 T1 | `credit_history` |
-| `GET /agents/participate/feed` | 🔜 T2 | `find_opportunities` |
-| `POST /agents/participate/submit` | 🔜 T2 | `submit_participation` ⚠️ needs backend author-match vs caller's X handle |
-| `GET /agents/participate/earnings` | 🔜 T2 | `get_earnings` |
+| `POST /agents/campaigns` | ✅ | `create_campaign` (10cr) |
+| `GET /agents/campaigns` | ✅ | `list_campaigns` (caller-scoped for trusted agents) |
+| `GET /agents/campaigns/{id}` | ✅ | `get_campaign` |
+| `POST /agents/campaigns/{id}/generate-posts` | ✅ | `generate_posts` (12cr/post) |
+| `POST/GET /agents/campaigns/{id}/research` | ✅ | `run_research` / `get_research` (free) |
+| `GET /agents/campaigns/{id}/posts` | ✅ | `get_posts` |
+| `POST /agents/campaigns/{id}/review-posts` | ✅ | `review_posts` (2cr/post, dry_run billed too) |
+| `POST /agents/campaigns/{id}/regenerate-replies` | ✅ | `regenerate_replies` (5cr/reply) |
+| `POST /agents/campaigns/{id}/delegates` | ✅ | `add_delegate` |
+| `GET /agents/credits/history` | ✅ | `credit_history` (caller-scoped for trusted agents) |
+| `GET /agents/participate/feed` | ✅ | `find_opportunities` |
+| `POST /agents/participate/submit` | ✅ | `submit_participation` (author-match vs the EARNING user's linked X handle) |
+| `GET /agents/participate/earnings` | ✅ | `get_earnings` (caller-scoped reply counts) |
 | `POST /agents/participate/claim-signature` | 🚫 T3 | $PRO pays agent wallet + ERC-8004/allowlist; no user-wallet path yet |
 | `POST /agents/participate/record-claim` | 🚫 T3 | pairs with claim-signature |
 | `POST /agents/register`, `/create-link`, `/me`, `/rotate-key`, `/import`, `/by-user`, `/authorize` (×2), `/telegram/*` | 🚫 | replaced by OAuth / not a connector concern (see `capabilities.json`) |
 | `POST /agents/credits/topup` | 🚫 | **policy:** keep crypto top-up off the connector; spend prefunded balance only |
 
-## Roadmap (planned tiers)
+Besides tools, the server ships one MCP **prompt** (`grow_product` — the operating
+procedure for the growth-agent persona) and one **resource**
+(`productclank://capabilities` — the tool/cost roster agents read before planning spend).
 
-- **Tier 1 — round out "grow my product":** the campaign tools above. All wrap
-  endpoints that already support `caller_user_id` (trusted-agent multi-tenant billing),
-  so no backend work — purely additive MCP tools.
-- **Tier 2 — participation "find & earn":** `find_opportunities` + `submit_participation`
-  (+ `get_earnings`) → earn points/credits. **Requires one backend change:** when
-  `caller_user_id` is set, `POST /agents/participate/submit` must author-match the tweet
-  against the *caller's* `UserSocial.twitter`, not the trusted agent's handle. Also needs
-  the user to have a linked X handle. v1 is a coach flow (Claude can't post to X — the
-  user posts the draft, pastes the URL back).
+## Multi-tenant scoping (why Tier 1/2 needed backend work after all)
+
+The connector is ONE trusted agent acting for many OAuth users, but the campaign
+routes originally scoped ownership by `creator_agent_id` alone — so any connected
+user could have listed/operated any other connector user's campaigns. The webapp
+now enforces per-caller scope (`creator_id === caller_user_id`, via
+`checkTrustedCampaignScope` in `lib/agent-auth.ts`) on every campaign read/op,
+scopes `credits/history` + `participate/earnings` to the caller, and feeds real
+`pendingCredits` into the daily-spend cap on per-item-billed routes. Trusted
+agents MUST pass `caller_user_id` on those routes.
+
+## Roadmap
+
 - **Tier 3 — user-wallet $PRO + X auto-posting:** a user-facing $PRO claim (today $PRO is
   agent-wallet-only, ERC-8004/allowlist gated) and X OAuth so Claude posts on the user's
-  behalf.
+  behalf. Until then participation is a coach flow: the user posts the draft from their
+  own X account and the connector submits the URL.
+- **Next (results & management):** campaign outcome reporting (posts delivered, replies
+  claimed/approved, engagement), pause/edit/delete, mention scans, GitHub-star community
+  campaigns — needs new `/v1` backend routes ported from the webapp.

@@ -41,15 +41,48 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 
 ## Tools
 
+### Grow — run growth campaigns for a product
+
 | Tool | What it does | Cost |
 |---|---|---|
-| `search_products` | Resolve your ProductClank products to a `product_id` (required for campaigns) | free |
-| `check_balance` | Your credit balance and plan | free |
-| `boost_post` | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster** | 200–300 cr |
+| `search_products` | Resolve your ProductClank products to a `product_id` | free |
+| `create_product` | List a product from just its website URL (token-free listing, auto-filled) | free |
+| `create_campaign` | Create a discovery campaign: continuously find relevant posts + draft community replies | 10 cr |
+| `run_research` / `get_research` | Topic & competitor analysis — the free pre-flight before spending | free |
+| `generate_posts` | Run discovery: scrape matching posts and draft a reply for each | 12 cr/post |
+| `list_campaigns` / `get_campaign` / `get_posts` | Campaign inventory, config + stats, discovered posts & drafts | free |
+| `review_posts` | AI-score posts against relevancy rules, prune the irrelevant (dry-run billed too) | 2 cr/post |
+| `regenerate_replies` | Redraft selected replies with an edit request | 5 cr/reply |
+| `add_delegate` | Hand a campaign to a human to manage in the web app | free |
+| `boost_post` | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 200–300 cr |
+
+### Earn — participate in campaigns for the connected user
+
+| Tool | What it does | Cost |
+|---|---|---|
+| `find_opportunities` | Browse unclaimed reply drafts the user can post to earn | free |
+| `submit_participation` | Submit the posted reply's URL — verified against the user's linked X handle, then points/credits are awarded | earns |
+| `get_earnings` | The user's participation totals: points, credits, reply stats | free |
+
+### Content Studio
+
+| Tool | What it does | Cost |
+|---|---|---|
 | `suggest_content_campaign` | AI-drafted preview of a community content campaign (title, description, CTA) + affordability check. Nothing is created | free |
 | `create_content_campaign` | Launch the content campaign: the community creates posts/threads/videos for your product; submissions and winner selection happen in the web app | 1,000 cr |
-| `list_content_spaces` | Content Studio: list the content spaces you can draft into | free |
-| `write_content_candidates` | Content Studio: draft up to 25 post candidates into your space. They land as **unreviewed drafts** — a human reviews and schedules; nothing auto-publishes | free |
+| `list_content_spaces` | List the content spaces you can draft into | free |
+| `write_content_candidates` | Draft up to 25 post candidates into your space. They land as **unreviewed drafts** — a human reviews and schedules; nothing auto-publishes | free |
+
+### Credits
+
+| Tool | What it does | Cost |
+|---|---|---|
+| `check_balance` | Your credit balance and plan | free |
+| `credit_history` | Your credit transactions (spend + rewards), newest first | free |
+
+The server also exposes an MCP **prompt** — `grow_product`, a ready-made operating
+procedure for the growth loop — and a **resource** — `productclank://capabilities`,
+the tool/cost roster — so agents can plan spend before calling anything.
 
 Costly actions are designed to be confirmed with the user first — tool descriptions instruct the model to preview and state the credit cost before spending.
 
