@@ -20,7 +20,8 @@ import { registerTools } from "./tools/index.js";
 import { createOAuthRoutes } from "./auth/oauth-metadata.js";
 import { createOAuthEndpoints } from "./auth/oauth-endpoints.js";
 import { tokenVerifier } from "./auth/verifier.js";
-import { config, assertRuntimeConfig } from "./config.js";
+import { config, assertRuntimeConfig, SERVER_VERSION } from "./config.js";
+import { shutdownAnalytics } from "./lib/analytics.js";
 
 assertRuntimeConfig();
 
@@ -80,7 +81,7 @@ const sessionSweepTimer = setInterval(
 sessionSweepTimer.unref();
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "ProductClank", version: "0.5.1" });
+  const server = new McpServer({ name: "ProductClank", version: SERVER_VERSION });
   registerTools(server);
   return server;
 }
@@ -189,7 +190,7 @@ app.delete("/mcp", bearerAuth, (req, res) => {
 
 // ─── Health check ──────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", version: "0.5.1", sessions: transports.size });
+  res.json({ status: "ok", version: SERVER_VERSION, sessions: transports.size });
 });
 
 // ─── Glama connector-ownership proof ───────────────────────────────────────
@@ -203,6 +204,14 @@ app.get("/.well-known/glama.json", (_req, res) => {
     maintainers: [{ email: "0xCovariance@gmail.com" }],
   });
 });
+
+// Flush buffered analytics before the container goes away (Railway redeploys
+// send SIGTERM); exit even if the flush hangs.
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.once(signal, () => {
+    void shutdownAnalytics().finally(() => process.exit(0));
+  });
+}
 
 app.listen(config.port, () => {
   console.log(`ProductClank MCP server listening on :${config.port}`);

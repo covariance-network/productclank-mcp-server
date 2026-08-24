@@ -94,6 +94,35 @@ Costly actions are designed to be confirmed with the user first — tool descrip
 
 The server is an OAuth 2.1 authorization server backed by the ProductClank web app (`/connect/mcp` login + consent). Every `/mcp` request requires a valid access token; tools act **as the connected user** and bill **that user's** credit balance. Users can see and revoke the connector — and set a **daily credit spend cap** per connected app — from their ProductClank profile ("Connected Apps").
 
+## Communication contract
+
+Tool results are read by an assistant, not by the person paying the credits, so
+anything the user must **know** or **decide** travels in the payload:
+
+- `user_note` — one or two plain sentences for the assistant to relay.
+- `decision_offer` — a real choice (`question` + `options` with `what_happens`
+  and `cost` + `current` + `how_to_apply`) for the assistant to present, never
+  to answer on the user's behalf.
+
+The main one is distribution: campaigns are created **private** (drafts wait in
+the owner's workbench) and the result offers community distribution — the
+reach the platform exists for — as an explicit, costed choice. Spends get the
+same treatment: `suggest_content_campaign` returns the 1000-credit launch as a
+yes/no, and a `review_posts` dry run says what it already cost and what the
+next step actually changes.
+
+## Telemetry
+
+The server emits three PostHog events — `mcp_connected` (OAuth consent
+completed), `mcp_tool_called` (every tool, with `ok` and `duration_ms`) and
+`mcp_tool_error` (failures, with the message) — so the connect → first-call →
+repeat-use funnel is measurable and refused calls double as roadmap signal.
+Events are keyed to the user's Supabase auth id where resolvable, so connector
+activity joins the same PostHog person as their webapp activity. Capture is
+fire-and-forget and the whole thing no-ops without `POSTHOG_API_KEY`. See
+[`src/lib/analytics.ts`](./src/lib/analytics.ts); tools are instrumented
+centrally in [`src/tools/instrument.ts`](./src/tools/instrument.ts).
+
 ## Architecture
 
 A thin Express + [`@modelcontextprotocol/sdk`](https://www.npmjs.com/package/@modelcontextprotocol/sdk) wrapper over ProductClank's public agent REST API (`/api/v1/agents/*`). The REST API is canonical; this server and the [ProductClank agent skill](https://github.com/covariance-network/productclank-agent-skill) are parallel wrappers — [`capabilities.json`](./capabilities.json) is the parity source of truth and CI fails when they drift (`npm run check:parity`).

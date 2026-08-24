@@ -1,6 +1,6 @@
 {
   "name": "@productclank/mcp-server",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "ProductClank MCP Server — custom connector for Claude & ChatGPT for ProductClank campaigns (boost + content)",
   "type": "module",
   "main": "dist/index.js",
@@ -15,6 +15,7 @@
     "@modelcontextprotocol/sdk": "^1.12.0",
     "@supabase/supabase-js": "^2.110.1",
     "express": "^4.21.0",
+    "posthog-node": "^5.51.1",
     "zod": "^3.24.0"
   },
   "devDependencies": {

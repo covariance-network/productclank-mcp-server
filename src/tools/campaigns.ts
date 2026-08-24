@@ -4,12 +4,54 @@
  * create_campaign (10 cr) → run_research (free) → generate_posts (12 cr/post)
  * → get_posts (free) → review_posts (2 cr/post) → regenerate_replies (5 cr/reply)
  * → add_delegate (free, hands the campaign to a human in the webapp).
+ *
+ * Visibility is the one decision the owner must actually make, so it travels
+ * with the results as a `decision_offer` (see ./_shared.ts) rather than only in
+ * a tool description the user never sees.
  */
+
+/**
+ * The distribution choice, offered rather than warned about: private is the
+ * default because it is reversible and cheap, but community distribution is the
+ * product's actual value — an agent that never surfaces it leaves the campaign
+ * as a drafts folder.
+ */
+function distributionOffer(isPublic: boolean, adminUrl: string): DecisionOffer {
+  return {
+    question:
+      "Who posts these replies — you, or the ProductClank community?",
+    options: [
+      {
+        choice: "You post them (private)",
+        what_happens:
+          "Drafts stay in the workbench; the user reviews and posts the ones they like from their own accounts. Nothing goes out on its own.",
+        cost: "No extra credits beyond discovery (12 credits per post found).",
+      },
+      {
+        choice: "The community posts them for you (public)",
+        what_happens:
+          "The drafts enter the ProductClank earn feed, where network members claim them and post from their own accounts — real reach without the user doing the posting. The user reviews the proof of each posted reply in the workbench.",
+        cost: "Credits per network-posted reply, on top of discovery.",
+      },
+    ],
+    current: isPublic
+      ? "The community posts them for you (public)"
+      : "You post them (private)",
+    how_to_apply: `Ask the user which they want. Switching is a toggle in the campaign workbench: ${adminUrl}`,
+  };
+}
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import {
+  getUserId,
+  textResult,
+  errorResult,
+  NOT_AUTHED,
+  type ToolExtra,
+  type DecisionOffer,
+} from "./_shared.js";
 
 export function registerCampaignTools(server: McpServer): void {
   server.registerTool(
@@ -17,7 +59,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Defaults to PRIVATE: drafts stay in the user's workbench for their own review and posting. Set visibility:'public' ONLY if the user explicitly wants the ProductClank community to claim and post the replies for them — public drafts enter the earn feed immediately and each network-posted reply bills the user additional credits. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -46,7 +88,7 @@ export function registerCampaignTools(server: McpServer): void {
           .enum(["public", "private"])
           .optional()
           .describe(
-            "Default private (drafts stay in the user's workbench). public = the community earn feed distributes the drafts and network members post them, billing the user per posted reply — ask the user before choosing public."
+            "Who posts the drafted replies. private (default) = they wait in the user's workbench for the user to post; public = the community earn feed distributes them and network members post them, billing the user per posted reply. Reversible either way — ask the user rather than assuming."
           ),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
@@ -67,11 +109,17 @@ export function registerCampaignTools(server: McpServer): void {
           replyGuidelines: args.reply_guidelines,
           visibility: args.visibility ?? "private",
         });
+        const isPublic = (args.visibility ?? "private") === "public";
         return textResult({
           campaign: result.campaign,
           credits: result.credits,
+          visibility: isPublic ? "public" : "private",
           next_step:
             "Topic research is computing in the background (~30s). Call get_research to read the expanded keywords and competitor angles before spending credits on generate_posts.",
+          user_note: isPublic
+            ? "This campaign is PUBLIC: once posts are discovered, the drafted replies go into the ProductClank earn feed and community members can claim and post them. Each network-posted reply costs credits, and the proof of every one shows up in the workbench for review."
+            : "This campaign is PRIVATE: drafted replies land in the user's workbench and nothing is posted anywhere until they post it. If they'd rather not do the posting themselves, the community can do it for them — offer the choice below.",
+          decision_offer: distributionOffer(isPublic, result.campaign.admin_url),
         });
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Campaign creation failed");
@@ -182,7 +230,14 @@ export function registerCampaignTools(server: McpServer): void {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        return textResult(await api.generatePosts({ callerUserId: userId, campaignId: campaign_id }));
+        const result = await api.generatePosts({ callerUserId: userId, campaignId: campaign_id });
+        return textResult({
+          ...result,
+          user_note:
+            "Nothing has been posted. On a private campaign (the default here) these drafts sit in the workbench until the user posts them; on a public one they enter the community earn feed. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies before anything goes out.",
+          next_step:
+            "get_posts (free) to read what was found, then review_posts with dry_run:true to see which are worth keeping.",
+        });
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Post generation failed");
       }
@@ -245,15 +300,24 @@ export function registerCampaignTools(server: McpServer): void {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        return textResult(
-          await api.reviewPosts({
-            callerUserId: userId,
-            campaignId: campaign_id,
-            reviewRules: review_rules,
-            threshold,
-            dryRun: dry_run,
-          })
-        );
+        const result = await api.reviewPosts({
+          callerUserId: userId,
+          campaignId: campaign_id,
+          reviewRules: review_rules,
+          threshold,
+          dryRun: dry_run,
+        });
+        // A dry run has already been paid for and changed nothing — say so, and
+        // say what the second (free-of-new-review) decision is.
+        return dry_run
+          ? textResult({
+              ...result,
+              user_note:
+                "Preview only — nothing was deleted, but the review was still billed (2 credits per post, since the AI scored them either way). Tell the user how many posts scored badly and what the reasons were.",
+              next_step:
+                "If the verdicts look right, re-run review_posts with the same rules and dry_run:false to actually remove the irrelevant posts (billed again, 2 credits per post). If they look wrong, adjust review_rules or the threshold instead — or skip pruning entirely.",
+            })
+          : textResult(result);
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Post review failed");
       }

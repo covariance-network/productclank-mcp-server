@@ -11,6 +11,12 @@ function optional(name: string, fallback: string): string {
   return value === undefined || value === "" ? fallback : value;
 }
 
+/**
+ * Server version — reported over MCP (`initialize`), on /health, and as a
+ * property on every analytics event. Keep in sync with package.json.
+ */
+export const SERVER_VERSION = "0.5.2";
+
 const issuer = optional(
   "OAUTH_ISSUER",
   optional("MCP_SERVER_URL", "http://localhost:3100")
@@ -46,6 +52,14 @@ export const config = {
       optional("LOGIN_STATE_TTL_SECONDS", "900"),
       10
     ),
+  },
+
+  posthog: {
+    // Adoption telemetry (see lib/analytics.ts). Unset = instrumentation off.
+    // Use the same project key as the webapp so MCP activity and webapp
+    // activity land on one person timeline.
+    apiKey: process.env.POSTHOG_API_KEY ?? "",
+    host: optional("POSTHOG_HOST", "https://us.i.posthog.com"),
   },
 
   session: {

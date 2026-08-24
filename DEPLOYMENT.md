@@ -67,6 +67,7 @@ webapp (`MCP_GRANT_SECRET`). They must match.
    | `SUPABASE_URL` | prod Supabase URL |
    | `SUPABASE_SERVICE_ROLE_KEY` | prod service-role key |
    | `MCP_GRANT_SECRET` | the secret from step 0c |
+   | `POSTHOG_API_KEY` | same project key as the webapp's `NEXT_PUBLIC_POSTHOG_KEY` (optional — unset disables telemetry) |
    > Do **not** set `PORT` — Railway injects it and the server reads it.
 4. Deploy. Check the deploy logs for `ProductClank MCP server listening on :<port>`.
 

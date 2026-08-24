@@ -13,7 +13,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import {
+  getUserId,
+  textResult,
+  errorResult,
+  NOT_AUTHED,
+  type ToolExtra,
+  type DecisionOffer,
+} from "./_shared.js";
 
 // Shared input schema for both content tools — you (the agent) write the brief
 // from what you know about the product; the platform's AI expands it.
@@ -69,6 +76,35 @@ function toParams(userId: string, args: ContentArgs): api.ContentCampaignParams 
   };
 }
 
+/**
+ * 1000 credits is the biggest single spend in the connector — it gets an
+ * explicit yes/no put to the user, not a line in a tool description.
+ */
+function launchOffer(creditsRequired: number, creditsAvailable: number, canAfford: boolean): DecisionOffer {
+  return {
+    question: `Launch this content campaign for ${creditsRequired} credits?`,
+    options: [
+      {
+        choice: "Launch it",
+        what_happens:
+          "The campaign goes live and auto-activates; the ProductClank community starts submitting content for it. Submissions and winner picking happen in the web app.",
+        cost: canAfford
+          ? `${creditsRequired} credits now (balance ${creditsAvailable} → ${creditsAvailable - creditsRequired}).`
+          : `${creditsRequired} credits — the user only has ${creditsAvailable} and needs ${creditsRequired - creditsAvailable} more first.`,
+      },
+      {
+        choice: "Change the brief first",
+        what_happens:
+          "Nothing is created. Adjust campaign_message / goals / audience and call suggest_content_campaign again for a new draft.",
+        cost: "Free — previews are never billed.",
+      },
+    ],
+    current: "Nothing created yet — this was a free preview.",
+    how_to_apply:
+      "Only call create_content_campaign after the user says yes to the credit cost.",
+  };
+}
+
 export function registerContentTools(server: McpServer): void {
   // ─── suggest_content_campaign (free preview) ──────────────────────────────
   server.registerTool(
@@ -76,7 +112,7 @@ export function registerContentTools(server: McpServer): void {
     {
       title: "Preview a content campaign",
       description:
-        "Preview a content campaign for a product BEFORE launching it. FREE — nothing is created and no credits are charged. Returns an AI-drafted campaign (title, description, call-to-action) plus whether the user can afford to launch it (1000 credits). Use this to show the user what the campaign would look like and get their approval, then call create_content_campaign. Requires a product_id from search_products; write the campaign_message brief from what you know about the product.",
+        "Preview a content campaign for a product BEFORE launching it. FREE — nothing is created and no credits are charged. Returns an AI-drafted campaign (title, description, call-to-action) plus whether the user can afford to launch it (1000 credits). Show the user the draft AND the credit cost, get an explicit yes, then call create_content_campaign — never launch off the back of the preview alone. Requires a product_id from search_products; write the campaign_message brief from what you know about the product.",
       inputSchema: contentInputSchema,
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -91,7 +127,14 @@ export function registerContentTools(server: McpServer): void {
           credits_required: result.credits_required,
           credits_available: result.credits_available,
           can_afford: result.can_afford,
-          note: "Preview only — nothing created, no credits charged. Call create_content_campaign to launch.",
+          user_note: result.can_afford
+            ? `Preview only — nothing created, no credits charged. Launching costs ${result.credits_required} credits (the user has ${result.credits_available}). Show them the draft campaign and ask before spending it.`
+            : `Preview only — nothing created, no credits charged. Launching costs ${result.credits_required} credits but the user only has ${result.credits_available}, so they'd need to top up first at https://app.productclank.com/credits.`,
+          decision_offer: launchOffer(
+            result.credits_required,
+            result.credits_available,
+            result.can_afford
+          ),
         });
       } catch (error) {
         return errorResult(

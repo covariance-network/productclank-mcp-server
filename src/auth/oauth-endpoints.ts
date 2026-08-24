@@ -14,6 +14,7 @@ import crypto from "node:crypto";
 import { config } from "../config.js";
 import * as store from "./store.js";
 import { verifyGrant } from "../lib/grant.js";
+import { track } from "../lib/analytics.js";
 import * as api from "../lib/api/index.js";
 
 function isLoopback(uri: string): boolean {
@@ -239,6 +240,13 @@ export function createOAuthEndpoints(): Router {
         );
         return;
       }
+
+      // Consent completed and the connector can bill this user — this is the
+      // top of the adoption funnel (see lib/analytics.ts).
+      track("mcp_connected", userId, {
+        client_id: login.clientId,
+        scope: login.scope,
+      });
 
       const code = await store.createAuthCode({
         clientId: login.clientId,
