@@ -39,7 +39,16 @@ export function registerParticipationTools(server: McpServer): void {
           campaignId: campaign_id,
           actionType: "reply",
         });
-        return textResult({ posts: result.posts, total: result.total });
+        return textResult({
+          posts: result.posts,
+          total: result.total,
+          ...(result.total === 0
+            ? {
+                user_note:
+                  "No reply opportunities are open right now. This is not an error — the open tasks at the moment may all be likes or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/communiply/feed). Worth checking back after new campaigns run discovery.",
+              }
+            : {}),
+        });
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Feed fetch failed");
       }
@@ -51,7 +60,7 @@ export function registerParticipationTools(server: McpServer): void {
     {
       title: "Submit a posted reply to earn",
       description:
-        "Submit the URL of a reply the connected user posted for a claimed opportunity (reply_id from find_opportunities). The backend verifies the tweet exists AND was posted by the user's linked X handle (they must have connected X on their ProductClank profile), then awards points — and credits when the campaign grants them — to the user. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
+        "Submit the URL of a reply the connected user posted for a claimed opportunity (reply_id from find_opportunities). X (Twitter) replies only: the backend verifies the post exists AND was authored by the user's linked X handle (they must have connected X on their ProductClank profile), which is what makes the reward attributable — Reddit, YouTube and LinkedIn tasks, and any like/repost, are done in the web app instead. Awards points, and credits when the campaign grants them. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
       inputSchema: {
         reply_id: z.string().describe("The reply draft's id from find_opportunities"),
         reply_url: z.string().url().describe("URL of the reply the user posted on X"),
@@ -130,7 +139,7 @@ export function registerParticipationTools(server: McpServer): void {
     {
       title: "Submit campaign participation proof",
       description:
-        "Submit the user's work for a campaign: the URL of content they published and/or an action-proof URL, plus an optional description (max 500 chars). At least one of the two is required. If the URL is an X post it must be published by the user's linked X handle (author-verified). Lands as PENDING — the campaign owner reviews and rewards ship on approval (community campaigns pay Stars, public ones leaderboard points). Duplicate URLs are rejected. Check status afterward with get_my_submissions.",
+        "Submit the user's work for a campaign. Three ways to prove it, and any one is enough: proof_url (content they published or an action they took), media_url (a hosted image or video made for the task — the ad-hoc creative case: a demo clip, a mockup, a designed asset), and description (max 500 chars). Media must already be hosted somewhere public and reachable — this API takes links, never uploads; a direct image link is shown to the reviewer inline, anything else (a video, a Loom) is shown as a link they open. If a URL is an X post it must be published by the user's linked X handle (author-verified); other URLs are accepted as-is. Lands as PENDING — the campaign owner reviews and rewards ship on approval (community campaigns pay Stars, public ones leaderboard points). Duplicate URLs are rejected. Check status afterward with get_my_submissions.",
       inputSchema: {
         campaign_id: z.string(),
         proof_url: z
@@ -138,6 +147,13 @@ export function registerParticipationTools(server: McpServer): void {
           .url()
           .optional()
           .describe("URL of the published content or action proof (X post, video, voting page, …)"),
+        media_url: z
+          .string()
+          .url()
+          .optional()
+          .describe(
+            "Public URL of an image or video produced for the task. Must already be hosted (upload it wherever the user keeps files first) — direct image links render inline for the reviewer; videos and Loom-style links show as a link."
+          ),
         description: z
           .string()
           .max(500)
@@ -146,7 +162,7 @@ export function registerParticipationTools(server: McpServer): void {
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    async ({ campaign_id, proof_url, description }, extra) => {
+    async ({ campaign_id, proof_url, media_url, description }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -154,6 +170,7 @@ export function registerParticipationTools(server: McpServer): void {
           callerUserId: userId,
           campaignId: campaign_id,
           castUrl: proof_url,
+          mediaUrl: media_url,
           description,
         });
         return textResult(result.data);
