@@ -19,7 +19,8 @@ src/
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
 │   └── index.ts        barrel — `import * as api from "../lib/api/index.js"`
 └── tools/
-    ├── _shared.ts      getUserId / textResult / errorResult / NOT_AUTHED
+    ├── _shared.ts      getUserId / textResult / errorResult / NOT_AUTHED / DecisionOffer
+    ├── instrument.ts   registerTool proxy → PostHog tool-call / tool-error events
     ├── products.ts     registerProductTools       → search_products, create_product
     ├── credits.ts      registerCreditTools        → check_balance, credit_history
     ├── boost.ts        registerBoostTools         → boost_post
@@ -68,6 +69,11 @@ src/
    domain's `register<Domain>Tools`. Resolve the user with `getUserId(extra)`;
    return via `textResult` / `errorResult`. Set `annotations`
    (`readOnlyHint` for reads; `destructiveHint` when it spends credits).
+   If the result carries something the *user* must know or decide, add a
+   `user_note` and/or a `decision_offer` (see `_shared.ts`) — the tool
+   description is read by the model, not by the person paying. Telemetry is
+   automatic: every tool registered through `registerTools` goes through the
+   `instrument.ts` proxy.
 3. **Wire it** — if you added a new domain, call its registrar in
    [`index.ts`](./index.ts).
 4. **Parity** — add the endpoint to [`../../capabilities.json`](../../capabilities.json)
