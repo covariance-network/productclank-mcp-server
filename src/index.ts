@@ -190,7 +190,22 @@ app.delete("/mcp", bearerAuth, (req, res) => {
 
 // ─── Health check ──────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", version: SERVER_VERSION, sessions: transports.size });
+  // `telemetry` answers the question that cost an afternoon to diagnose: is
+  // this process actually configured to emit? Capture is fire-and-forget, so a
+  // missing or wrong key is indistinguishable from "nobody used the connector"
+  // without container logs. `key_kind` catches the specific mistake of pasting
+  // a personal key (phx_) where a project key (phc_) belongs — it reports the
+  // SHAPE of the value, never the value.
+  const apiKey = config.posthog.apiKey;
+  res.json({
+    status: "ok",
+    version: SERVER_VERSION,
+    sessions: transports.size,
+    telemetry: apiKey ? "on" : "off",
+    ...(apiKey
+      ? { key_kind: apiKey.startsWith("phc_") ? "project" : "not-a-project-key" }
+      : {}),
+  });
 });
 
 // ─── Glama connector-ownership proof ───────────────────────────────────────
