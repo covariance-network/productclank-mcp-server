@@ -18,7 +18,7 @@ export function registerParticipationTools(server: McpServer): void {
     {
       title: "Find earning opportunities",
       description:
-        "Browse unclaimed reply drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted reply. Free, read-only. Flow: pick an opportunity → the user posts the reply (verbatim or personalized) from their own X account → call submit_participation with the posted reply's URL. Returns reply opportunities only — like/repost actions need screenshot proof and are web-only (app.productclank.com/communiply/feed).",
+        "Browse unclaimed reply drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted reply, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn). Free, read-only. Flow: pick an opportunity → the user posts the reply (verbatim or personalized) from their own account on that platform → call submit_participation with the posted reply's URL. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable. Returns reply opportunities only — likes and reposts are proved with a screenshot and stay in the web app (app.productclank.com/communiply/feed).",
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
         offset: z.number().int().min(0).optional(),
@@ -30,9 +30,9 @@ export function registerParticipationTools(server: McpServer): void {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        // Reply-only: like/repost claims are proven by screenshot and the agent
-        // submit path author-matches the URL as the earner's own tweet — neither
-        // fits the connector, so those opportunities must not be claimable here.
+        // Reply-only: likes and reposts are proved by an uploaded screenshot,
+        // which this connector has no way to produce. Every reply platform is
+        // fair game — attribution runs off the user's linked handle.
         const result = await api.getParticipationFeed({
           limit,
           offset,
@@ -60,7 +60,7 @@ export function registerParticipationTools(server: McpServer): void {
     {
       title: "Submit a posted reply to earn",
       description:
-        "Submit the URL of a reply the connected user posted for a claimed opportunity (reply_id from find_opportunities). X (Twitter) replies only: the backend verifies the post exists AND was authored by the user's linked X handle (they must have connected X on their ProductClank profile), which is what makes the reward attributable — Reddit, YouTube and LinkedIn tasks, and any like/repost, are done in the web app instead. Awards points, and credits when the campaign grants them. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
+        "Submit the URL of a reply the connected user posted for a claimed opportunity (reply_id from find_opportunities). Works for X, Reddit, YouTube and LinkedIn replies. Every claim is attributed to the user's linked handle for that platform, so they must have it connected on their ProductClank profile — X replies are additionally author-verified against the live post at submit time, and the others are verified afterwards by the same checks that cover web submissions. If the platform handle is missing the call fails saying which one to add. Awards points, and credits when the campaign grants them. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
       inputSchema: {
         reply_id: z.string().describe("The reply draft's id from find_opportunities"),
         reply_url: z.string().url().describe("URL of the reply the user posted on X"),
