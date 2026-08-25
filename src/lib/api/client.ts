@@ -15,6 +15,17 @@ import { config } from "../../config.js";
 
 const BASE = config.productclankApiUrl;
 
+/**
+ * Upstream requests must not hang forever. The slowest agent routes cap at 300s
+ * of Vercel function time, so a call still running past that will never return
+ * anything useful — better to surface a timeout the assistant can relay than to
+ * leave the user watching a spinner with no way to tell stuck from slow.
+ */
+const REQUEST_TIMEOUT_MS = parseInt(
+  process.env.PRODUCTCLANK_API_TIMEOUT_MS || String(320_000),
+  10
+);
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -27,14 +38,27 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(path: string, init: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${config.trustedApiKey}`,
-      "Content-Type": "application/json",
-      ...(init.headers as Record<string, string> | undefined),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...init,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      headers: {
+        Authorization: `Bearer ${config.trustedApiKey}`,
+        "Content-Type": "application/json",
+        ...(init.headers as Record<string, string> | undefined),
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new ApiError(
+        `ProductClank API did not respond within ${Math.round(REQUEST_TIMEOUT_MS / 1000)}s. Long operations like post discovery can take minutes — check the campaign in the workbench before retrying, since the work may have completed server-side.`,
+        504,
+        null
+      );
+    }
+    throw error;
+  }
 
   const text = await res.text();
   let body: unknown = null;
