@@ -40,12 +40,28 @@ export interface CreateCampaignParams {
   /** private = drafts stay in the owner's workbench; public = community earn
    *  feed distribution (network replies bill the owner). */
   visibility?: "public" | "private";
+  /** Which network discovery works. NOT `sources` — see updateCampaign. */
+  platform?: CampaignPlatform;
+  /** Reddit only. Bare names or "r/x"; omit for all of Reddit. */
+  targetSubreddits?: string[];
+  /** YouTube only. Handles, ids or URLs; omit for keyword search alone. */
+  targetYoutubeChannels?: string[];
 }
+
+/**
+ * The four networks a campaign can work. Each has its own discovery pipeline
+ * and reply shape. TikTok is absent on purpose: its proof is screenshot-only
+ * and agents have no upload path, so offering it would let an agent set up
+ * work it cannot complete.
+ */
+export type CampaignPlatform = "twitter" | "linkedin" | "reddit" | "youtube";
 
 export function createCampaign(params: CreateCampaignParams): Promise<{
   success: boolean;
   campaign: CampaignSummary & { keywords: string[] };
   credits: { credits_used: number; credits_remaining: number };
+  platform_note?: string;
+  targeting_notes?: string[];
   next_step?: unknown;
 }> {
   return request("/agents/campaigns", {
@@ -64,6 +80,11 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
       ...(params.minFollowerCount != null ? { min_follower_count: params.minFollowerCount } : {}),
       ...(params.maxPostAgeDays != null ? { max_post_age_days: params.maxPostAgeDays } : {}),
       ...(params.visibility ? { visibility: params.visibility } : {}),
+      ...(params.platform ? { platform: params.platform } : {}),
+      ...(params.targetSubreddits ? { target_subreddits: params.targetSubreddits } : {}),
+      ...(params.targetYoutubeChannels
+        ? { target_youtube_channels: params.targetYoutubeChannels }
+        : {}),
     }),
   });
 }
@@ -215,6 +236,11 @@ export interface UpdateCampaignParams {
   relevanceThreshold?: number;
   isActive?: boolean;
   visibility?: "public" | "private";
+  /** Only accepted while the campaign has discovered nothing — 409 after that. */
+  platform?: CampaignPlatform;
+  /** Replace-semantics; [] clears back to "search the whole platform". */
+  targetSubreddits?: string[];
+  targetYoutubeChannels?: string[];
 }
 
 /**
@@ -227,6 +253,8 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
   campaign: Record<string, unknown> & { admin_url: string };
   changed: Record<string, unknown>;
   posts_visibility_updated?: number;
+  platform_note?: string;
+  targeting_notes?: string[];
   next_step?: string;
 }> {
   return request(`/agents/campaigns/${params.campaignId}`, {
@@ -242,6 +270,13 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
         : {}),
       ...(params.isActive != null ? { is_active: params.isActive } : {}),
       ...(params.visibility ? { visibility: params.visibility } : {}),
+      ...(params.platform ? { platform: params.platform } : {}),
+      ...(params.targetSubreddits !== undefined
+        ? { target_subreddits: params.targetSubreddits }
+        : {}),
+      ...(params.targetYoutubeChannels !== undefined
+        ? { target_youtube_channels: params.targetYoutubeChannels }
+        : {}),
     }),
   });
 }
@@ -303,5 +338,85 @@ export function getCampaignResults(params: {
   const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
   return request(`/agents/campaigns/${params.campaignId}/results?${qs.toString()}`, {
     method: "GET",
+  });
+}
+
+/**
+ * Standing discovery — the only thing the connector can switch on that keeps
+ * spending after the conversation ends.
+ *
+ * Two backend behaviours the caller must respect rather than route around:
+ *  - `enabled:true` without `confirm:true` returns 400 `confirmation_required`
+ *    carrying the projection. That is not an error to retry past; it is the
+ *    user's decision point.
+ *  - The per-app daily spend cap is enforced HERE as a ceiling (429
+ *    `daily_spend_cap_exceeded`), because scheduled runs bill the campaign
+ *    owner directly and never pass through the per-request cap.
+ */
+export interface ScheduleProjection {
+  runs_per_day: number;
+  posts_per_run: number;
+  max_posts_per_day: number;
+  credits_per_post: number;
+  projected_daily_credits: number;
+  projected_monthly_credits: number;
+  days_of_runway: number | null;
+  is_upper_bound: true;
+  notes: string[];
+}
+
+export interface ScheduleState {
+  enabled: boolean;
+  frequency_per_day: number | null;
+  posts_per_run: number | null;
+  next_run: string | null;
+  last_run: string | null;
+}
+
+export interface CampaignScheduleResponse {
+  success: boolean;
+  campaign?: Record<string, unknown>;
+  schedule: ScheduleState;
+  projection?: ScheduleProjection;
+  credit_balance?: number | null;
+  daily_spend_limit_credits?: number | null;
+  limits?: Record<string, unknown>;
+  /** Reasons an enabled schedule would not actually fire. Relay these. */
+  blockers?: string[];
+  changed?: Record<string, unknown>;
+  message?: string;
+}
+
+/** Free — current schedule, projected cost, balance, cap, limits, blockers. */
+export function getCampaignSchedule(params: {
+  callerUserId: string;
+  campaignId: string;
+}): Promise<CampaignScheduleResponse> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  return request(`/agents/campaigns/${params.campaignId}/schedule?${qs.toString()}`, {
+    method: "GET",
+  });
+}
+
+export function setCampaignSchedule(params: {
+  callerUserId: string;
+  campaignId: string;
+  enabled: boolean;
+  frequencyPerDay?: number;
+  postsPerRun?: number;
+  /** Must be true to ENABLE. Never send it unless the user actually said yes. */
+  confirm?: boolean;
+}): Promise<CampaignScheduleResponse> {
+  return request(`/agents/campaigns/${params.campaignId}/schedule`, {
+    method: "PUT",
+    body: JSON.stringify({
+      caller_user_id: params.callerUserId,
+      enabled: params.enabled,
+      ...(params.frequencyPerDay != null
+        ? { frequency_per_day: params.frequencyPerDay }
+        : {}),
+      ...(params.postsPerRun != null ? { posts_per_run: params.postsPerRun } : {}),
+      ...(params.confirm ? { confirm: true } : {}),
+    }),
   });
 }

@@ -47,9 +47,11 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/{id}/review-posts` | ✅ | `review_posts` (2cr/post, dry_run billed too) |
 | `POST /agents/campaigns/{id}/regenerate-replies` | ✅ | `regenerate_replies` (5cr/reply) |
 | `POST /agents/campaigns/{id}/delegates` | ✅ | `add_delegate` |
-| `PATCH /agents/campaigns/{id}` | ✅ | `update_campaign` (free — keywords merge, discovery sources, relevance bar, pause/resume, visibility flip) |
+| `PATCH /agents/campaigns/{id}` | ✅ | `update_campaign` (free — keywords merge, discovery sources, relevance bar, pause/resume, visibility flip, platform + Reddit/YouTube targeting) |
 | `GET /agents/campaigns/{id}/activity` | ✅ | `get_campaign_activity` (free — since-watermark delta with live posted links) |
 | `GET /agents/campaigns/{id}/results` | ✅ | `get_campaign_results` (free — funnel, approval + survival rates, cost per usable reply) |
+| `GET /agents/campaigns/{id}/schedule` | ✅ | `set_campaign_schedule` (free — the un-confirmed call is the read: changes nothing, returns the projection) |
+| `PUT /agents/campaigns/{id}/schedule` | ✅ | `set_campaign_schedule` (free to call; **authorizes unattended spend** — 12cr/post found, hourly, no human in the loop. Enabling requires `confirm:true` after showing the projection; the per-app daily spend cap is enforced here as a ceiling because scheduled runs never pass through it) |
 | `GET /agents/credits/history` | ✅ | `credit_history` (caller-scoped for trusted agents) |
 | `GET /agents/participate/feed` | ✅ | `find_opportunities` |
 | `POST /agents/participate/submit` | ✅ | `submit_participation` (author-match vs the EARNING user's linked X handle) |

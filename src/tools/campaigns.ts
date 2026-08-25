@@ -48,6 +48,7 @@ function distributionOffer(isPublic: boolean, adminUrl: string): DecisionOffer {
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
+import { ApiError } from "../lib/api/client.js";
 import {
   getUserId,
   textResult,
@@ -119,13 +120,46 @@ function researchResult(result: SourceStatus & Record<string, unknown>) {
   });
 }
 
+/**
+ * The backend refuses to enable a schedule without an explicit yes and returns
+ * 400 `confirmation_required` with the cost projection attached. Recognising
+ * that shape is what lets the tool present it as a decision instead of an error.
+ */
+interface ConfirmationRequiredBody {
+  error: "confirmation_required";
+  projection: {
+    runs_per_day: number;
+    posts_per_run: number;
+    projected_daily_credits: number;
+    projected_monthly_credits: number;
+    days_of_runway: number | null;
+    notes?: string[];
+  };
+  credit_balance?: number | null;
+  daily_spend_limit_credits?: number | null;
+  proposed?: unknown;
+  current?: unknown;
+  limits?: unknown;
+  blockers?: string[];
+}
+
+function isConfirmationRequired(body: unknown): body is ConfirmationRequiredBody {
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    (body as { error?: unknown }).error === "confirmation_required" &&
+    typeof (body as { projection?: unknown }).projection === "object" &&
+    (body as { projection?: unknown }).projection !== null
+  );
+}
+
 export function registerCampaignTools(server: McpServer): void {
   server.registerTool(
     "create_campaign",
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -150,6 +184,26 @@ export function registerCampaignTools(server: McpServer): void {
           .string()
           .optional()
           .describe("Custom guidelines for reply drafting (defaults are built from the campaign context)"),
+        platform: z
+          .enum(["twitter", "linkedin", "reddit", "youtube"])
+          .optional()
+          .describe(
+            "Which network to work: twitter (default), linkedin, reddit, youtube. This is WHERE discovery looks — distinct from `sources` in update_campaign, which is HOW it looks there. Pick from where the product's audience actually is; it is fixed once the campaign discovers its first post."
+          ),
+        target_subreddits: z
+          .array(z.string())
+          .max(25)
+          .optional()
+          .describe(
+            "Reddit only. Subreddits to rotate through, with or without the 'r/' prefix. Omit to search all of Reddit. Note Reddit allows at most one posted reply per subreddit per day, so breadth beats depth here."
+          ),
+        target_youtube_channels: z
+          .array(z.string())
+          .max(25)
+          .optional()
+          .describe(
+            "YouTube only. Channel handles, ids or URLs to pull recent videos from, alongside the keyword search. Omit for keyword search alone."
+          ),
         visibility: z
           .enum(["public", "private"])
           .optional()
@@ -174,12 +228,18 @@ export function registerCampaignTools(server: McpServer): void {
           replyLength: args.reply_length,
           replyGuidelines: args.reply_guidelines,
           visibility: args.visibility ?? "private",
+          platform: args.platform,
+          targetSubreddits: args.target_subreddits,
+          targetYoutubeChannels: args.target_youtube_channels,
         });
         const isPublic = (args.visibility ?? "private") === "public";
         return textResult({
           campaign: result.campaign,
           credits: result.credits,
           visibility: isPublic ? "public" : "private",
+          platform: args.platform ?? "twitter",
+          ...(result.platform_note ? { platform_note: result.platform_note } : {}),
+          ...(result.targeting_notes ? { targeting_notes: result.targeting_notes } : {}),
           next_step:
             "Topic research is computing in the background (~30s). Call get_research to read the expanded keywords and competitor angles before spending credits on generate_posts.",
           user_note: isPublic
@@ -505,7 +565,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Tune a running campaign",
       description:
-        "Adjust a live campaign without recreating it. Free — nothing here spends credits, though the next generate_posts run bills as usual. Keywords MERGE (add_keywords never drops what is already there). `sources` is how research findings get applied: high-intent phrases, influencer accounts and lists that run_research found stay dormant until you enable their source. `relevance_threshold` moves the bar the relevance gate keeps posts above (new campaigns start lenient at 5; raise it when discovery is noisy). `is_active:false` pauses discovery so nothing more is found or billed. `visibility` decides who posts the drafts — flipping to 'public' also releases the already-discovered drafts to the community, so only do it when the user has said yes. Changes apply to the NEXT generate_posts run; existing posts are not re-scored.",
+        "Adjust a live campaign without recreating it. Free — nothing here spends credits, though the next generate_posts run bills as usual. Keywords MERGE (add_keywords never drops what is already there). `sources` is how research findings get applied: high-intent phrases, influencer accounts and lists that run_research found stay dormant until you enable their source. `relevance_threshold` moves the bar the relevance gate keeps posts above (new campaigns start lenient at 5; raise it when discovery is noisy). `is_active:false` pauses discovery so nothing more is found or billed. `visibility` decides who posts the drafts — flipping to 'public' also releases the already-discovered drafts to the community, so only do it when the user has said yes. `target_subreddits` / `target_youtube_channels` re-aim discovery within its platform (send an empty array to clear and search the whole platform). `platform` itself can only change while the campaign has discovered nothing — after that it is fixed, and a second campaign is the answer. Changes apply to the NEXT generate_posts run; existing posts are not re-scored.",
       inputSchema: {
         campaign_id: z.string(),
         add_keywords: z
@@ -537,6 +597,22 @@ export function registerCampaignTools(server: McpServer): void {
           .describe(
             "Who posts the drafted replies. private = the user posts them from the workbench; public = the community earn feed distributes them and members post them, billing the user per posted reply. Ask first."
           ),
+        platform: z
+          .enum(["twitter", "linkedin", "reddit", "youtube"])
+          .optional()
+          .describe(
+            "Which network discovery works. Only changeable while the campaign has discovered nothing — otherwise it returns platform_locked, because switching would mix two platforms' posts and proof rules in one campaign."
+          ),
+        target_subreddits: z
+          .array(z.string())
+          .max(25)
+          .optional()
+          .describe("Reddit only. Replaces the list; [] clears it and searches all of Reddit."),
+        target_youtube_channels: z
+          .array(z.string())
+          .max(25)
+          .optional()
+          .describe("YouTube only. Replaces the list; [] clears it and runs keyword search alone."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
@@ -554,6 +630,9 @@ export function registerCampaignTools(server: McpServer): void {
           relevanceThreshold: args.relevance_threshold,
           isActive: args.is_active,
           visibility: args.visibility,
+          platform: args.platform,
+          targetSubreddits: args.target_subreddits,
+          targetYoutubeChannels: args.target_youtube_channels,
         });
 
         const notes: string[] = [];
@@ -568,6 +647,12 @@ export function registerCampaignTools(server: McpServer): void {
         }
         if (args.is_active === false) {
           notes.push("Discovery is paused — nothing new will be found or billed until it is resumed.");
+        }
+        if (result.targeting_notes?.length) {
+          notes.push(result.targeting_notes.join(" "));
+        }
+        if (result.platform_note) {
+          notes.push(result.platform_note);
         }
         if (args.sources && args.sources.length > 1) {
           notes.push(
@@ -589,6 +674,131 @@ export function registerCampaignTools(server: McpServer): void {
         });
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Campaign update failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "set_campaign_schedule",
+    {
+      title: "Put discovery on a schedule",
+      description:
+        "Turn standing discovery on or off for a campaign. Calling this is free, but switching it ON authorizes spend that happens LATER and unattended: an hourly job runs discovery on its own and bills the user 12 credits per post it finds, with nobody in the loop. So there are two steps and you must not skip the first. STEP 1 — call with enabled:true and NO confirmed flag: nothing is changed and you get back the projected daily and monthly cost, the balance, and how many days of runway that is. STEP 2 — show the user those numbers, get a real yes, then call again with confirmed:true. Never send confirmed:true on your own initiative, on an assumption, or because the user said something general like 'keep it going' — the user has to have seen a number. Turning it OFF (enabled:false) is always safe and needs no confirmation; do it whenever the user asks to stop. Limits on this path are deliberately lower than the website's: up to 4 runs/day, up to 20 posts/run, and never more than 600 projected credits/day. Read the current schedule with get_campaign.",
+      inputSchema: {
+        campaign_id: z.string(),
+        enabled: z
+          .boolean()
+          .describe("true starts standing discovery, false stops it"),
+        frequency_per_day: z
+          .number()
+          .int()
+          .min(1)
+          .max(4)
+          .optional()
+          .describe("Discovery runs per day (1-4). Defaults to the campaign's current setting, else 1."),
+        posts_per_run: z
+          .number()
+          .int()
+          .min(1)
+          .max(20)
+          .optional()
+          .describe("Target posts per run (1-20). Defaults to the campaign's current setting, else 5. Each post found bills 12 credits."),
+        confirmed: z
+          .boolean()
+          .optional()
+          .describe(
+            "Set true ONLY after the user has seen the projected cost from a previous call and explicitly agreed to it. Omit on the first call — that is what produces the projection."
+          ),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async (args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.setCampaignSchedule({
+          callerUserId: userId,
+          campaignId: args.campaign_id,
+          enabled: args.enabled,
+          frequencyPerDay: args.frequency_per_day,
+          postsPerRun: args.posts_per_run,
+          confirm: args.confirmed === true,
+        });
+
+        if (!args.enabled) {
+          return textResult({
+            ...result,
+            user_note:
+              "Standing discovery is off. Nothing more is found or billed on its own — generate_posts still works whenever the user asks for a run.",
+          });
+        }
+
+        const blockers = result.blockers ?? [];
+        return textResult({
+          ...result,
+          user_note: [
+            `Standing discovery is now ON: up to ${result.schedule.posts_per_run} posts per run, ${result.schedule.frequency_per_day}x a day, billing 12 credits per post found — up to ${result.projection?.projected_daily_credits} credits a day. It keeps running after this conversation ends.`,
+            "Tell the user how to stop it: ask you to turn it off, or toggle it in the workbench.",
+            ...blockers,
+          ].join(" "),
+        });
+      } catch (error) {
+        // The confirmation gate is a DECISION, not a failure. The backend
+        // refuses to enable without an explicit yes and hands back the cost
+        // projection; surfacing that as an error would push an assistant to
+        // retry past it instead of asking the person paying.
+        if (
+          error instanceof ApiError &&
+          error.status === 400 &&
+          isConfirmationRequired(error.body)
+        ) {
+          const body = error.body as ConfirmationRequiredBody;
+          const p = body.projection;
+          const runway =
+            p.days_of_runway != null
+              ? ` At the current balance of ${body.credit_balance ?? "unknown"} credits, that is about ${p.days_of_runway} day(s) of runway.`
+              : "";
+          return textResult({
+            status: "confirmation_required",
+            nothing_changed: true,
+            projection: p,
+            credit_balance: body.credit_balance ?? null,
+            daily_spend_limit_credits: body.daily_spend_limit_credits ?? null,
+            proposed: body.proposed,
+            current: body.current,
+            limits: body.limits,
+            ...(body.blockers?.length ? { blockers: body.blockers } : {}),
+            user_note: `Nothing has been scheduled yet. Running discovery ${p.runs_per_day}x a day at up to ${p.posts_per_run} posts per run would cost up to ${p.projected_daily_credits} credits a day (${p.projected_monthly_credits} a month) — a ceiling, not a forecast, since each run only bills the posts it actually finds.${runway} This keeps spending after the conversation ends, so ask the user directly and only call again with confirmed:true if they say yes.`,
+            decision_offer: {
+              question: `Run discovery on this campaign automatically, ${p.runs_per_day}x a day?`,
+              options: [
+                {
+                  choice: "Yes, keep it running",
+                  what_happens:
+                    "Discovery runs on its own from now on, finding new conversations and drafting replies between sessions. It can be stopped any time, from chat or the workbench.",
+                  cost: `Up to ${p.projected_daily_credits} credits a day (${p.projected_monthly_credits}/month) — only for posts it actually finds.`,
+                },
+                {
+                  choice: "No, keep it manual",
+                  what_happens:
+                    "Nothing runs unless asked. Discovery happens only when generate_posts is called, so every credit is spent with the user present.",
+                  cost: "Nothing until the next manual run.",
+                },
+              ],
+              current: "Manual — no schedule is running.",
+              how_to_apply:
+                "If they say yes, call set_campaign_schedule again with the same frequency_per_day and posts_per_run plus confirmed:true.",
+            },
+          });
+        }
+        if (error instanceof ApiError && error.status === 429) {
+          return errorResult(
+            `${error.message} Nothing was scheduled. Either propose a smaller schedule, or ask the user to raise the limit for this app under Profile → Connected Apps.`
+          );
+        }
+        return errorResult(
+          error instanceof Error ? error.message : "Setting the schedule failed"
+        );
       }
     }
   );

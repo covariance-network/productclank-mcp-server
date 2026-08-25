@@ -55,7 +55,8 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `regenerate_replies` | Redraft selected replies with an edit request | 5 cr/reply |
 | `get_campaign_activity` | What's new since the last check — posts found, replies claimed, live links to what went out | free |
 | `get_campaign_results` | Spend vs outcomes: the funnel, approval + survival rates, cost per usable reply | free |
-| `update_campaign` | Merge keywords, enable the discovery sources research found, move the relevance bar, pause/resume, change who posts the drafts | free |
+| `update_campaign` | Merge keywords, enable the discovery sources research found, move the relevance bar, pause/resume, re-aim the platform targeting, change who posts the drafts | free |
+| `set_campaign_schedule` | Put discovery on a schedule so it keeps finding conversations between sessions. Shows the projected daily cost and requires an explicit yes before enabling | free to set · 12cr per post found |
 | `add_delegate` | Hand a campaign to a human to manage in the web app | free |
 | `boost_post` | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 200–300 cr |
 
