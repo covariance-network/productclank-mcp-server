@@ -37,14 +37,34 @@ app.use(createOAuthEndpoints());
 const transports = new Map<string, StreamableHTTPServerTransport>();
 // Last time (epoch ms) each session serviced a request, for idle cleanup below.
 const lastSeenAt = new Map<string, number>();
+// Requests currently executing per session. A tool call can outlive the idle
+// TTL (discovery runs take minutes), and closing its transport mid-flight means
+// the client never receives a response — it just waits forever. Idle means
+// "nothing running and nothing recent", never "started a while ago".
+const inFlight = new Map<string, number>();
 
 function touchSession(sessionId: string): void {
   lastSeenAt.set(sessionId, Date.now());
 }
 
+function beginRequest(sessionId: string): void {
+  touchSession(sessionId);
+  inFlight.set(sessionId, (inFlight.get(sessionId) ?? 0) + 1);
+}
+
+function endRequest(sessionId: string): void {
+  const remaining = (inFlight.get(sessionId) ?? 1) - 1;
+  if (remaining > 0) inFlight.set(sessionId, remaining);
+  else inFlight.delete(sessionId);
+  // Stamp on completion too: a 4-minute call should leave the session looking
+  // fresh for the full TTL afterwards, not already 4 minutes stale.
+  touchSession(sessionId);
+}
+
 function forgetSession(sessionId: string): void {
   transports.delete(sessionId);
   lastSeenAt.delete(sessionId);
+  inFlight.delete(sessionId);
 }
 
 // Close transports idle longer than the configured TTL. Unauthenticated
@@ -55,6 +75,7 @@ function sweepIdleSessions(): void {
   const now = Date.now();
   const stale: string[] = [];
   for (const [sessionId] of transports) {
+    if (inFlight.get(sessionId)) continue; // work in progress — never sweep
     if (now - (lastSeenAt.get(sessionId) ?? 0) > config.session.idleTtlMs) {
       stale.push(sessionId);
     }
@@ -133,8 +154,12 @@ app.post("/mcp", bearerAuthUnlessDiscovery, async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (sessionId && transports.has(sessionId)) {
-    touchSession(sessionId);
-    await transports.get(sessionId)!.handleRequest(req, res, req.body);
+    beginRequest(sessionId);
+    try {
+      await transports.get(sessionId)!.handleRequest(req, res, req.body);
+    } finally {
+      endRequest(sessionId);
+    }
     return;
   }
 
@@ -172,8 +197,12 @@ app.get("/mcp", bearerAuth, async (req, res) => {
     res.status(400).json({ error: "Missing or invalid session ID" });
     return;
   }
-  touchSession(sessionId);
-  await transports.get(sessionId)!.handleRequest(req, res);
+  beginRequest(sessionId);
+  try {
+    await transports.get(sessionId)!.handleRequest(req, res);
+  } finally {
+    endRequest(sessionId);
+  }
 });
 
 app.delete("/mcp", bearerAuth, (req, res) => {
