@@ -156,6 +156,9 @@ export function submitCampaignWork(params: {
   callerUserId: string;
   campaignId: string;
   castUrl?: string;
+  /** A hosted image or video the user produced for the task. Links only —
+   *  the API stores URLs, it never accepts uploads. */
+  mediaUrl?: string;
   description?: string;
 }): Promise<{
   success: boolean;
@@ -166,6 +169,7 @@ export function submitCampaignWork(params: {
     body: JSON.stringify({
       caller_user_id: params.callerUserId,
       ...(params.castUrl ? { cast_url: params.castUrl } : {}),
+      ...(params.mediaUrl ? { media_url: params.mediaUrl } : {}),
       ...(params.description ? { description: params.description } : {}),
     }),
   });
