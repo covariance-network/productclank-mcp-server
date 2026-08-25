@@ -41,8 +41,13 @@ export function registerParticipationTools(server: McpServer): void {
         });
         return textResult({
           posts: result.posts,
+          // `total` is an upper bound (it counts posts before action-type
+          // filtering), so an empty page can carry a non-zero total. Trigger
+          // on what was actually returned, or the note never fires in the one
+          // case it exists for.
+          matching: result.matching ?? result.posts.length,
           total: result.total,
-          ...(result.total === 0
+          ...(result.posts.length === 0
             ? {
                 user_note:
                   "No reply opportunities are open right now. This is not an error — the open tasks at the moment may all be likes or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/communiply/feed). Worth checking back after new campaigns run discovery.",
