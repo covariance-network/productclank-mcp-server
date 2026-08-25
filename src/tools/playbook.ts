@@ -18,16 +18,18 @@ Product to grow: {{product}}
 1. **Resolve the product.** Call search_products with the product name. If it isn't listed, call create_product with its website URL (free — the server auto-fills the listing).
 2. **Check the budget.** Call check_balance. Rough costs: discovery campaign 10 to create + 12/post discovered; post review 2/post; reply redraft 5/reply; boost 200–300; content campaign 1000. Never start a paid step the balance can't cover, and confirm each spend with the user first.
 3. **Pick the play (combine when budget allows):**
-   - **Conversations play** — create_campaign with 3–8 focused keywords (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone. Manage anytime in the workbench via the campaign's admin_url.
+   - **Conversations play** — create_campaign with 3–8 focused keywords and the platform the audience is actually on — twitter (default), linkedin, reddit or youtube; for reddit/youtube also pass target_subreddits / target_youtube_channels (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone. Manage anytime in the workbench via the campaign's admin_url.
    - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost).
    - **Content play** — the user wants the community creating content: suggest_content_campaign (FREE dry-run) → create_content_campaign once they approve the 1000-credit spend.
 4. **Close the loop.** After each paid step: get_campaign_results for spend vs outcomes (funnel, approval rate, cost per usable reply), credit_history for the ledger, and report both to the user with what you'd do next. Hand long-running campaigns to the human with add_delegate so they can manage them at app.productclank.com/my-campaigns.
 5. **Keep it running across sessions.** A campaign is a standing operation, not a one-shot. At the start of a session call get_campaign_activity with the checked_at value from last time — new posts, new claims, live links to what went out. Then adjust with update_campaign (all free): add keywords that are working, enable the phrases/influencers sources research found (they stay dormant until enabled), raise relevance_threshold if discovery is noisy, pause with is_active:false if the user wants to stop spending. If drafts are piling up unposted, that is the moment to offer public visibility — the community posts them instead of the user.
+6. **Offer to keep it running.** Once a campaign is producing usable replies, set_campaign_schedule turns discovery into a standing operation that runs between sessions. It spends unattended (12 credits per post found, hourly job, nobody in the loop), so it is a two-step tool ON PURPOSE: call it WITHOUT confirmed to get the projected daily and monthly cost, put those numbers in front of the user, and only call again with confirmed:true if they actually say yes. Never confirm on their behalf. Turning it off is always safe.
 
 ## Rules
 - Free before paid: run_research and dry-runs come before any billable call.
 - One step at a time — never chain paid calls without reporting results in between.
-- If a call returns a daily-spend-cap error, stop and tell the user to adjust it in ProductClank → Profile → Connected Apps.`;
+- If a call returns a daily-spend-cap error, stop and tell the user to adjust it in ProductClank → Profile → Connected Apps.
+- Recurring spend needs a stated number and a real yes. A confirmation prompt is a question for the user, never a step to retry past.`;
 
 export function registerPlaybook(server: McpServer): void {
   server.registerPrompt(
@@ -81,7 +83,8 @@ export function registerPlaybook(server: McpServer): void {
 | get_posts / list_campaigns / get_campaign | free |
 | get_campaign_activity (what's new since last check) | free |
 | get_campaign_results (spend vs outcomes) | free |
-| update_campaign (keywords, sources, relevance bar, pause, visibility) | free |
+| update_campaign (keywords, platform + targeting, sources, relevance bar, pause, visibility) | free |
+| set_campaign_schedule | free to set — then 12 per post found, on its own, until stopped |
 | review_posts | 2 per post (dry_run billed too) |
 | regenerate_replies | 5 per reply |
 | add_delegate | free |
