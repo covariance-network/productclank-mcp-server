@@ -190,3 +190,105 @@ export function addDelegate(params: {
     }),
   });
 }
+
+export interface UpdateCampaignParams {
+  callerUserId: string;
+  campaignId: string;
+  addKeywords?: string[];
+  removeKeywords?: string[];
+  /** enabled_verticals: keywords | phrases | influencers | lists | competitors */
+  sources?: string[];
+  monitorAccounts?: string[];
+  relevanceThreshold?: number;
+  isActive?: boolean;
+  visibility?: "public" | "private";
+}
+
+/**
+ * PATCH the campaign's live configuration. Free. Only the fields present are
+ * touched, and keywords MERGE rather than replace — an agent adding a keyword
+ * must never silently drop the ones already working.
+ */
+export function updateCampaign(params: UpdateCampaignParams): Promise<{
+  success: boolean;
+  campaign: Record<string, unknown> & { admin_url: string };
+  changed: Record<string, unknown>;
+  posts_visibility_updated?: number;
+  next_step?: string;
+}> {
+  return request(`/agents/campaigns/${params.campaignId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      caller_user_id: params.callerUserId,
+      ...(params.addKeywords ? { add_keywords: params.addKeywords } : {}),
+      ...(params.removeKeywords ? { remove_keywords: params.removeKeywords } : {}),
+      ...(params.sources ? { sources: params.sources } : {}),
+      ...(params.monitorAccounts ? { monitor_accounts: params.monitorAccounts } : {}),
+      ...(params.relevanceThreshold != null
+        ? { relevance_threshold: params.relevanceThreshold }
+        : {}),
+      ...(params.isActive != null ? { is_active: params.isActive } : {}),
+      ...(params.visibility ? { visibility: params.visibility } : {}),
+    }),
+  });
+}
+
+export interface CampaignActivity {
+  success: boolean;
+  campaign: Record<string, unknown>;
+  since: string;
+  /** Pass this back as `since` on the next check. */
+  checked_at: string;
+  summary: {
+    new_posts: number;
+    replies_claimed: number;
+    replies_posted: number;
+    engagement_drawn: { likes: number; replies: number };
+    quiet: boolean;
+  };
+  new_posts: unknown[];
+  claimed_replies: unknown[];
+}
+
+/** Free, no scraping — what changed since `since` (default 24h). */
+export function getCampaignActivity(params: {
+  callerUserId: string;
+  campaignId: string;
+  since?: string;
+  limit?: number;
+}): Promise<CampaignActivity> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  if (params.since) qs.set("since", params.since);
+  if (params.limit != null) qs.set("limit", String(params.limit));
+  return request(`/agents/campaigns/${params.campaignId}/activity?${qs.toString()}`, {
+    method: "GET",
+  });
+}
+
+export interface CampaignResults {
+  success: boolean;
+  campaign: Record<string, unknown>;
+  funnel: Record<string, number>;
+  rates: Record<string, number | null>;
+  survival: Record<string, unknown>;
+  engagement: Record<string, unknown>;
+  spend: {
+    credits_spent: number;
+    by_operation: Record<string, number>;
+    usable_replies: number;
+    credits_per_usable_reply: number | null;
+    credits_per_post_discovered: number | null;
+    note: string;
+  };
+}
+
+/** Free — spend vs outcomes, computed from stored columns (never Apify). */
+export function getCampaignResults(params: {
+  callerUserId: string;
+  campaignId: string;
+}): Promise<CampaignResults> {
+  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  return request(`/agents/campaigns/${params.campaignId}/results?${qs.toString()}`, {
+    method: "GET",
+  });
+}

@@ -14,7 +14,7 @@ src/
 │   ├── boost.ts        boostPost
 │   ├── content.ts      composeContentCampaign, createContentCampaign
 │   ├── contentStudio.ts listContentSpaces, writeContentCandidates
-│   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, addDelegate
+│   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
 │   └── index.ts        barrel — `import * as api from "../lib/api/index.js"`
@@ -26,7 +26,7 @@ src/
     ├── boost.ts        registerBoostTools         → boost_post
     ├── content.ts      registerContentTools       → suggest_content_campaign, create_content_campaign
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, write_content_candidates
-    ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, add_delegate
+    ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, submit_participation, get_earnings
     ├── playbook.ts     registerPlaybook           → grow_product prompt + productclank://capabilities resource
     └── index.ts        registerTools() — composes the above
@@ -51,6 +51,9 @@ src/
 | `generate_posts` | campaigns | `POST /agents/campaigns/{id}/generate-posts` | 12 cr/post |
 | `review_posts` | campaigns | `POST /agents/campaigns/{id}/review-posts` | 2 cr/post |
 | `regenerate_replies` | campaigns | `POST /agents/campaigns/{id}/regenerate-replies` | 5 cr/reply |
+| `update_campaign` | campaigns | `PATCH /agents/campaigns/{id}` | free |
+| `get_campaign_activity` | campaigns | `GET /agents/campaigns/{id}/activity` | free |
+| `get_campaign_results` | campaigns | `GET /agents/campaigns/{id}/results` | free |
 | `add_delegate` | campaigns | `POST /agents/campaigns/{id}/delegates` | free |
 | `find_opportunities` | participation | `GET /agents/participate/feed` | free |
 | `submit_participation` | participation | `POST /agents/participate/submit` | earns |

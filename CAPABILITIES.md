@@ -47,6 +47,9 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/{id}/review-posts` | ✅ | `review_posts` (2cr/post, dry_run billed too) |
 | `POST /agents/campaigns/{id}/regenerate-replies` | ✅ | `regenerate_replies` (5cr/reply) |
 | `POST /agents/campaigns/{id}/delegates` | ✅ | `add_delegate` |
+| `PATCH /agents/campaigns/{id}` | ✅ | `update_campaign` (free — keywords merge, discovery sources, relevance bar, pause/resume, visibility flip) |
+| `GET /agents/campaigns/{id}/activity` | ✅ | `get_campaign_activity` (free — since-watermark delta with live posted links) |
+| `GET /agents/campaigns/{id}/results` | ✅ | `get_campaign_results` (free — funnel, approval + survival rates, cost per usable reply) |
 | `GET /agents/credits/history` | ✅ | `credit_history` (caller-scoped for trusted agents) |
 | `GET /agents/participate/feed` | ✅ | `find_opportunities` |
 | `POST /agents/participate/submit` | ✅ | `submit_participation` (author-match vs the EARNING user's linked X handle) |

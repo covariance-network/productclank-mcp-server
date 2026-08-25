@@ -21,7 +21,8 @@ Product to grow: {{product}}
    - **Conversations play** — create_campaign with 3–8 focused keywords (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone. Manage anytime in the workbench via the campaign's admin_url.
    - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost).
    - **Content play** — the user wants the community creating content: suggest_content_campaign (FREE dry-run) → create_content_campaign once they approve the 1000-credit spend.
-4. **Close the loop.** After each paid step: get_campaign for stats, credit_history for what was spent, and report both to the user with what you'd do next. Hand long-running campaigns to the human with add_delegate so they can manage them at app.productclank.com/my-campaigns.
+4. **Close the loop.** After each paid step: get_campaign_results for spend vs outcomes (funnel, approval rate, cost per usable reply), credit_history for the ledger, and report both to the user with what you'd do next. Hand long-running campaigns to the human with add_delegate so they can manage them at app.productclank.com/my-campaigns.
+5. **Keep it running across sessions.** A campaign is a standing operation, not a one-shot. At the start of a session call get_campaign_activity with the checked_at value from last time — new posts, new claims, live links to what went out. Then adjust with update_campaign (all free): add keywords that are working, enable the phrases/influencers sources research found (they stay dormant until enabled), raise relevance_threshold if discovery is noisy, pause with is_active:false if the user wants to stop spending. If drafts are piling up unposted, that is the moment to offer public visibility — the community posts them instead of the user.
 
 ## Rules
 - Free before paid: run_research and dry-runs come before any billable call.
@@ -78,6 +79,9 @@ export function registerPlaybook(server: McpServer): void {
 | run_research / get_research | free |
 | generate_posts | 12 per post discovered |
 | get_posts / list_campaigns / get_campaign | free |
+| get_campaign_activity (what's new since last check) | free |
+| get_campaign_results (spend vs outcomes) | free |
+| update_campaign (keywords, sources, relevance bar, pause, visibility) | free |
 | review_posts | 2 per post (dry_run billed too) |
 | regenerate_replies | 5 per reply |
 | add_delegate | free |
