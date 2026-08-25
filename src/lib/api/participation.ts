@@ -38,12 +38,14 @@ export interface FeedPost {
   unclaimedReplies: FeedReply[];
 }
 
+/** `matching` = what the page returned after filtering; `total` counts posts
+ *  with any unclaimed reply and is an upper bound. */
 export function getParticipationFeed(params: {
   limit?: number;
   offset?: number;
   campaignId?: string;
   actionType?: "reply" | "like" | "repost";
-}): Promise<{ success: boolean; posts: FeedPost[]; total: number }> {
+}): Promise<{ success: boolean; posts: FeedPost[]; total: number; matching?: number }> {
   const qs = new URLSearchParams();
   if (params.limit != null) qs.set("limit", String(params.limit));
   if (params.offset != null) qs.set("offset", String(params.offset));
