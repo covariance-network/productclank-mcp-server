@@ -5,6 +5,10 @@
  * → get_posts (free) → review_posts (2 cr/post) → regenerate_replies (5 cr/reply)
  * → add_delegate (free, hands the campaign to a human in the webapp).
  *
+ * And the operate half, all free: get_campaign_activity (what's new since the
+ * last check) → get_campaign_results (spend vs outcomes) → update_campaign
+ * (keywords, sources, relevance bar, pause, visibility).
+ *
  * Visibility is the one decision the owner must actually make, so it travels
  * with the results as a `decision_offer` (see ./_shared.ts) rather than only in
  * a tool description the user never sees.
@@ -37,7 +41,7 @@ function distributionOffer(isPublic: boolean, adminUrl: string): DecisionOffer {
     current: isPublic
       ? "The community posts them for you (public)"
       : "You post them (private)",
-    how_to_apply: `Ask the user which they want. Switching is a toggle in the campaign workbench: ${adminUrl}`,
+    how_to_apply: `Ask the user which they want, then call update_campaign with the matching \`visibility\` — it takes effect immediately, including for drafts already found. They can also toggle it in the workbench: ${adminUrl}`,
   };
 }
 
@@ -52,6 +56,68 @@ import {
   type ToolExtra,
   type DecisionOffer,
 } from "./_shared.js";
+
+/**
+ * Research writes findings; only the enabled sources read them. Expanded
+ * keywords and exclude terms apply on their own, but phrases, key accounts,
+ * lists and competitors sit unused until their source is switched on — which
+ * an agent has no reason to mention unless the result says so. Hence: report
+ * what is dormant, and offer to turn it on.
+ */
+interface SourceStatus {
+  active_sources?: string[];
+  dormant_until_enabled?: { source: string; finding: string }[];
+  analysis?: Record<string, unknown>;
+}
+
+function dormantFindings(result: SourceStatus): { source: string; count: number }[] {
+  const analysis = result.analysis ?? {};
+  return (result.dormant_until_enabled ?? [])
+    .map((entry) => {
+      const found = analysis[entry.finding];
+      return { source: entry.source, count: Array.isArray(found) ? found.length : 0 };
+    })
+    .filter((entry) => entry.count > 0);
+}
+
+function researchResult(result: SourceStatus & Record<string, unknown>) {
+  const dormant = dormantFindings(result);
+  if (dormant.length === 0) {
+    return textResult({
+      ...result,
+      user_note:
+        "The expanded keywords and exclusion terms from this analysis are applied automatically on the next generate_posts run — nothing else to switch on.",
+    });
+  }
+  // "1 competitors" reads like a bug in the middle of an offer.
+  const summary = dormant
+    .map((d) => `${d.count} ${d.count === 1 ? d.source.replace(/s$/, "") : d.source}`)
+    .join(", ");
+  return textResult({
+    ...result,
+    user_note: `The expanded keywords and exclusion terms apply automatically. But this analysis also found ${summary} that the campaign is NOT using — those sources are switched off, so discovery ignores them. Tell the user what was found and offer to turn them on; it is free and takes one call.`,
+    decision_offer: {
+      question: `Research found ${summary} the campaign isn't searching. Turn those on?`,
+      options: [
+        {
+          choice: `Turn on ${dormant.map((d) => d.source).join(" + ")}`,
+          what_happens:
+            "Discovery starts searching those sources as well as keywords — usually more posts, and different ones (people the product's audience follows, phrases they actually use).",
+          cost: "Free to enable. The next generate_posts run still costs 12 credits per post it finds, and finding more posts means it finds more.",
+        },
+        {
+          choice: "Keep it keyword-only",
+          what_happens:
+            "Discovery stays narrow and predictable. The findings stay saved and can be enabled any time.",
+          cost: "Nothing.",
+        },
+      ],
+      current: `Active sources: ${(result.active_sources ?? ["keywords"]).join(", ")}`,
+      how_to_apply:
+        "Call update_campaign with sources: [\"keywords\", …the ones they approved].",
+    },
+  });
+}
 
 export function registerCampaignTools(server: McpServer): void {
   server.registerTool(
@@ -180,7 +246,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Research the campaign's topic (free)",
       description:
-        "FREE pre-flight before spending credits: analyzes the campaign's keywords/topic and returns expanded keywords, high-intent phrases, influencer accounts, relevant X lists, and competitors. The EXPANDED KEYWORDS are automatically used by the next generate_posts run — no extra step. Account/phrase monitoring sources are NOT settable via this connector; if the analysis suggests them, tell the user they can optionally add sources later in the workbench (admin_url) — do not treat it as a required step. Cached for 7 days — pass force:true to refresh.",
+        "FREE pre-flight before spending credits: analyzes the campaign's keywords/topic and returns expanded keywords, high-intent phrases, influencer accounts, relevant X lists, and competitors. The EXPANDED KEYWORDS and exclusion terms are applied automatically by the next generate_posts run. Everything else is NOT: phrases, influencer accounts, lists and competitors are only searched once their source is enabled — the result reports which are dormant, and update_campaign (free) switches them on. Cached for 7 days — pass force:true to refresh.",
       inputSchema: {
         campaign_id: z.string(),
         force: z.boolean().optional().describe("Force a fresh analysis even if a cached one exists"),
@@ -191,7 +257,9 @@ export function registerCampaignTools(server: McpServer): void {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        return textResult(await api.runResearch({ callerUserId: userId, campaignId: campaign_id, force }));
+        return researchResult(
+          await api.runResearch({ callerUserId: userId, campaignId: campaign_id, force })
+        );
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Research failed");
       }
@@ -202,7 +270,8 @@ export function registerCampaignTools(server: McpServer): void {
     "get_research",
     {
       title: "Read cached campaign research",
-      description: "Read the cached topic/competitor analysis for a campaign (from run_research). Free.",
+      description:
+        "Read the cached topic/competitor analysis for a campaign (from run_research). Free. Also reports which of its findings the campaign is actually searching: expanded keywords and exclusion terms always apply, while phrases / influencer accounts / lists / competitors stay dormant until their source is enabled via update_campaign.",
       inputSchema: { campaign_id: z.string() },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -210,7 +279,9 @@ export function registerCampaignTools(server: McpServer): void {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        return textResult(await api.getResearch({ callerUserId: userId, campaignId: campaign_id }));
+        return researchResult(
+          await api.getResearch({ callerUserId: userId, campaignId: campaign_id })
+        );
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Research fetch failed");
       }
@@ -351,6 +422,173 @@ export function registerCampaignTools(server: McpServer): void {
         );
       } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Reply regeneration failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_campaign_activity",
+    {
+      title: "What's new on a campaign",
+      description:
+        "Catch up on a campaign since the last check: posts discovered, replies claimed by community members, LIVE links to what they actually posted, and the engagement those replies drew. Free, and it never scrapes — safe to call at the start of every session. Pass `since` (the `checked_at` from the previous call) to get only what is new; omit it for the last 24 hours. Use this to resume a standing growth operation across chats, then get_campaign_results for the cumulative picture.",
+      inputSchema: {
+        campaign_id: z.string(),
+        since: z
+          .string()
+          .optional()
+          .describe("ISO 8601 timestamp — the `checked_at` returned by the previous call. Default: 24 hours ago."),
+        limit: z.number().int().min(1).max(100).optional().describe("Items per list, default 20"),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ campaign_id, since, limit }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.getCampaignActivity({
+          callerUserId: userId,
+          campaignId: campaign_id,
+          since,
+          limit,
+        });
+        const { summary } = result;
+        return textResult({
+          ...result,
+          user_note: summary.quiet
+            ? "Nothing new since the last check — no posts discovered and no replies claimed. That is normal for a private campaign between discovery runs; it is worth looking at only if it keeps repeating after a generate_posts run."
+            : `Since the last check: ${summary.new_posts} new post(s) found and ${summary.replies_claimed} reply(ies) claimed, ${summary.replies_posted} of them already posted. Give the user the live links (posted_url) — those are real replies on their behalf.`,
+          next_step:
+            "Pass `checked_at` back as `since` next time so this stays a running log rather than a repeat.",
+        });
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Activity fetch failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_campaign_results",
+    {
+      title: "Campaign results & cost per usable reply",
+      description:
+        "The cumulative scorecard for a campaign: the funnel (posts discovered → kept → replies drafted → claimed → posted → approved), the approval rate, whether posted replies survived on-platform, the engagement they drew, total credits spent broken down by operation, and the cost per usable reply. Free, and it never scrapes — unlike the web report it costs nothing to poll. Use it to answer 'is this working and what am I paying for it?'.",
+      inputSchema: { campaign_id: z.string() },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ campaign_id }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.getCampaignResults({
+          callerUserId: userId,
+          campaignId: campaign_id,
+        });
+        const perReply = result.spend.credits_per_usable_reply;
+        return textResult({
+          ...result,
+          user_note:
+            perReply != null
+              ? `${result.spend.credits_spent} credits spent so far, ${result.spend.usable_replies} usable replies out of it — about ${perReply} credits each. Report the funnel honestly: the approval and survival rates below cover only what has actually been judged or checked.`
+              : `${result.spend.credits_spent} credits spent so far, with no usable replies yet. Say so plainly rather than reporting the raw counts as success — if posts were found but nothing was posted, the campaign is private and waiting on the user (or on the community, if they want to open it up).`,
+          reading_guide:
+            "approval_rate is over judged replies only (see approval_sample); survival_rate is null until enough replies were checked; engagement covers only swept replies. A removed reply is usually a moderator decision, not fraud.",
+        });
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Results fetch failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "update_campaign",
+    {
+      title: "Tune a running campaign",
+      description:
+        "Adjust a live campaign without recreating it. Free — nothing here spends credits, though the next generate_posts run bills as usual. Keywords MERGE (add_keywords never drops what is already there). `sources` is how research findings get applied: high-intent phrases, influencer accounts and lists that run_research found stay dormant until you enable their source. `relevance_threshold` moves the bar the relevance gate keeps posts above (new campaigns start lenient at 5; raise it when discovery is noisy). `is_active:false` pauses discovery so nothing more is found or billed. `visibility` decides who posts the drafts — flipping to 'public' also releases the already-discovered drafts to the community, so only do it when the user has said yes. Changes apply to the NEXT generate_posts run; existing posts are not re-scored.",
+      inputSchema: {
+        campaign_id: z.string(),
+        add_keywords: z
+          .array(z.string())
+          .optional()
+          .describe("Keywords to add — merged with the existing list, duplicates ignored"),
+        remove_keywords: z.array(z.string()).optional().describe("Keywords to drop (at least one must remain)"),
+        sources: z
+          .array(z.enum(["keywords", "phrases", "influencers", "lists", "competitors"]))
+          .optional()
+          .describe(
+            "Which discovery sources run. 'keywords' is always included. Enable 'phrases'/'influencers'/'lists'/'competitors' to actually USE what run_research found — they do nothing until enabled."
+          ),
+        monitor_accounts: z
+          .array(z.string())
+          .optional()
+          .describe("Specific handles the influencers source should watch; enables that source automatically"),
+        relevance_threshold: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .optional()
+          .describe("Keep only posts scoring at or above this on semantic relevance (new campaigns start at 5)"),
+        is_active: z.boolean().optional().describe("false pauses discovery, true resumes it"),
+        visibility: z
+          .enum(["public", "private"])
+          .optional()
+          .describe(
+            "Who posts the drafted replies. private = the user posts them from the workbench; public = the community earn feed distributes them and members post them, billing the user per posted reply. Ask first."
+          ),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async (args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.updateCampaign({
+          callerUserId: userId,
+          campaignId: args.campaign_id,
+          addKeywords: args.add_keywords,
+          removeKeywords: args.remove_keywords,
+          sources: args.sources,
+          monitorAccounts: args.monitor_accounts,
+          relevanceThreshold: args.relevance_threshold,
+          isActive: args.is_active,
+          visibility: args.visibility,
+        });
+
+        const notes: string[] = [];
+        if (args.visibility === "public") {
+          notes.push(
+            `The campaign is now public: ${result.posts_visibility_updated ?? 0} existing draft(s) were released to the community earn feed, where members can claim and post them. Each posted reply bills credits, and the proof of every one shows up in the workbench for review.`
+          );
+        } else if (args.visibility === "private") {
+          notes.push(
+            `The campaign is now private: ${result.posts_visibility_updated ?? 0} draft(s) were pulled from the community feed. Replies already claimed stay claimed — this only stops new ones.`
+          );
+        }
+        if (args.is_active === false) {
+          notes.push("Discovery is paused — nothing new will be found or billed until it is resumed.");
+        }
+        if (args.sources && args.sources.length > 1) {
+          notes.push(
+            "The new sources take effect on the next generate_posts run, which will cost 12 credits per post it finds."
+          );
+        }
+
+        return textResult({
+          ...result,
+          ...(notes.length > 0 ? { user_note: notes.join(" ") } : {}),
+          ...(args.visibility === undefined
+            ? {
+                decision_offer: distributionOffer(
+                  (result.campaign.visibility as string) === "public",
+                  result.campaign.admin_url
+                ),
+              }
+            : {}),
+        });
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Campaign update failed");
       }
     }
   );
