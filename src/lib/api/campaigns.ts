@@ -115,11 +115,24 @@ export function generatePosts(params: {
   });
 }
 
+/**
+ * Research response also reports which findings the campaign is actually
+ * searching — `active_sources` plus the `dormant_until_enabled` list — so the
+ * tool can offer to switch the unused ones on rather than silently reporting
+ * findings that discovery ignores.
+ */
+export interface ResearchResponse extends Record<string, unknown> {
+  analysis?: Record<string, unknown>;
+  active_sources?: string[];
+  applied_automatically?: string[];
+  dormant_until_enabled?: { source: string; finding: string }[];
+}
+
 export function runResearch(params: {
   callerUserId: string;
   campaignId: string;
   force?: boolean;
-}): Promise<Record<string, unknown>> {
+}): Promise<ResearchResponse> {
   return request(`/agents/campaigns/${params.campaignId}/research`, {
     method: "POST",
     body: JSON.stringify({
@@ -132,7 +145,7 @@ export function runResearch(params: {
 export function getResearch(params: {
   callerUserId: string;
   campaignId: string;
-}): Promise<Record<string, unknown>> {
+}): Promise<ResearchResponse> {
   const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
   return request(`/agents/campaigns/${params.campaignId}/research?${qs.toString()}`, { method: "GET" });
 }
