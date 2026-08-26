@@ -5,7 +5,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
 export function registerBoostTools(server: McpServer): void {
   server.registerTool(
@@ -70,9 +70,7 @@ export function registerBoostTools(server: McpServer): void {
         });
       } catch (error) {
         // Surface actionable API errors (e.g. insufficient credits) verbatim.
-        return errorResult(
-          error instanceof Error ? error.message : "Boost failed"
-        );
+        return toolError(error, "Boost failed");
       }
     }
   );
