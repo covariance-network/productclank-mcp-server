@@ -4,7 +4,6 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getUserCreditBalance } from "../lib/credits.js";
 import * as api from "../lib/api/index.js";
 import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
@@ -22,7 +21,7 @@ export function registerCreditTools(server: McpServer): void {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        const { balance, plan } = await getUserCreditBalance(userId);
+        const { balance, plan } = await api.getCreditBalance(userId);
         return textResult({ balance, plan });
       } catch (error) {
         return errorResult(

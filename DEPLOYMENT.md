@@ -2,10 +2,11 @@
 
 This server is an OAuth 2.1 authorization server + MCP Streamable-HTTP endpoint.
 It delegates end-user login to the ProductClank webapp and bills each connected
-user's own credits through one **trusted** agent key.
+user's own credits through their own **per-user** agent (provisioned at consent
+via the webapp's `/agents/connector/provision` route — no shared trusted key).
 
 ```
-Claude ──HTTPS──▶ mcp.productclank.com/mcp ──REST(trusted key + caller_user_id)──▶ api.productclank.com
+Claude ──HTTPS──▶ mcp.productclank.com/mcp ──REST(per-user agent key)──▶ api.productclank.com
                         │
                         └─OAuth─▶ app.productclank.com/connect/mcp (login + consent)
 ```
@@ -22,23 +23,16 @@ preview), `create_content_campaign` (write — launches a content campaign, 1000
 Run `migrations/0001_mcp_oauth.sql` against the ProductClank **prod** database
 (creates `mcp_oauth_clients`, `mcp_login_states`, `mcp_auth_codes`, `mcp_tokens`).
 
-### b. Create the trusted connector agent
-Register one agent — this returns a `pck_live_` key you keep as a server secret:
+### b. Generate the provisioning secret
+Per-user agents are provisioned on demand by the webapp's
+`POST /api/v1/agents/connector/provision` route; the server authenticates to it
+with a shared secret (set the SAME value as `MCP_PROVISION_SECRET` in the
+webapp's Vercel env):
 
 ```bash
-curl -X POST https://api.productclank.com/api/v1/agents/register \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"Claude Connector","description":"ProductClank MCP server for Claude"}'
+openssl rand -hex 32
 ```
 
-Then promote it to trusted (see `sql/setup-trusted-agent.sql`) using the returned
-`agent.id`:
-
-```sql
-update public."Agent"
-set trusted = true, rate_limit_daily = 100000
-where id = '<agent_id>';
-```
 
 ### c. Generate the shared grant secret
 ```bash
@@ -63,7 +57,7 @@ webapp (`MCP_GRANT_SECRET`). They must match.
    | `OAUTH_ISSUER` | `https://mcp.productclank.com` |
    | `PRODUCTCLANK_API_URL` | `https://api.productclank.com/api/v1` |
    | `PRODUCTCLANK_WEBAPP_URL` | `https://app.productclank.com` |
-   | `PRODUCTCLANK_TRUSTED_KEY` | the `pck_live_` key from step 0b |
+   | `MCP_PROVISION_SECRET` | shared secret for the webapp's `/agents/connector/provision` route (must match the webapp env; `openssl rand -hex 32`) |
    | `SUPABASE_URL` | prod Supabase URL |
    | `SUPABASE_SERVICE_ROLE_KEY` | prod service-role key |
    | `MCP_GRANT_SECRET` | the secret from step 0c |
@@ -129,9 +123,8 @@ post. Confirm the campaign appears in the user's **My Campaigns** on the webapp.
 ---
 
 ## Known MVP limitations (tracked follow-ups)
-- **Shared rate limit.** The daily campaign cap is per-agent; all users share the
-  one trusted agent, hence `rate_limit_daily = 100000`. Per-user limiting needs
-  the boost route to rate-limit by `caller_user_id`.
+- ~~Shared rate limit~~ — RESOLVED in v0.8.0: each user has their own agent
+  (`rate_limit_daily` 50/day, campaign creates + participation submissions).
 - **Single instance.** MCP transport sessions are in-memory — run one instance.
   OAuth tokens ARE persisted (Supabase), so a redeploy does not sign users out.
 - **Supabase login required.** Identity is derived from the Supabase session;

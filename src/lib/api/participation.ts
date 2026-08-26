@@ -2,7 +2,8 @@
  * Participation — the connected user EARNS by doing campaign work.
  *
  * Wraps /agents/participate/** — feed (free), submit (earns points/credits),
- * earnings (free). Submissions are attributed to caller_user_id: the backend
+ * earnings (free). Submissions are attributed to the acting user via their
+ * own per-user agent key: the backend
  * author-matches the posted reply against THAT user's linked X handle
  * (UserSocial.twitter) and awards points/credits to them.
  */
@@ -41,6 +42,7 @@ export interface FeedPost {
 /** `matching` = what the page returned after filtering; `total` counts posts
  *  with any unclaimed reply and is an upper bound. */
 export function getParticipationFeed(params: {
+  callerUserId: string;
   limit?: number;
   offset?: number;
   campaignId?: string;
@@ -52,7 +54,9 @@ export function getParticipationFeed(params: {
   if (params.campaignId) qs.set("campaignId", params.campaignId);
   if (params.actionType) qs.set("actionType", params.actionType);
   const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
-  return request(`/agents/participate/feed${suffix}`, { method: "GET" });
+  return request(params.callerUserId, `/agents/participate/feed${suffix}`, {
+    method: "GET",
+  });
 }
 
 export function submitParticipation(params: {
@@ -66,10 +70,9 @@ export function submitParticipation(params: {
   pointsAwarded?: number;
   creditsAwarded?: number;
 }> {
-  return request("/agents/participate/submit", {
+  return request(params.callerUserId, "/agents/participate/submit", {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       replyId: params.replyId,
       replyUrl: params.replyUrl,
     }),
@@ -93,8 +96,8 @@ export interface EarningsResult {
 export function getEarnings(params: {
   callerUserId: string;
 }): Promise<EarningsResult> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
-  return request(`/agents/participate/earnings?${qs.toString()}`, { method: "GET" });
+  const qs = new URLSearchParams();
+  return request(params.callerUserId, `/agents/participate/earnings?${qs.toString()}`, { method: "GET" });
 }
 
 export function getCreditHistory(params: {
@@ -102,10 +105,10 @@ export function getCreditHistory(params: {
   limit?: number;
   offset?: number;
 }): Promise<{ success: boolean; transactions: unknown[]; total: number }> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  const qs = new URLSearchParams();
   if (params.limit != null) qs.set("limit", String(params.limit));
   if (params.offset != null) qs.set("offset", String(params.offset));
-  return request(`/agents/credits/history?${qs.toString()}`, { method: "GET" });
+  return request(params.callerUserId, `/agents/credits/history?${qs.toString()}`, { method: "GET" });
 }
 
 // ── Content / take-action campaign participation ────────────────────────────
@@ -134,10 +137,10 @@ export function listOpenCampaigns(params: {
   limit?: number;
   kind?: "content" | "take_action";
 }): Promise<{ success: boolean; campaigns: OpenCampaign[]; total: number }> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  const qs = new URLSearchParams();
   if (params.limit != null) qs.set("limit", String(params.limit));
   if (params.kind) qs.set("kind", params.kind);
-  return request(`/agents/participate/campaigns?${qs.toString()}`, { method: "GET" });
+  return request(params.callerUserId, `/agents/participate/campaigns?${qs.toString()}`, { method: "GET" });
 }
 
 export function getCampaignBrief(params: {
@@ -148,8 +151,8 @@ export function getCampaignBrief(params: {
   campaign: Record<string, unknown>;
   my_participation: { submissions_used: number; submissions_allowed: number };
 }> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
-  return request(`/agents/participate/campaigns/${params.campaignId}?${qs.toString()}`, {
+  const qs = new URLSearchParams();
+  return request(params.callerUserId, `/agents/participate/campaigns/${params.campaignId}?${qs.toString()}`, {
     method: "GET",
   });
 }
@@ -166,10 +169,9 @@ export function submitCampaignWork(params: {
   success: boolean;
   data: { submission: Record<string, unknown>; message: string };
 }> {
-  return request(`/agents/participate/campaigns/${params.campaignId}/submissions`, {
+  return request(params.callerUserId, `/agents/participate/campaigns/${params.campaignId}/submissions`, {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       ...(params.castUrl ? { cast_url: params.castUrl } : {}),
       ...(params.mediaUrl ? { media_url: params.mediaUrl } : {}),
       ...(params.description ? { description: params.description } : {}),
@@ -181,8 +183,8 @@ export function getMyCampaignSubmissions(params: {
   callerUserId: string;
   campaignId: string;
 }): Promise<{ success: boolean; submissions: unknown[]; total: number }> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
-  return request(
+  const qs = new URLSearchParams();
+  return request(params.callerUserId, 
     `/agents/participate/campaigns/${params.campaignId}/my-submissions?${qs.toString()}`,
     { method: "GET" }
   );

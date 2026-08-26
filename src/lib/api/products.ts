@@ -17,11 +17,14 @@ export interface ProductSearchResult {
 }
 
 export function searchProducts(
+  callerUserId: string,
   query: string,
   limit: number
 ): Promise<ProductSearchResult> {
   const qs = new URLSearchParams({ q: query, limit: String(limit) });
-  return request(`/agents/products/search?${qs.toString()}`, { method: "GET" });
+  return request(callerUserId, `/agents/products/search?${qs.toString()}`, {
+    method: "GET",
+  });
 }
 
 export interface CreateProductParams {
@@ -63,10 +66,9 @@ export function createProduct(
   params: CreateProductParams
 ): Promise<CreateProductResult> {
   const { callerUserId, ...rest } = params;
-  return request("/agents/products", {
+  return request(callerUserId, "/agents/products", {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: callerUserId,
       ...(rest.url ? { url: rest.url } : {}),
       ...(rest.name ? { name: rest.name } : {}),
       ...(rest.tagline ? { tagline: rest.tagline } : {}),

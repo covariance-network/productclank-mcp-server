@@ -34,6 +34,7 @@ export function registerParticipationTools(server: McpServer): void {
         // which this connector has no way to produce. Every reply platform is
         // fair game — attribution runs off the user's linked handle.
         const result = await api.getParticipationFeed({
+          callerUserId: userId,
           limit,
           offset,
           campaignId: campaign_id,

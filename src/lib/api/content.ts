@@ -80,7 +80,6 @@ export interface CreateContentCampaignResult {
 
 function buildBody(params: ContentCampaignParams, dryRun: boolean) {
   return {
-    caller_user_id: params.callerUserId,
     product_id: params.productId,
     campaign_message: params.campaignMessage,
     dry_run: dryRun,
@@ -98,7 +97,7 @@ function buildBody(params: ContentCampaignParams, dryRun: boolean) {
 export function composeContentCampaign(
   params: ContentCampaignParams
 ): Promise<ComposeContentCampaignResult> {
-  return request("/agents/campaigns/content", {
+  return request(params.callerUserId, "/agents/campaigns/content", {
     method: "POST",
     body: JSON.stringify(buildBody(params, true)),
   });
@@ -108,7 +107,7 @@ export function composeContentCampaign(
 export function createContentCampaign(
   params: ContentCampaignParams
 ): Promise<CreateContentCampaignResult> {
-  return request("/agents/campaigns/content", {
+  return request(params.callerUserId, "/agents/campaigns/content", {
     method: "POST",
     body: JSON.stringify(buildBody(params, false)),
   });

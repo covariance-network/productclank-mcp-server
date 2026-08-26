@@ -27,9 +27,10 @@ export function registerProductTools(server: McpServer): void {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ query, limit }, extra) => {
-      if (!getUserId(extra as ToolExtra)) return errorResult(NOT_AUTHED);
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
       try {
-        const result = await api.searchProducts(query, limit ?? 5);
+        const result = await api.searchProducts(userId, query, limit ?? 5);
         return textResult(result.products ?? []);
       } catch (error) {
         return errorResult(
