@@ -195,14 +195,14 @@ export function registerCampaignTools(server: McpServer): void {
           .max(25)
           .optional()
           .describe(
-            "Reddit only. Subreddits to rotate through, with or without the 'r/' prefix. Omit to search all of Reddit. Note Reddit allows at most one posted reply per subreddit per day, so breadth beats depth here."
+            "Reddit only, and enforced server-side: sending this on a non-Reddit campaign is REJECTED with an error, never silently ignored. Subreddits to rotate through, with or without the 'r/' prefix. Omit to search all of Reddit. Note Reddit allows at most one posted reply per subreddit per day, so breadth beats depth here."
           ),
         target_youtube_channels: z
           .array(z.string())
           .max(25)
           .optional()
           .describe(
-            "YouTube only. Channel handles, ids or URLs to pull recent videos from, alongside the keyword search. Omit for keyword search alone."
+            "YouTube only, and enforced server-side: sending this on a non-YouTube campaign is REJECTED with an error, never silently ignored. Channel handles, ids or URLs to pull recent videos from, alongside the keyword search. Omit for keyword search alone."
           ),
         visibility: z
           .enum(["public", "private"])
@@ -607,12 +607,12 @@ export function registerCampaignTools(server: McpServer): void {
           .array(z.string())
           .max(25)
           .optional()
-          .describe("Reddit only. Replaces the list; [] clears it and searches all of Reddit."),
+          .describe("Reddit only, enforced server-side — sending it on a non-Reddit campaign is REJECTED, not ignored. REPLACES the list rather than appending; [] clears it and searches all of Reddit. To add one, read the current list with get_campaign first and send the full merged list."),
         target_youtube_channels: z
           .array(z.string())
           .max(25)
           .optional()
-          .describe("YouTube only. Replaces the list; [] clears it and runs keyword search alone."),
+          .describe("YouTube only, enforced server-side — sending it on a non-YouTube campaign is REJECTED, not ignored. REPLACES the list rather than appending; [] clears it and runs keyword search alone. To add one, read the current list with get_campaign first and send the full merged list."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
