@@ -15,7 +15,7 @@ function optional(name: string, fallback: string): string {
  * Server version — reported over MCP (`initialize`), on /health, and as a
  * property on every analytics event. Keep in sync with package.json.
  */
-export const SERVER_VERSION = "0.8.0";
+export const SERVER_VERSION = "0.8.1";
 
 const issuer = optional(
   "OAUTH_ISSUER",
