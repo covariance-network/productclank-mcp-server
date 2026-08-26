@@ -15,7 +15,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
 const MAX_CANDIDATES = 25;
 
@@ -59,9 +59,7 @@ export function registerContentStudioTools(server: McpServer): void {
               : "Pick the space_id the user wants, then call write_content_candidates.",
         });
       } catch (error) {
-        return errorResult(
-          error instanceof Error ? error.message : "Failed to list content spaces"
-        );
+        return toolError(error, "Failed to list content spaces");
       }
     }
   );
@@ -101,9 +99,7 @@ export function registerContentStudioTools(server: McpServer): void {
         });
       } catch (error) {
         // Surface actionable API errors (403 not your space, 404 content not enabled) verbatim.
-        return errorResult(
-          error instanceof Error ? error.message : "Failed to write content candidates"
-        );
+        return toolError(error, "Failed to write content candidates");
       }
     }
   );

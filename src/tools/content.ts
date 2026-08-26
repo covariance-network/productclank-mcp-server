@@ -17,6 +17,7 @@ import {
   getUserId,
   textResult,
   errorResult,
+  toolError,
   NOT_AUTHED,
   type ToolExtra,
   type DecisionOffer,
@@ -137,9 +138,7 @@ export function registerContentTools(server: McpServer): void {
           ),
         });
       } catch (error) {
-        return errorResult(
-          error instanceof Error ? error.message : "Content-campaign preview failed"
-        );
+        return toolError(error, "Content-campaign preview failed");
       }
     }
   );
@@ -181,9 +180,7 @@ export function registerContentTools(server: McpServer): void {
         });
       } catch (error) {
         // Surface actionable API errors (e.g. insufficient credits) verbatim.
-        return errorResult(
-          error instanceof Error ? error.message : "Content-campaign launch failed"
-        );
+        return toolError(error, "Content-campaign launch failed");
       }
     }
   );

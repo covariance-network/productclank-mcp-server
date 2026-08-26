@@ -5,7 +5,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
 export function registerCreditTools(server: McpServer): void {
   server.registerTool(
@@ -24,9 +24,7 @@ export function registerCreditTools(server: McpServer): void {
         const { balance, plan } = await api.getCreditBalance(userId);
         return textResult({ balance, plan });
       } catch (error) {
-        return errorResult(
-          error instanceof Error ? error.message : "Balance lookup failed"
-        );
+        return toolError(error, "Balance lookup failed");
       }
     }
   );
@@ -50,9 +48,7 @@ export function registerCreditTools(server: McpServer): void {
         const result = await api.getCreditHistory({ callerUserId: userId, limit, offset });
         return textResult({ transactions: result.transactions, total: result.total });
       } catch (error) {
-        return errorResult(
-          error instanceof Error ? error.message : "History lookup failed"
-        );
+        return toolError(error, "History lookup failed");
       }
     }
   );
