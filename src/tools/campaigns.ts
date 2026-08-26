@@ -258,7 +258,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "List the user's campaigns",
       description:
-        "List discovery/boost campaigns the connected user created through this connector, newest first. Free. Use to find a campaign id before get_campaign / generate_posts / get_posts.",
+        "List ALL the connected user's discovery/boost campaigns, newest first — including ones created in the ProductClank web app, not just via this connector. Free. Use to find a campaign id before get_campaign / generate_posts / get_posts.",
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 20"),
         offset: z.number().int().min(0).optional(),
@@ -595,7 +595,13 @@ export function registerCampaignTools(server: McpServer): void {
           .enum(["public", "private"])
           .optional()
           .describe(
-            "Who posts the drafted replies. private = the user posts them from the workbench; public = the community earn feed distributes them and members post them, billing the user per posted reply. Ask first."
+            "Who posts the drafted replies. private = the user posts them from the workbench; public = the community earn feed distributes them and members post them, billing the user per posted reply. Flipping to public REQUIRES confirm: true — ask the user first, then pass it."
+          ),
+        confirm: z
+          .boolean()
+          .optional()
+          .describe(
+            "Required (true) when setting visibility to public — confirms the user agreed to community distribution and per-posted-reply billing. Without it the API returns confirmation_required."
           ),
         platform: z
           .enum(["twitter", "linkedin", "reddit", "youtube"])
@@ -630,6 +636,7 @@ export function registerCampaignTools(server: McpServer): void {
           relevanceThreshold: args.relevance_threshold,
           isActive: args.is_active,
           visibility: args.visibility,
+          confirm: args.confirm,
           platform: args.platform,
           targetSubreddits: args.target_subreddits,
           targetYoutubeChannels: args.target_youtube_channels,
