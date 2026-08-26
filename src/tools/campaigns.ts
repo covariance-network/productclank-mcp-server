@@ -79,6 +79,7 @@ import {
   getUserId,
   textResult,
   errorResult,
+  toolError,
   NOT_AUTHED,
   type ToolExtra,
   type DecisionOffer,
@@ -283,7 +284,7 @@ export function registerCampaignTools(server: McpServer): void {
           ),
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign creation failed");
+        return toolError(error, "Campaign creation failed");
       }
     }
   );
@@ -308,7 +309,7 @@ export function registerCampaignTools(server: McpServer): void {
         const result = await api.listCampaigns({ callerUserId: userId, limit, offset, status });
         return textResult({ campaigns: result.campaigns, total: result.total });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Listing campaigns failed");
+        return toolError(error, "Listing campaigns failed");
       }
     }
   );
@@ -331,7 +332,7 @@ export function registerCampaignTools(server: McpServer): void {
         const result = await api.getCampaign({ callerUserId: userId, campaignId: campaign_id });
         return textResult({ campaign: result.campaign, stats: result.stats });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign fetch failed");
+        return toolError(error, "Campaign fetch failed");
       }
     }
   );
@@ -356,7 +357,7 @@ export function registerCampaignTools(server: McpServer): void {
           await api.runResearch({ callerUserId: userId, campaignId: campaign_id, force })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Research failed");
+        return toolError(error, "Research failed");
       }
     }
   );
@@ -378,7 +379,7 @@ export function registerCampaignTools(server: McpServer): void {
           await api.getResearch({ callerUserId: userId, campaignId: campaign_id })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Research fetch failed");
+        return toolError(error, "Research fetch failed");
       }
     }
   );
@@ -426,7 +427,7 @@ export function registerCampaignTools(server: McpServer): void {
           ...offer,
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Post generation failed");
+        return toolError(error, "Post generation failed");
       }
     }
   );
@@ -461,7 +462,7 @@ export function registerCampaignTools(server: McpServer): void {
           })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Posts fetch failed");
+        return toolError(error, "Posts fetch failed");
       }
     }
   );
@@ -506,7 +507,7 @@ export function registerCampaignTools(server: McpServer): void {
             })
           : textResult(result);
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Post review failed");
+        return toolError(error, "Post review failed");
       }
     }
   );
@@ -537,7 +538,7 @@ export function registerCampaignTools(server: McpServer): void {
           })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Reply regeneration failed");
+        return toolError(error, "Reply regeneration failed");
       }
     }
   );
@@ -578,7 +579,7 @@ export function registerCampaignTools(server: McpServer): void {
             "Pass `checked_at` back as `since` next time so this stays a running log rather than a repeat.",
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Activity fetch failed");
+        return toolError(error, "Activity fetch failed");
       }
     }
   );
@@ -611,7 +612,7 @@ export function registerCampaignTools(server: McpServer): void {
             "approval_rate is over judged replies only (see approval_sample); survival_rate is null until enough replies were checked; engagement covers only swept replies. A removed reply is usually a moderator decision, not fraud.",
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Results fetch failed");
+        return toolError(error, "Results fetch failed");
       }
     }
   );
@@ -737,7 +738,7 @@ export function registerCampaignTools(server: McpServer): void {
             : {}),
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign update failed");
+        return toolError(error, "Campaign update failed");
       }
     }
   );
@@ -856,13 +857,14 @@ export function registerCampaignTools(server: McpServer): void {
           });
         }
         if (error instanceof ApiError && error.status === 429) {
+          // A cap doing its job, not a fault — tagged so it never lands in the
+          // failure metric, and so "how often do users hit their cap" is visible.
           return errorResult(
-            `${error.message} Nothing was scheduled. Either propose a smaller schedule, or ask the user to raise the limit for this app under Profile → Connected Apps.`
+            `${error.message} Nothing was scheduled. Either propose a smaller schedule, or ask the user to raise the limit for this app under Profile → Connected Apps.`,
+            { outcome: "refused", reason_code: "daily_spend_cap_exceeded" }
           );
         }
-        return errorResult(
-          error instanceof Error ? error.message : "Setting the schedule failed"
-        );
+        return toolError(error, "Setting the schedule failed");
       }
     }
   );
@@ -887,7 +889,7 @@ export function registerCampaignTools(server: McpServer): void {
           await api.addDelegate({ callerUserId: userId, campaignId: campaign_id, userId: user_id })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Adding delegate failed");
+        return toolError(error, "Adding delegate failed");
       }
     }
   );

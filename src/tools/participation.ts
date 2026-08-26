@@ -10,7 +10,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
 export function registerParticipationTools(server: McpServer): void {
   server.registerTool(
@@ -56,7 +56,7 @@ export function registerParticipationTools(server: McpServer): void {
             : {}),
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Feed fetch failed");
+        return toolError(error, "Feed fetch failed");
       }
     }
   );
@@ -89,7 +89,7 @@ export function registerParticipationTools(server: McpServer): void {
           next_step: "Call get_earnings to see the user's running totals.",
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Submission failed");
+        return toolError(error, "Submission failed");
       }
     }
   );
@@ -113,7 +113,7 @@ export function registerParticipationTools(server: McpServer): void {
         const result = await api.listOpenCampaigns({ callerUserId: userId, limit, kind });
         return textResult({ campaigns: result.campaigns, total: result.total });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign discovery failed");
+        return toolError(error, "Campaign discovery failed");
       }
     }
   );
@@ -135,7 +135,7 @@ export function registerParticipationTools(server: McpServer): void {
       try {
         return textResult(await api.getCampaignBrief({ callerUserId: userId, campaignId: campaign_id }));
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Brief fetch failed");
+        return toolError(error, "Brief fetch failed");
       }
     }
   );
@@ -181,7 +181,7 @@ export function registerParticipationTools(server: McpServer): void {
         });
         return textResult(result.data);
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Submission failed");
+        return toolError(error, "Submission failed");
       }
     }
   );
@@ -203,7 +203,7 @@ export function registerParticipationTools(server: McpServer): void {
           await api.getMyCampaignSubmissions({ callerUserId: userId, campaignId: campaign_id })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Status fetch failed");
+        return toolError(error, "Status fetch failed");
       }
     }
   );
@@ -228,7 +228,7 @@ export function registerParticipationTools(server: McpServer): void {
           replies: result.replies,
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Earnings fetch failed");
+        return toolError(error, "Earnings fetch failed");
       }
     }
   );

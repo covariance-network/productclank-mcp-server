@@ -5,7 +5,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
 export function registerProductTools(server: McpServer): void {
   server.registerTool(
@@ -33,9 +33,7 @@ export function registerProductTools(server: McpServer): void {
         const result = await api.searchProducts(userId, query, limit ?? 5);
         return textResult(result.products ?? []);
       } catch (error) {
-        return errorResult(
-          error instanceof Error ? error.message : "Product search failed"
-        );
+        return toolError(error, "Product search failed");
       }
     }
   );
@@ -129,9 +127,7 @@ export function registerProductTools(server: McpServer): void {
           already_listed: result.already_listed,
         });
       } catch (error) {
-        return errorResult(
-          error instanceof Error ? error.message : "Product listing failed"
-        );
+        return toolError(error, "Product listing failed");
       }
     }
   );
