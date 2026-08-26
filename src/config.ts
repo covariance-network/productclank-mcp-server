@@ -1,7 +1,7 @@
 /**
  * Environment configuration for the ProductClank MCP server.
  *
- * Runtime-critical secrets (Supabase, trusted key, grant secret) are validated
+ * Runtime-critical secrets (Supabase, provision secret, grant secret) are validated
  * lazily via assertRuntimeConfig() at server startup, so tooling (tsc, lint) can
  * import this module without a fully-populated environment.
  */
@@ -15,7 +15,7 @@ function optional(name: string, fallback: string): string {
  * Server version — reported over MCP (`initialize`), on /health, and as a
  * property on every analytics event. Keep in sync with package.json.
  */
-export const SERVER_VERSION = "0.7.0";
+export const SERVER_VERSION = "0.8.0";
 
 const issuer = optional(
   "OAUTH_ISSUER",
@@ -33,7 +33,13 @@ export const config = {
 
   supabaseUrl: process.env.SUPABASE_URL ?? "",
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
-  trustedApiKey: process.env.PRODUCTCLANK_TRUSTED_KEY ?? "",
+  /**
+   * Auth for the webapp's POST /agents/connector/provision route — the ONLY
+   * standing upstream secret this server holds. It can provision per-user
+   * connector agents; it is NOT an agent key and cannot act as one. Replaced
+   * PRODUCTCLANK_TRUSTED_KEY in the per-user-agents migration (v0.8.0).
+   */
+  provisionSecret: process.env.MCP_PROVISION_SECRET ?? "",
   grantSecret: process.env.MCP_GRANT_SECRET ?? "",
 
   oauth: {
@@ -92,7 +98,7 @@ export function assertRuntimeConfig(): void {
   const missing: string[] = [];
   if (!config.supabaseUrl) missing.push("SUPABASE_URL");
   if (!config.supabaseServiceRoleKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
-  if (!config.trustedApiKey) missing.push("PRODUCTCLANK_TRUSTED_KEY");
+  if (!config.provisionSecret) missing.push("MCP_PROVISION_SECRET");
   if (!config.grantSecret) missing.push("MCP_GRANT_SECRET");
   if (missing.length > 0) {
     throw new Error(

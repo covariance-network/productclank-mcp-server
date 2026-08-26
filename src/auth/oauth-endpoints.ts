@@ -15,7 +15,7 @@ import { config } from "../config.js";
 import * as store from "./store.js";
 import { verifyGrant } from "../lib/grant.js";
 import { track } from "../lib/analytics.js";
-import * as api from "../lib/api/index.js";
+import { provisionUserAgent } from "../lib/api/keys.js";
 
 function isLoopback(uri: string): boolean {
   try {
@@ -226,11 +226,13 @@ export function createOAuthEndpoints(): Router {
         return;
       }
 
-      // Ensure the trusted connector agent is authorized to bill this user.
+      // Provision (or re-activate) this user's own per-user connector agent —
+      // consent mode: a human just approved, so a revoked connector may be
+      // reactivated and its key rotated. Also warms the key cache.
       try {
-        await api.authorizeUser(userId);
+        await provisionUserAgent(userId);
       } catch (error) {
-        console.error("[oauth/callback] authorizeUser failed", error);
+        console.error("[oauth/callback] provisionUserAgent failed", error);
         redirectError(
           res,
           login.redirectUri,

@@ -31,10 +31,9 @@ export interface BoostResult {
 }
 
 export function boostPost(params: BoostParams): Promise<BoostResult> {
-  return request("/agents/campaigns/boost", {
+  return request(params.callerUserId, "/agents/campaigns/boost", {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       post_url: params.postUrl,
       ...(params.productId ? { product_id: params.productId } : {}),
       action_type: params.actionType,

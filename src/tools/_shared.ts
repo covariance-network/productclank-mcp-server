@@ -3,8 +3,9 @@
  *
  * The connected user's ProductClank id is resolved from the OAuth access token
  * by the requireBearerAuth middleware and surfaces at
- * `extra.authInfo.extra.userId`. Every write bills that user's own credits via
- * the trusted-agent `caller_user_id` path.
+ * `extra.authInfo.extra.userId`. Every call authenticates upstream as that
+ * user's own per-user agent (lib/api/keys.ts), so billing and access scope
+ * come from the key itself.
  */
 
 export interface ToolExtra {

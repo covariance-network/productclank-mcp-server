@@ -7,7 +7,8 @@
  */
 
 export { ApiError, request } from "./client.js";
-export * from "./authorize.js";
+export * from "./keys.js";
+export * from "./credits.js";
 export * from "./products.js";
 export * from "./boost.js";
 export * from "./content.js";

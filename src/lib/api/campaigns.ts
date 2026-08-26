@@ -4,8 +4,8 @@
  * Wraps /agents/campaigns/** — create (10 cr), list/get/posts (free),
  * research (free, cached 7 days), generate-posts (12 cr/post),
  * review-posts (2 cr/post), regenerate-replies (5 cr/reply), delegates (free).
- * Every call passes caller_user_id: the backend scopes trusted-agent campaigns
- * per user (creator_id), so one connector user can never touch another's.
+ * Every call authenticates as the acting user's own per-user agent (see
+ * client.ts) — the key itself scopes access; no caller_user_id is sent.
  */
 
 import { request } from "./client.js";
@@ -64,10 +64,9 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
   targeting_notes?: string[];
   next_step?: unknown;
 }> {
-  return request("/agents/campaigns", {
+  return request(params.callerUserId, "/agents/campaigns", {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       product_id: params.productId,
       title: params.title,
       keywords: params.keywords,
@@ -95,19 +94,19 @@ export function listCampaigns(params: {
   offset?: number;
   status?: string;
 }): Promise<{ success: boolean; campaigns: CampaignSummary[]; total: number }> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  const qs = new URLSearchParams();
   if (params.limit != null) qs.set("limit", String(params.limit));
   if (params.offset != null) qs.set("offset", String(params.offset));
   if (params.status) qs.set("status", params.status);
-  return request(`/agents/campaigns?${qs.toString()}`, { method: "GET" });
+  return request(params.callerUserId, `/agents/campaigns?${qs.toString()}`, { method: "GET" });
 }
 
 export function getCampaign(params: {
   callerUserId: string;
   campaignId: string;
 }): Promise<{ success: boolean; campaign: Record<string, unknown>; stats: Record<string, unknown> }> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
-  return request(`/agents/campaigns/${params.campaignId}?${qs.toString()}`, { method: "GET" });
+  const qs = new URLSearchParams();
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}?${qs.toString()}`, { method: "GET" });
 }
 
 export function getPosts(params: {
@@ -118,21 +117,21 @@ export function getPosts(params: {
   status?: string;
   includeReplies?: boolean;
 }): Promise<{ success: boolean; posts: unknown[]; total: number }> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  const qs = new URLSearchParams();
   if (params.limit != null) qs.set("limit", String(params.limit));
   if (params.offset != null) qs.set("offset", String(params.offset));
   if (params.status) qs.set("status", params.status);
   if (params.includeReplies === false) qs.set("include_replies", "false");
-  return request(`/agents/campaigns/${params.campaignId}/posts?${qs.toString()}`, { method: "GET" });
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/posts?${qs.toString()}`, { method: "GET" });
 }
 
 export function generatePosts(params: {
   callerUserId: string;
   campaignId: string;
 }): Promise<Record<string, unknown>> {
-  return request(`/agents/campaigns/${params.campaignId}/generate-posts`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/generate-posts`, {
     method: "POST",
-    body: JSON.stringify({ caller_user_id: params.callerUserId }),
+    body: JSON.stringify({}),
   });
 }
 
@@ -154,10 +153,9 @@ export function runResearch(params: {
   campaignId: string;
   force?: boolean;
 }): Promise<ResearchResponse> {
-  return request(`/agents/campaigns/${params.campaignId}/research`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/research`, {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       ...(params.force ? { force: true } : {}),
     }),
   });
@@ -167,8 +165,8 @@ export function getResearch(params: {
   callerUserId: string;
   campaignId: string;
 }): Promise<ResearchResponse> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
-  return request(`/agents/campaigns/${params.campaignId}/research?${qs.toString()}`, { method: "GET" });
+  const qs = new URLSearchParams();
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/research?${qs.toString()}`, { method: "GET" });
 }
 
 export function reviewPosts(params: {
@@ -179,10 +177,9 @@ export function reviewPosts(params: {
   dryRun?: boolean;
   saveRules?: boolean;
 }): Promise<Record<string, unknown>> {
-  return request(`/agents/campaigns/${params.campaignId}/review-posts`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/review-posts`, {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       ...(params.reviewRules ? { review_rules: params.reviewRules } : {}),
       ...(params.threshold != null ? { threshold: params.threshold } : {}),
       dry_run: params.dryRun ?? false,
@@ -199,10 +196,9 @@ export function regenerateReplies(params: {
   applyToSystemPrompt?: boolean;
   newReplyGuidelines?: string;
 }): Promise<Record<string, unknown>> {
-  return request(`/agents/campaigns/${params.campaignId}/regenerate-replies`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/regenerate-replies`, {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       post_ids: params.postIds,
       edit_request: params.editRequest,
       ...(params.applyToSystemPrompt ? { apply_to_system_prompt: true } : {}),
@@ -216,10 +212,9 @@ export function addDelegate(params: {
   campaignId: string;
   userId: string;
 }): Promise<{ success: boolean; message?: string }> {
-  return request(`/agents/campaigns/${params.campaignId}/delegates`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/delegates`, {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       user_id: params.userId,
     }),
   });
@@ -257,10 +252,9 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
   targeting_notes?: string[];
   next_step?: string;
 }> {
-  return request(`/agents/campaigns/${params.campaignId}`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       ...(params.addKeywords ? { add_keywords: params.addKeywords } : {}),
       ...(params.removeKeywords ? { remove_keywords: params.removeKeywords } : {}),
       ...(params.sources ? { sources: params.sources } : {}),
@@ -305,10 +299,10 @@ export function getCampaignActivity(params: {
   since?: string;
   limit?: number;
 }): Promise<CampaignActivity> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
+  const qs = new URLSearchParams();
   if (params.since) qs.set("since", params.since);
   if (params.limit != null) qs.set("limit", String(params.limit));
-  return request(`/agents/campaigns/${params.campaignId}/activity?${qs.toString()}`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/activity?${qs.toString()}`, {
     method: "GET",
   });
 }
@@ -335,8 +329,8 @@ export function getCampaignResults(params: {
   callerUserId: string;
   campaignId: string;
 }): Promise<CampaignResults> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
-  return request(`/agents/campaigns/${params.campaignId}/results?${qs.toString()}`, {
+  const qs = new URLSearchParams();
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/results?${qs.toString()}`, {
     method: "GET",
   });
 }
@@ -392,8 +386,8 @@ export function getCampaignSchedule(params: {
   callerUserId: string;
   campaignId: string;
 }): Promise<CampaignScheduleResponse> {
-  const qs = new URLSearchParams({ caller_user_id: params.callerUserId });
-  return request(`/agents/campaigns/${params.campaignId}/schedule?${qs.toString()}`, {
+  const qs = new URLSearchParams();
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/schedule?${qs.toString()}`, {
     method: "GET",
   });
 }
@@ -407,10 +401,9 @@ export function setCampaignSchedule(params: {
   /** Must be true to ENABLE. Never send it unless the user actually said yes. */
   confirm?: boolean;
 }): Promise<CampaignScheduleResponse> {
-  return request(`/agents/campaigns/${params.campaignId}/schedule`, {
+  return request(params.callerUserId, `/agents/campaigns/${params.campaignId}/schedule`, {
     method: "PUT",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       enabled: params.enabled,
       ...(params.frequencyPerDay != null
         ? { frequency_per_day: params.frequencyPerDay }

@@ -1,9 +1,12 @@
 /**
  * Base transport for the ProductClank Agent REST API.
  *
- * Every call authenticates with the server's single *trusted* agent key
- * (PRODUCTCLANK_TRUSTED_KEY) and bills the end user via `caller_user_id`. The
- * trusted key is a server secret — it is never exposed to Claude or to users.
+ * Every call authenticates as the ACTING USER's own per-user agent — a
+ * non-trusted Agent row bound to that user, whose key is resolved via
+ * ./keys.ts (in-memory cache → provisioning route). There is no shared
+ * upstream credential anymore, and no `caller_user_id` field: identity comes
+ * entirely from the per-user key (the backend 403s a non-trusted agent that
+ * sends caller_user_id). See app repo docs/plans/mcp-per-user-agents.md.
  *
  * Per-domain request functions live alongside this file (products.ts, boost.ts,
  * content.ts, …) and are re-exported from ./index.ts. To add an endpoint: add a
@@ -37,14 +40,17 @@ export class ApiError extends Error {
   }
 }
 
-export async function request<T>(path: string, init: RequestInit): Promise<T> {
-  let res: Response;
+async function doFetch(
+  apiKey: string,
+  path: string,
+  init: RequestInit
+): Promise<Response> {
   try {
-    res = await fetch(`${BASE}${path}`, {
+    return await fetch(`${BASE}${path}`, {
       ...init,
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: {
-        Authorization: `Bearer ${config.trustedApiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         ...(init.headers as Record<string, string> | undefined),
       },
@@ -58,6 +64,33 @@ export async function request<T>(path: string, init: RequestInit): Promise<T> {
       );
     }
     throw error;
+  }
+}
+
+/**
+ * Perform an upstream request as `userId`.
+ *
+ * A 401 usually means the cached key went stale (rotated on consent-after-
+ * revoke, or re-minted server-side), so the key is dropped and re-fetched
+ * once; a second 401 is surfaced. A revoked user surfaces as a 403 from the
+ * key fetch itself, with a reconnect hint the assistant can relay.
+ */
+export async function request<T>(
+  userId: string,
+  path: string,
+  init: RequestInit
+): Promise<T> {
+  // Dynamic import breaks the module cycle (keys.ts imports ApiError from
+  // this file); Node caches it after the first call, so the cost is one-time.
+  const { resolveUserApiKey, invalidateUserApiKey } = await import("./keys.js");
+
+  let apiKey = await resolveUserApiKey(userId);
+  let res = await doFetch(apiKey, path, init);
+
+  if (res.status === 401) {
+    invalidateUserApiKey(userId);
+    apiKey = await resolveUserApiKey(userId);
+    res = await doFetch(apiKey, path, init);
   }
 
   const text = await res.text();

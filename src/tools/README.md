@@ -66,8 +66,10 @@ src/
 ## Adding a new tool
 
 1. **API fn** — add a typed function to the matching `src/lib/api/<domain>.ts`
-   (or create a new domain file + export it from `src/lib/api/index.ts`). Trusted
-   writes must pass `caller_user_id: userId`.
+   (or create a new domain file + export it from `src/lib/api/index.ts`). Pass the
+   acting user's id as `request()`'s first argument — the call authenticates as
+   that user's own per-user agent (no `caller_user_id` field; the backend 403s
+   non-trusted agents that send one).
 2. **Tool** — in `src/tools/<domain>.ts`, `server.registerTool(...)` inside the
    domain's `register<Domain>Tools`. Resolve the user with `getUserId(extra)`;
    return via `textResult` / `errorResult`. Set `annotations`

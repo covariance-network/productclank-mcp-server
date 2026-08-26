@@ -31,8 +31,7 @@ export interface ListContentSpacesResult {
 export function listContentSpaces(
   callerUserId: string
 ): Promise<ListContentSpacesResult> {
-  const qs = new URLSearchParams({ caller_user_id: callerUserId });
-  return request(`/agents/content/spaces?${qs.toString()}`, { method: "GET" });
+  return request(callerUserId, "/agents/content/spaces", { method: "GET" });
 }
 
 export interface ContentCandidateInput {
@@ -69,10 +68,9 @@ export interface WriteContentCandidatesResult {
 export function writeContentCandidates(
   params: WriteContentCandidatesParams
 ): Promise<WriteContentCandidatesResult> {
-  return request("/agents/content/candidates", {
+  return request(params.callerUserId, "/agents/content/candidates", {
     method: "POST",
     body: JSON.stringify({
-      caller_user_id: params.callerUserId,
       space_id: params.spaceId,
       candidates: params.candidates,
     }),
