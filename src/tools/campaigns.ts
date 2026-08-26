@@ -19,8 +19,17 @@
  * default because it is reversible and cheap, but community distribution is the
  * product's actual value — an agent that never surfaces it leaves the campaign
  * as a drafts folder.
+ *
+ * The community option carries live proof (posted-reply counts and real URLs,
+ * computed at call time) because "network members will post these" is exactly
+ * the claim a new user has no reason to believe — and the network is the one
+ * thing a plain LLM session can't replicate.
  */
-function distributionOffer(isPublic: boolean, adminUrl: string): DecisionOffer {
+function distributionOffer(
+  isPublic: boolean,
+  adminUrl: string,
+  evidence: DistributionEvidence | null
+): DecisionOffer {
   return {
     question:
       "Who posts these replies — you, or the ProductClank community?",
@@ -36,6 +45,18 @@ function distributionOffer(isPublic: boolean, adminUrl: string): DecisionOffer {
         what_happens:
           "The drafts enter the ProductClank earn feed, where network members claim them and post from their own accounts — real reach without the user doing the posting. The user reviews the proof of each posted reply in the workbench.",
         cost: "Credits per network-posted reply, on top of discovery.",
+        ...(evidence
+          ? {
+              evidence: {
+                replies_posted_by_members_last_30_days:
+                  evidence.replies_posted_last_30_days,
+                distinct_members_posting_last_7_days:
+                  evidence.distinct_posters_last_7_days,
+                recent_live_examples: evidence.live_examples,
+                note: "Live network numbers, computed just now — share them (and an example link or two) with the user so the choice is made on evidence, not on a promise.",
+              },
+            }
+          : {}),
       },
     ],
     current: isPublic
@@ -49,6 +70,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
 import { ApiError } from "../lib/api/client.js";
+import { config } from "../config.js";
+import {
+  getNetworkEvidence,
+  type DistributionEvidence,
+} from "../lib/networkEvidence.js";
 import {
   getUserId,
   textResult,
@@ -160,7 +186,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. BEFORE calling: the keywords and search_context are YOURS to derive, and deriving them well is most of the campaign's quality — actually fetch and read the product's website (and any docs or pages the user pointed at), work out who the audience is and the phrases they use when they have the problem the product solves, and build keywords + search_context from that. Do it in this conversation, for free — it is not billed, and you can iterate with the user before anything is spent. If you cannot browse the web from this client, SAY SO to the user and build from what they tell you instead — never silently guess from the product's name alone. Credits pay only for what you cannot do here: scraping the platforms, real community members posting, and proof verification. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -168,10 +194,14 @@ export function registerCampaignTools(server: McpServer): void {
           .array(z.string())
           .min(1)
           .max(20)
-          .describe("Search keywords/phrases to discover posts with (3–8 focused phrases work best)"),
+          .describe(
+            "Search keywords/phrases to discover posts with (3–8 focused phrases work best). Derive these from the product's actual site and audience — the words people use when they HAVE the problem ('CI is so slow', 'alternatives to X'), not the product's own marketing vocabulary or its name."
+          ),
         search_context: z
           .string()
-          .describe("One or two sentences on what conversations to find and why the product is relevant to them"),
+          .describe(
+            "One or two sentences on what conversations to find and why the product is relevant to them. Write it from having actually read the product's site and this conversation — who the audience is, what pain they voice, what makes the product a natural mention. This steers both discovery and the relevance gate, so a generic sentence produces generic (billed) posts."
+          ),
         mention_accounts: z
           .array(z.string())
           .optional()
@@ -234,6 +264,7 @@ export function registerCampaignTools(server: McpServer): void {
           targetYoutubeChannels: args.target_youtube_channels,
         });
         const isPublic = (args.visibility ?? "private") === "public";
+        const evidence = await getNetworkEvidence();
         return textResult({
           campaign: result.campaign,
           credits: result.credits,
@@ -246,7 +277,11 @@ export function registerCampaignTools(server: McpServer): void {
           user_note: isPublic
             ? "This campaign is PUBLIC: once posts are discovered, the drafted replies go into the ProductClank earn feed and community members can claim and post them. Each network-posted reply costs credits, and the proof of every one shows up in the workbench for review."
             : "This campaign is PRIVATE: drafted replies land in the user's workbench and nothing is posted anywhere until they post it. If they'd rather not do the posting themselves, the community can do it for them — offer the choice below.",
-          decision_offer: distributionOffer(isPublic, result.campaign.admin_url),
+          decision_offer: distributionOffer(
+            isPublic,
+            result.campaign.admin_url,
+            evidence
+          ),
         });
       } catch (error) {
         return toolError(error, "Campaign creation failed");
@@ -363,12 +398,33 @@ export function registerCampaignTools(server: McpServer): void {
       if (!userId) return errorResult(NOT_AUTHED);
       try {
         const result = await api.generatePosts({ callerUserId: userId, campaignId: campaign_id });
+        // Drafts in hand is the moment the "so what happens to these?" question
+        // actually arises — so the distribution choice (with live network
+        // proof) belongs on THIS result, not only back at create time.
+        const visibility =
+          typeof result.visibility === "string" ? result.visibility : null;
+        const adminUrl = `${config.webappUrl}/amplify/workbench/${campaign_id}`;
+        const offer =
+          visibility === "private"
+            ? {
+                decision_offer: distributionOffer(
+                  false,
+                  adminUrl,
+                  await getNetworkEvidence()
+                ),
+              }
+            : {};
         return textResult({
           ...result,
           user_note:
-            "Nothing has been posted. On a private campaign (the default here) these drafts sit in the workbench until the user posts them; on a public one they enter the community earn feed. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies before anything goes out.",
+            visibility === "public"
+              ? "This campaign is public, so these drafts are now in the community earn feed — network members can claim and post them, billing per posted reply. Read them with get_posts and prune with review_posts before the network gets to the weak ones."
+              : visibility === "private"
+                ? "Nothing has been posted. These drafts sit in the workbench until the user posts them. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies — and since the drafts now exist, this is the moment to relay the decision below: the user can post them themselves, or the community can. That half of the platform is live and measurable; the offer carries today's numbers and real links."
+                : "Nothing has been posted. On a private campaign (the default here) these drafts sit in the workbench until the user posts them; on a public one they enter the community earn feed. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies before anything goes out.",
           next_step:
             "get_posts (free) to read what was found, then review_posts with dry_run:true to see which are worth keeping.",
+          ...offer,
         });
       } catch (error) {
         return toolError(error, "Post generation failed");
@@ -675,7 +731,8 @@ export function registerCampaignTools(server: McpServer): void {
             ? {
                 decision_offer: distributionOffer(
                   (result.campaign.visibility as string) === "public",
-                  result.campaign.admin_url
+                  result.campaign.admin_url,
+                  await getNetworkEvidence()
                 ),
               }
             : {}),
