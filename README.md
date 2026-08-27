@@ -149,6 +149,10 @@ npm run build && npm start
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment (Docker / Railway) and [CAPABILITIES.md](./CAPABILITIES.md) for the tool roadmap.
 
+## Operations
+
+When a release depends on new app-repo behavior, deploy the app repo first; tools must degrade gracefully against the older API.
+
 ## Registry
 
 Published to the official MCP Registry as **`com.productclank/productclank`** — see [`server.json`](./server.json).
