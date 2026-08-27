@@ -9,7 +9,7 @@ makes adding endpoints a repeatable, low-conflict change.
 ```
 src/
 ├── lib/api/            REST client, one file per domain
-│   ├── client.ts       base transport (trusted key + request())
+│   ├── client.ts       base transport (per-user agent key resolved at request time)
 │   ├── products.ts     searchProducts, createProduct
 │   ├── boost.ts        boostPost
 │   ├── content.ts      composeContentCampaign, createContentCampaign
