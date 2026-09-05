@@ -13,7 +13,7 @@ src/
 │   ├── products.ts     searchProducts, createProduct
 │   ├── boost.ts        boostPost
 │   ├── content.ts      composeContentCampaign, createContentCampaign
-│   ├── contentStudio.ts listContentSpaces, writeContentCandidates
+│   ├── contentStudio.ts listContentSpaces, getContentWorkspace, setupContentWorkspace, list/add/update/remove/suggestContentTopics, writeContentCandidates, getContentQueue, actOnContentDraft, teachContentVoice
 │   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
@@ -25,10 +25,10 @@ src/
     ├── credits.ts      registerCreditTools        → check_balance, credit_history
     ├── boost.ts        registerBoostTools         → boost_post
     ├── content.ts      registerContentTools       → suggest_content_campaign, create_content_campaign
-    ├── contentStudio.ts registerContentStudioTools → list_content_spaces, write_content_candidates
+    ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, submit_participation, get_earnings
-    ├── playbook.ts     registerPlaybook           → grow_product prompt + productclank://capabilities resource
+    ├── playbook.ts     registerPlaybook           → grow_product + setup_content_space prompts + productclank://capabilities resource
     └── index.ts        registerTools() — composes the above
 ```
 
@@ -44,7 +44,13 @@ src/
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |
 | `create_content_campaign` | content | `POST /agents/campaigns/content` | 1000 cr |
 | `list_content_spaces` | contentStudio | `GET /agents/content/spaces` | free |
+| `get_content_workspace` | contentStudio | `GET /agents/content/workspace` | free |
+| `setup_content_space` | contentStudio | `POST /agents/content/workspace` | free (5 cr with brand_doc) |
+| `manage_content_topics` | contentStudio | `GET/POST/PATCH/DELETE /agents/content/topics`, `POST …/topics/suggest` | free |
 | `write_content_candidates` | contentStudio | `POST /agents/content/candidates` | free |
+| `get_content_queue` | contentStudio | `GET /agents/content/queue` | free |
+| `revise_content_draft` | contentStudio | `PATCH /agents/content/drafts` | free / 2 cr |
+| `teach_content_voice` | contentStudio | `POST /agents/content/feedback` | 1 cr |
 | `create_campaign` | campaigns | `POST /agents/campaigns` | 10 cr |
 | `list_campaigns` / `get_campaign` / `get_posts` | campaigns | `GET /agents/campaigns{,/{id},/{id}/posts}` | free |
 | `run_research` / `get_research` | campaigns | `POST/GET /agents/campaigns/{id}/research` | free |
