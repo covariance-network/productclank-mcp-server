@@ -79,7 +79,13 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `suggest_content_campaign` | AI-drafted preview of a community content campaign (title, description, CTA) + affordability check. Nothing is created | free |
 | `create_content_campaign` | Launch the content campaign: the community creates posts/threads/videos for your product; submissions and winner selection happen in the web app | 1,000 cr |
 | `list_content_spaces` | List the content spaces you can draft into | free |
-| `write_content_candidates` | Draft up to 25 post candidates into your space. They land as **unreviewed drafts** — a human reviews and schedules; nothing auto-publishes | free |
+| `get_content_workspace` | The brand's calibration — voice, platforms, post types, playbook, topic inventory, style guides. Read it before drafting | free |
+| `setup_content_space` | Turn content on for a brand from an onboarding chat (pair with the `setup_content_space` prompt): voice, platforms, post types, topics — can create a solo space for the brand. Also updates settings later | free by fields · 5 cr for a pasted brand doc |
+| `manage_content_topics` | The inventory of aspects the brand talks about: list / add / update / remove / suggest | free |
+| `write_content_candidates` | Draft up to 25 posts into the space, in the calibrated voice. They are auto-scored by the reviewer and wait in the queue for the user's approval; nothing auto-publishes | free |
+| `get_content_queue` | The queue as the user sees it: each draft with its score, verdict, and the reviewer's one-line fix | free |
+| `revise_content_draft` | Approve (`stage`), drop (`discard`), edit, or nudge a draft with a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — or a typed note; `fix` / `humanize` / `review` | stage · discard · edit free; rewrites & review 2 cr |
+| `teach_content_voice` | Turn a reaction into a standing rule in the brand's voice KB so every future draft honors it | 1 cr |
 
 ### Credits
 
@@ -88,9 +94,12 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `check_balance` | Your credit balance and plan | free |
 | `credit_history` | Your credit transactions (spend + rewards), newest first | free |
 
-The server also exposes an MCP **prompt** — `grow_product`, a ready-made operating
-procedure for the growth loop — and a **resource** — `productclank://capabilities`,
-the tool/cost roster — so agents can plan spend before calling anything.
+The server also exposes two MCP **prompts** — `grow_product`, a ready-made operating
+procedure for the growth loop, and `setup_content_space`, the Content Studio onboarding
+interview (brand → audience → tone → example posts → platforms → post types → topics,
+then first drafts and the approve / tweak / teach loop) — and a **resource** —
+`productclank://capabilities`, the tool/cost roster — so agents can plan spend before
+calling anything.
 
 Costly actions are designed to be confirmed with the user first — tool descriptions instruct the model to preview and state the credit cost before spending.
 
