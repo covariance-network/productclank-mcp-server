@@ -13,7 +13,7 @@ export function registerBoostTools(server: McpServer): void {
     {
       title: "Boost a social post",
       description:
-        "Rally the ProductClank community to engage with a specific social post. Creates a boost campaign and spends the user's credits: 'replies' generates 10 AI reply drafts (200 credits); 'likes' (30 likes) and 'repost' (10 reposts) cost 300. Supports Twitter/X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, and YouTube (replies + likes on YouTube; reposts only on X and Farcaster) — the platform is auto-detected from the URL. product_id is OPTIONAL: link a product (from search_products or create_product) to tailor replies with the product name, or omit it for a tweet-first boost that uses generic amplification language. Confirm the action and its credit cost with the user before calling.",
+        "Rally the ProductClank community to engage with a specific social post. Creates a boost campaign and spends the user's credits: 'replies' generates 10 AI reply drafts (200 credits); 'quote' generates 10 AI-drafted QUOTE POSTS (200 credits) — a repost WITH each member's own text, shown above the quoted post in their followers' feeds, the highest-reach action; 'likes' (30 likes) and 'repost' (10 reposts) cost 300. Supports Twitter/X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, and YouTube (replies + likes on YouTube; reposts only on X and Farcaster; quote posts only on X) — the platform is auto-detected from the URL. product_id is OPTIONAL: link a product (from search_products or create_product) to tailor replies with the product name, or omit it for a tweet-first boost that uses generic amplification language. Confirm the action and its credit cost with the user before calling.",
       inputSchema: {
         post_url: z
           .string()
@@ -26,16 +26,16 @@ export function registerBoostTools(server: McpServer): void {
             "Optional product UUID (from search_products or create_product). Omit for a tweet-first boost."
           ),
         action_type: z
-          .enum(["replies", "likes", "repost"])
+          .enum(["replies", "likes", "repost", "quote"])
           .optional()
           .describe(
-            "How the community engages. Default: replies. Reposts are Twitter/Farcaster only."
+            "How the community engages. Default: replies. Reposts are Twitter/Farcaster only; quote posts (repost with the member's own drafted text) are X only."
           ),
         reply_guidelines: z
           .string()
           .optional()
           .describe(
-            "Optional guidance for the tone and content of community replies"
+            "Optional guidance for the tone and content of community replies or quote posts"
           ),
       },
       annotations: {

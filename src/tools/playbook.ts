@@ -19,7 +19,7 @@ Product to grow: {{product}}
 2. **Check the budget.** Call check_balance. Rough costs: discovery campaign 10 to create + 12/post discovered; post review 2/post; reply redraft 5/reply; boost 200–300; content campaign 1000. Never start a paid step the balance can't cover, and confirm each spend with the user first.
 3. **Pick the play (combine when budget allows):**
    - **Conversations play** — first READ THE PRODUCT'S SITE: fetch its website (and anything else the user pointed at) and derive the keywords and search_context from who the audience actually is and the phrases they use when they have the problem — not from the product's name. That derivation is your work, done here, free; if you cannot browse from this client, say so and build it from what the user tells you instead of guessing. Then create_campaign with 3–8 focused keywords and the platform the audience is actually on — twitter (default), linkedin, reddit or youtube; for reddit/youtube also pass target_subreddits / target_youtube_channels (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply; the create result carries live network numbers and real posted-reply links so that choice is made on evidence). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone. Manage anytime in the workbench via the campaign's admin_url.
-   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost).
+   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote — a quote post is a repost with the member's own text, X only, the highest-reach option).
    - **Content play** — the user wants the community creating content: suggest_content_campaign (FREE dry-run) → create_content_campaign once they approve the 1000-credit spend.
    - **Own-content play** — the user wants to publish their OWN posts: that is the Content Studio, not a campaign. Use the setup_content_space prompt (free interview → calibrated space → first drafts → approve / tweak / teach loop).
 4. **Close the loop.** After each paid step: get_campaign_results for spend vs outcomes (funnel, approval rate, cost per usable reply), credit_history for the ledger, and report both to the user with what you'd do next. Hand long-running campaigns to the human with add_delegate so they can manage them at app.productclank.com/my-campaigns.
@@ -144,7 +144,7 @@ export function registerPlaybook(server: McpServer): void {
 | review_posts | 2 per post (dry_run billed too) |
 | regenerate_replies | 5 per reply |
 | add_delegate | free |
-| boost_post | 200 (replies) / 300 (likes, repost) |
+| boost_post | 200 (replies, quote) / 300 (likes, repost) |
 
 ## Content
 | Tool | Cost |

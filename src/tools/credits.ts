@@ -13,7 +13,7 @@ export function registerCreditTools(server: McpServer): void {
     {
       title: "Check credit balance",
       description:
-        "Return the connected user's ProductClank credit balance and plan. Use before launching a campaign to confirm they have enough credits (a content campaign costs 1000; a reply boost 200; likes/reposts 300; a discovery campaign 10 to create + 12/post discovered).",
+        "Return the connected user's ProductClank credit balance and plan. Use before launching a campaign to confirm they have enough credits (a content campaign costs 1000; a reply or quote-post boost 200; likes/reposts 300; a discovery campaign 10 to create + 12/post discovered).",
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },

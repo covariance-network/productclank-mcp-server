@@ -10,7 +10,7 @@ export interface BoostParams {
   postUrl: string;
   /** Optional — link a product. Omit for a tweet-first boost. */
   productId?: string;
-  actionType: "replies" | "likes" | "repost";
+  actionType: "replies" | "likes" | "repost" | "quote";
   replyGuidelines?: string;
 }
 
