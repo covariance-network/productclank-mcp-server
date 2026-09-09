@@ -240,12 +240,19 @@ app.get("/health", (_req, res) => {
 // ─── Glama connector-ownership proof ───────────────────────────────────────
 // Glama verifies claim of the registry-synced connector listing
 // (glama.ai/mcp/connectors/com.productclank/productclank) by fetching this
-// file from the server's own domain. The email must match the maintainer's
-// Glama account email.
+// file from the server's own domain — the HTTP challenge.
+//
+// This MUST stay published: Glama re-checks it, and removing the file silently
+// un-claims the listing (losing the admin panel, analytics, and the ability to
+// disable a tool at the gateway). The token is account-bound and carries no
+// personal information, so it is safe in source.
+//
+// The previous `maintainers: [{ email }]` form is deprecated in Glama's schema
+// and never completed a claim; the opaque token replaces it.
 app.get("/.well-known/glama.json", (_req, res) => {
   res.json({
     $schema: "https://glama.ai/mcp/schemas/connector.json",
-    maintainers: [{ email: "0xCovariance@gmail.com" }],
+    claim: "glama_claim_UGeNRXW0l-RtY0YtZUMGhK9qWOdH0mpW",
   });
 });
 
