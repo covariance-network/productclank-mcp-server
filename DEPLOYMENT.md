@@ -11,9 +11,8 @@ Claude ──HTTPS──▶ mcp.productclank.com/mcp ──REST(per-user agent k
                         └─OAuth─▶ app.productclank.com/connect/mcp (login + consent)
 ```
 
-Tools exposed: `search_products` (read), `check_balance` (read),
-`boost_post` (write — spends credits), `suggest_content_campaign` (read — free
-preview), `create_content_campaign` (write — launches a content campaign, 1000cr).
+Tools exposed: the full tool list (~29 tools, spend and earn) lives in the
+[README's Tools table](./README.md#tools).
 
 ---
 
@@ -79,7 +78,7 @@ Set these on the ProductClank webapp (Vercel) env and redeploy `main`→`prod`:
   is the default).
 
 The webapp ships `/connect/mcp` (consent page) and `/api/connect/mcp/grant`
-(grant signer) from the `feat/connect-mcp-consent` branch.
+(grant signer) on `main` (deployed with the regular main→prod flow).
 
 ---
 
@@ -113,12 +112,21 @@ curl -i -X POST https://mcp.productclank.com/mcp \
 npx @modelcontextprotocol/inspector
 ```
 Point it at `https://mcp.productclank.com/mcp`, run the OAuth flow (it opens the
-webapp consent page), then `tools/list` → expect the 5 tools; call
-`search_products`.
+webapp consent page), then `tools/list` → expect the full tool list from the
+[README](./README.md#tools) (~29 tools); call `search_products`.
 
 **In Claude:** Settings → Connectors → Add custom connector →
 `https://mcp.productclank.com/mcp` → connect (runs OAuth) → ask Claude to boost a
 post. Confirm the campaign appears in the user's **My Campaigns** on the webapp.
+
+---
+
+## Release checklist
+
+- Bump the version in `package.json` and `src/config.ts` **and `server.json`** —
+  the MCP Registry manifest does not update itself and silently drifts otherwise.
+- If the release depends on new app-repo behavior, **deploy the app repo first**;
+  tools must degrade gracefully against the older API.
 
 ---
 

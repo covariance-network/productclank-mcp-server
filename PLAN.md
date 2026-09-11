@@ -1,3 +1,6 @@
+> ⚠️ **Historical document** (pre-v0.1 planning) — kept for context only. See
+> [README.md](./README.md) and [CAPABILITIES.md](./CAPABILITIES.md) for current state.
+
 # ProductClank MCP Server — Implementation Plan
 
 ## Goal

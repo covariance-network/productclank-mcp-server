@@ -36,7 +36,13 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/boost` | ✅ | `boost_post` |
 | `POST /agents/campaigns/content` | ✅ | `suggest_content_campaign` (free preview) + `create_content_campaign` (1000cr) |
 | `GET /agents/content/spaces` | ✅ | `list_content_spaces` (Content Studio) |
-| `POST /agents/content/candidates` | ✅ | `write_content_candidates` (Content Studio — free, human-reviewed drafts) |
+| `POST /agents/content/candidates` | ✅ | `write_content_candidates` (Content Studio — free, auto-scored, human-staged drafts) |
+| `GET /agents/content/workspace` | ✅ | `get_content_workspace` (Content Studio — the brand's voice + topics; free) |
+| `POST /agents/content/workspace` | ✅ | `setup_content_space` (Content Studio onboarding — free by fields, 5cr for a pasted brand_doc) |
+| `GET/POST/PATCH/DELETE /agents/content/topics`, `POST /agents/content/topics/suggest` | ✅ | `manage_content_topics` (Content Studio — free) |
+| `GET /agents/content/queue` | ✅ | `get_content_queue` (Content Studio — drafts + scores; free) |
+| `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit free; revise presets / fix / humanize / review 2cr) |
+| `POST /agents/content/feedback` | ✅ | `teach_content_voice` (Content Studio — reaction → KB rule, 1cr) |
 | `GET /agents/credits/balance` | ✅ | `check_balance` (reads `UserCredits` directly) |
 | `POST /agents/campaigns` | ✅ | `create_campaign` (10cr) |
 | `GET /agents/campaigns` | ✅ | `list_campaigns` (caller-scoped for trusted agents) |
@@ -69,16 +75,17 @@ Besides tools, the server ships one MCP **prompt** (`grow_product` — the opera
 procedure for the growth-agent persona) and one **resource**
 (`productclank://capabilities` — the tool/cost roster agents read before planning spend).
 
-## Multi-tenant scoping (why Tier 1/2 needed backend work after all)
+## Multi-tenant scoping (per-user agents, since v0.8.0)
 
-The connector is ONE trusted agent acting for many OAuth users, but the campaign
-routes originally scoped ownership by `creator_agent_id` alone — so any connected
-user could have listed/operated any other connector user's campaigns. The webapp
-now enforces per-caller scope (`creator_id === caller_user_id`, via
-`checkTrustedCampaignScope` in `lib/agent-auth.ts`) on every campaign read/op,
-scopes `credits/history` + `participate/earnings` to the caller, and feeds real
-`pendingCredits` into the daily-spend cap on per-item-billed routes. Trusted
-agents MUST pass `caller_user_id` on those routes.
+Each connected OAuth user gets their own **non-trusted** agent, provisioned at
+consent via the webapp's `/agents/connector/provision` route (the server
+authenticates to it with `MCP_PROVISION_SECRET`). There is no `caller_user_id`
+anywhere in this server — the backend 403s non-trusted agents that send one.
+Scoping is the plain non-trusted ownership rule: **the agent acts on everything
+its user owns** (campaigns, credits, earnings), and each user's agent carries
+its own `rate_limit_daily: 50` (campaign creates + participation submissions).
+The pre-v0.8.0 model — one shared trusted agent passing `caller_user_id` for
+many users — is retired.
 
 ## Roadmap
 

@@ -58,13 +58,13 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `update_campaign` | Merge keywords, enable the discovery sources research found, move the relevance bar, pause/resume, re-aim the platform targeting, change who posts the drafts | free |
 | `set_campaign_schedule` | Put discovery on a schedule so it keeps finding conversations between sessions. Shows the projected daily cost and requires an explicit yes before enabling | free to set · 12cr per post found |
 | `add_delegate` | Hand a campaign to a human to manage in the web app | free |
-| `boost_post` | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 200–300 cr |
+| `boost_post` | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 10 AI-drafted quote posts (200 cr, X only — a repost with each member's own text, landing in their followers' feeds), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 200–300 cr |
 
 ### Earn — participate in campaigns for the connected user
 
 | Tool | What it does | Cost |
 |---|---|---|
-| `find_opportunities` | Browse unclaimed reply drafts the user can post to earn (replies only — likes and reposts need a screenshot and stay in the web app) | free |
+| `find_opportunities` | Browse unclaimed reply and quote-post drafts the user can post to earn (likes and reposts need a screenshot and stay in the web app) | free |
 | `submit_participation` | Submit the posted reply's URL (X, Reddit, YouTube, LinkedIn) — attributed to the user's linked handle for that platform, then points/credits are awarded | earns |
 | `find_open_campaigns` | Discover content & take-action campaigns the user can join — public ones plus their communities' | free |
 | `get_campaign_brief` | Read a campaign's full brief: what to create or do, judging criteria, rewards, deadline, remaining allowance | free |
@@ -79,7 +79,13 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `suggest_content_campaign` | AI-drafted preview of a community content campaign (title, description, CTA) + affordability check. Nothing is created | free |
 | `create_content_campaign` | Launch the content campaign: the community creates posts/threads/videos for your product; submissions and winner selection happen in the web app | 1,000 cr |
 | `list_content_spaces` | List the content spaces you can draft into | free |
-| `write_content_candidates` | Draft up to 25 post candidates into your space. They land as **unreviewed drafts** — a human reviews and schedules; nothing auto-publishes | free |
+| `get_content_workspace` | The brand's calibration — voice, platforms, post types, playbook, topic inventory, style guides. Read it before drafting | free |
+| `setup_content_space` | Turn content on for a brand from an onboarding chat (pair with the `setup_content_space` prompt): voice, platforms, post types, topics — can create a solo space for the brand. Also updates settings later | free by fields · 5 cr for a pasted brand doc |
+| `manage_content_topics` | The inventory of aspects the brand talks about: list / add / update / remove / suggest | free |
+| `write_content_candidates` | Draft up to 25 posts into the space, in the calibrated voice. They are auto-scored by the reviewer and wait in the queue for the user's approval; nothing auto-publishes | free |
+| `get_content_queue` | The queue as the user sees it: each draft with its score, verdict, and the reviewer's one-line fix | free |
+| `revise_content_draft` | Approve (`stage`), drop (`discard`), edit, or nudge a draft with a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — or a typed note; `fix` / `humanize` / `review` | stage · discard · edit free; rewrites & review 2 cr |
+| `teach_content_voice` | Turn a reaction into a standing rule in the brand's voice KB so every future draft honors it | 1 cr |
 
 ### Credits
 
@@ -88,9 +94,12 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `check_balance` | Your credit balance and plan | free |
 | `credit_history` | Your credit transactions (spend + rewards), newest first | free |
 
-The server also exposes an MCP **prompt** — `grow_product`, a ready-made operating
-procedure for the growth loop — and a **resource** — `productclank://capabilities`,
-the tool/cost roster — so agents can plan spend before calling anything.
+The server also exposes two MCP **prompts** — `grow_product`, a ready-made operating
+procedure for the growth loop, and `setup_content_space`, the Content Studio onboarding
+interview (brand → audience → tone → example posts → platforms → post types → topics,
+then first drafts and the approve / tweak / teach loop) — and a **resource** —
+`productclank://capabilities`, the tool/cost roster — so agents can plan spend before
+calling anything.
 
 Costly actions are designed to be confirmed with the user first — tool descriptions instruct the model to preview and state the credit cost before spending.
 
@@ -148,6 +157,10 @@ npm run build && npm start
 ```
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment (Docker / Railway) and [CAPABILITIES.md](./CAPABILITIES.md) for the tool roadmap.
+
+## Operations
+
+When a release depends on new app-repo behavior, deploy the app repo first; tools must degrade gracefully against the older API.
 
 ## Registry
 

@@ -231,6 +231,10 @@ export interface UpdateCampaignParams {
   relevanceThreshold?: number;
   isActive?: boolean;
   visibility?: "public" | "private";
+  /** Required (true) when flipping private → public — the backend 400s
+   *  `confirmation_required` without it, because public authorizes per-posted-
+   *  reply billing. */
+  confirm?: boolean;
   /** Only accepted while the campaign has discovered nothing — 409 after that. */
   platform?: CampaignPlatform;
   /** Replace-semantics; [] clears back to "search the whole platform". */
@@ -264,6 +268,7 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
         : {}),
       ...(params.isActive != null ? { is_active: params.isActive } : {}),
       ...(params.visibility ? { visibility: params.visibility } : {}),
+      ...(params.confirm !== undefined ? { confirm: params.confirm } : {}),
       ...(params.platform ? { platform: params.platform } : {}),
       ...(params.targetSubreddits !== undefined
         ? { target_subreddits: params.targetSubreddits }

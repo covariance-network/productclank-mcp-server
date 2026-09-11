@@ -10,7 +10,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { track } from "../lib/analytics.js";
-import { getUserId, type ToolExtra } from "./_shared.js";
+import { getUserId, OUTCOME, type OutcomeMeta, type ToolExtra } from "./_shared.js";
 
 type AnyFn = (...args: unknown[]) => unknown;
 
@@ -33,24 +33,44 @@ function wrapHandler(toolName: string, handler: AnyFn): AnyFn {
     const userId = getUserId(args[args.length - 1] as ToolExtra);
     try {
       const result = await handler(...args);
-      const failed = (result as { isError?: boolean })?.isError === true;
+      const isError = (result as { isError?: boolean })?.isError === true;
+      // The tool classified it (see _shared.ts). An untagged error result is
+      // treated as a genuine failure — the safe default, since a guard that
+      // forgets to tag itself should show up rather than hide.
+      const meta: OutcomeMeta = isError
+        ? ((result as Record<symbol, unknown>)[OUTCOME] as OutcomeMeta | undefined) ?? {
+            outcome: "failed",
+          }
+        : { outcome: "ok" };
+
       track("mcp_tool_called", userId, {
         tool: toolName,
-        ok: !failed,
+        // `ok` keeps its original meaning (true only on success) so anything
+        // already querying it does not silently change under us.
+        ok: !isError,
+        outcome: meta.outcome,
+        ...(meta.reason_code ? { reason_code: meta.reason_code } : {}),
         duration_ms: Date.now() - startedAt,
       });
-      if (failed) {
+
+      // Only genuine failures. A refusal or a confirmation prompt is the system
+      // working; counting either as an error makes good guards look like bugs
+      // and leaves this event useless for alerting.
+      if (meta.outcome === "failed") {
         track("mcp_tool_error", userId, {
           tool: toolName,
           duration_ms: Date.now() - startedAt,
+          ...(meta.reason_code ? { reason_code: meta.reason_code } : {}),
           error_message: errorText(result),
         });
       }
       return result;
     } catch (error) {
+      // Nothing caught this, so it is a failure by definition.
       track("mcp_tool_called", userId, {
         tool: toolName,
         ok: false,
+        outcome: "failed",
         duration_ms: Date.now() - startedAt,
       });
       track("mcp_tool_error", userId, {

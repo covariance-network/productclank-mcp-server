@@ -46,7 +46,7 @@ export function getParticipationFeed(params: {
   limit?: number;
   offset?: number;
   campaignId?: string;
-  actionType?: "reply" | "like" | "repost";
+  actionType?: "reply" | "quote" | "like" | "repost";
 }): Promise<{ success: boolean; posts: FeedPost[]; total: number; matching?: number }> {
   const qs = new URLSearchParams();
   if (params.limit != null) qs.set("limit", String(params.limit));

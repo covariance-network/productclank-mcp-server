@@ -10,7 +10,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
-import { getUserId, textResult, errorResult, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
 export function registerParticipationTools(server: McpServer): void {
   server.registerTool(
@@ -18,7 +18,7 @@ export function registerParticipationTools(server: McpServer): void {
     {
       title: "Find earning opportunities",
       description:
-        "Browse unclaimed reply drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted reply, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn). Free, read-only. Flow: pick an opportunity → the user posts the reply (verbatim or personalized) from their own account on that platform → call submit_participation with the posted reply's URL. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable. Returns reply opportunities only — likes and reposts are proved with a screenshot and stay in the web app (app.productclank.com/communiply/feed).",
+        "Browse unclaimed drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: pick an opportunity → the user posts it (verbatim or personalized) from their own account → call submit_participation with the URL of what they posted. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable. Likes and reposts are proved with a screenshot and stay in the web app (app.productclank.com/communiply/feed).",
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
         offset: z.number().int().min(0).optional(),
@@ -30,15 +30,16 @@ export function registerParticipationTools(server: McpServer): void {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        // Reply-only: likes and reposts are proved by an uploaded screenshot,
-        // which this connector has no way to produce. Every reply platform is
-        // fair game — attribution runs off the user's linked handle.
+        // No action filter: the backend serves only what an agent can finish by
+        // URL (AGENT_COMPLETABLE_ACTION_TYPES = reply + quote). Likes and
+        // reposts are proved by an uploaded screenshot, which this connector
+        // has no way to produce, and never reach this feed. Attribution runs
+        // off the user's linked handle for the item's platform.
         const result = await api.getParticipationFeed({
           callerUserId: userId,
           limit,
           offset,
           campaignId: campaign_id,
-          actionType: "reply",
         });
         return textResult({
           posts: result.posts,
@@ -51,12 +52,12 @@ export function registerParticipationTools(server: McpServer): void {
           ...(result.posts.length === 0
             ? {
                 user_note:
-                  "No reply opportunities are open right now. This is not an error — the open tasks at the moment may all be likes or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/communiply/feed). Worth checking back after new campaigns run discovery.",
+                  "No reply or quote-post opportunities are open right now. This is not an error — the open tasks at the moment may all be likes or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/communiply/feed). Worth checking back after new campaigns run discovery.",
               }
             : {}),
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Feed fetch failed");
+        return toolError(error, "Feed fetch failed");
       }
     }
   );
@@ -64,12 +65,12 @@ export function registerParticipationTools(server: McpServer): void {
   server.registerTool(
     "submit_participation",
     {
-      title: "Submit a posted reply to earn",
+      title: "Submit a posted reply or quote post to earn",
       description:
-        "Submit the URL of a reply the connected user posted for a claimed opportunity (reply_id from find_opportunities). Works for X, Reddit, YouTube and LinkedIn replies. Every claim is attributed to the user's linked handle for that platform, so they must have it connected on their ProductClank profile — X replies are additionally author-verified against the live post at submit time, and the others are verified afterwards by the same checks that cover web submissions. If the platform handle is missing the call fails saying which one to add. Awards points, and credits when the campaign grants them. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
+        "Submit the URL of what the connected user posted for a claimed opportunity (reply_id from find_opportunities). Works for X, Reddit, YouTube and LinkedIn replies, and X quote posts (actionType `quote`: pass the URL of the user's own quote post, NOT the original — the backend checks it was posted by their linked X handle and that it actually quotes the target post; a plain tweet or a quote of something else is rejected). Every claim is attributed to the user's linked handle for that platform, so they must have it connected on their ProductClank profile — X replies are additionally author-verified against the live post at submit time, and the others are verified afterwards by the same checks that cover web submissions. If the platform handle is missing the call fails saying which one to add. Awards points, and credits when the campaign grants them. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
       inputSchema: {
         reply_id: z.string().describe("The reply draft's id from find_opportunities"),
-        reply_url: z.string().url().describe("URL of the reply the user posted on X"),
+        reply_url: z.string().url().describe("URL of the reply (or, for a quote opportunity, the quote post) the user posted"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
@@ -89,7 +90,7 @@ export function registerParticipationTools(server: McpServer): void {
           next_step: "Call get_earnings to see the user's running totals.",
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Submission failed");
+        return toolError(error, "Submission failed");
       }
     }
   );
@@ -113,7 +114,7 @@ export function registerParticipationTools(server: McpServer): void {
         const result = await api.listOpenCampaigns({ callerUserId: userId, limit, kind });
         return textResult({ campaigns: result.campaigns, total: result.total });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign discovery failed");
+        return toolError(error, "Campaign discovery failed");
       }
     }
   );
@@ -135,7 +136,7 @@ export function registerParticipationTools(server: McpServer): void {
       try {
         return textResult(await api.getCampaignBrief({ callerUserId: userId, campaignId: campaign_id }));
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Brief fetch failed");
+        return toolError(error, "Brief fetch failed");
       }
     }
   );
@@ -181,7 +182,7 @@ export function registerParticipationTools(server: McpServer): void {
         });
         return textResult(result.data);
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Submission failed");
+        return toolError(error, "Submission failed");
       }
     }
   );
@@ -203,7 +204,7 @@ export function registerParticipationTools(server: McpServer): void {
           await api.getMyCampaignSubmissions({ callerUserId: userId, campaignId: campaign_id })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Status fetch failed");
+        return toolError(error, "Status fetch failed");
       }
     }
   );
@@ -228,7 +229,7 @@ export function registerParticipationTools(server: McpServer): void {
           replies: result.replies,
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Earnings fetch failed");
+        return toolError(error, "Earnings fetch failed");
       }
     }
   );

@@ -19,8 +19,17 @@
  * default because it is reversible and cheap, but community distribution is the
  * product's actual value — an agent that never surfaces it leaves the campaign
  * as a drafts folder.
+ *
+ * The community option carries live proof (posted-reply counts and real URLs,
+ * computed at call time) because "network members will post these" is exactly
+ * the claim a new user has no reason to believe — and the network is the one
+ * thing a plain LLM session can't replicate.
  */
-function distributionOffer(isPublic: boolean, adminUrl: string): DecisionOffer {
+function distributionOffer(
+  isPublic: boolean,
+  adminUrl: string,
+  evidence: DistributionEvidence | null
+): DecisionOffer {
   return {
     question:
       "Who posts these replies — you, or the ProductClank community?",
@@ -36,6 +45,18 @@ function distributionOffer(isPublic: boolean, adminUrl: string): DecisionOffer {
         what_happens:
           "The drafts enter the ProductClank earn feed, where network members claim them and post from their own accounts — real reach without the user doing the posting. The user reviews the proof of each posted reply in the workbench.",
         cost: "Credits per network-posted reply, on top of discovery.",
+        ...(evidence
+          ? {
+              evidence: {
+                replies_posted_by_members_last_30_days:
+                  evidence.replies_posted_last_30_days,
+                distinct_members_posting_last_7_days:
+                  evidence.distinct_posters_last_7_days,
+                recent_live_examples: evidence.live_examples,
+                note: "Live network numbers, computed just now — share them (and an example link or two) with the user so the choice is made on evidence, not on a promise.",
+              },
+            }
+          : {}),
       },
     ],
     current: isPublic
@@ -49,10 +70,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
 import { ApiError } from "../lib/api/client.js";
+import { config } from "../config.js";
+import {
+  getNetworkEvidence,
+  type DistributionEvidence,
+} from "../lib/networkEvidence.js";
 import {
   getUserId,
   textResult,
   errorResult,
+  toolError,
   NOT_AUTHED,
   type ToolExtra,
   type DecisionOffer,
@@ -159,7 +186,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. BEFORE calling: the keywords and search_context are YOURS to derive, and deriving them well is most of the campaign's quality — actually fetch and read the product's website (and any docs or pages the user pointed at), work out who the audience is and the phrases they use when they have the problem the product solves, and build keywords + search_context from that. Do it in this conversation, for free — it is not billed, and you can iterate with the user before anything is spent. If you cannot browse the web from this client, SAY SO to the user and build from what they tell you instead — never silently guess from the product's name alone. Credits pay only for what you cannot do here: scraping the platforms, real community members posting, and proof verification. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -167,10 +194,14 @@ export function registerCampaignTools(server: McpServer): void {
           .array(z.string())
           .min(1)
           .max(20)
-          .describe("Search keywords/phrases to discover posts with (3–8 focused phrases work best)"),
+          .describe(
+            "Search keywords/phrases to discover posts with (3–8 focused phrases work best). Derive these from the product's actual site and audience — the words people use when they HAVE the problem ('CI is so slow', 'alternatives to X'), not the product's own marketing vocabulary or its name."
+          ),
         search_context: z
           .string()
-          .describe("One or two sentences on what conversations to find and why the product is relevant to them"),
+          .describe(
+            "One or two sentences on what conversations to find and why the product is relevant to them. Write it from having actually read the product's site and this conversation — who the audience is, what pain they voice, what makes the product a natural mention. This steers both discovery and the relevance gate, so a generic sentence produces generic (billed) posts."
+          ),
         mention_accounts: z
           .array(z.string())
           .optional()
@@ -233,6 +264,7 @@ export function registerCampaignTools(server: McpServer): void {
           targetYoutubeChannels: args.target_youtube_channels,
         });
         const isPublic = (args.visibility ?? "private") === "public";
+        const evidence = await getNetworkEvidence();
         return textResult({
           campaign: result.campaign,
           credits: result.credits,
@@ -245,10 +277,14 @@ export function registerCampaignTools(server: McpServer): void {
           user_note: isPublic
             ? "This campaign is PUBLIC: once posts are discovered, the drafted replies go into the ProductClank earn feed and community members can claim and post them. Each network-posted reply costs credits, and the proof of every one shows up in the workbench for review."
             : "This campaign is PRIVATE: drafted replies land in the user's workbench and nothing is posted anywhere until they post it. If they'd rather not do the posting themselves, the community can do it for them — offer the choice below.",
-          decision_offer: distributionOffer(isPublic, result.campaign.admin_url),
+          decision_offer: distributionOffer(
+            isPublic,
+            result.campaign.admin_url,
+            evidence
+          ),
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign creation failed");
+        return toolError(error, "Campaign creation failed");
       }
     }
   );
@@ -258,7 +294,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "List the user's campaigns",
       description:
-        "List discovery/boost campaigns the connected user created through this connector, newest first. Free. Use to find a campaign id before get_campaign / generate_posts / get_posts.",
+        "List ALL the connected user's discovery/boost campaigns, newest first — including ones created in the ProductClank web app, not just via this connector. Free. Use to find a campaign id before get_campaign / generate_posts / get_posts.",
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 20"),
         offset: z.number().int().min(0).optional(),
@@ -273,7 +309,7 @@ export function registerCampaignTools(server: McpServer): void {
         const result = await api.listCampaigns({ callerUserId: userId, limit, offset, status });
         return textResult({ campaigns: result.campaigns, total: result.total });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Listing campaigns failed");
+        return toolError(error, "Listing campaigns failed");
       }
     }
   );
@@ -296,7 +332,7 @@ export function registerCampaignTools(server: McpServer): void {
         const result = await api.getCampaign({ callerUserId: userId, campaignId: campaign_id });
         return textResult({ campaign: result.campaign, stats: result.stats });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign fetch failed");
+        return toolError(error, "Campaign fetch failed");
       }
     }
   );
@@ -321,7 +357,7 @@ export function registerCampaignTools(server: McpServer): void {
           await api.runResearch({ callerUserId: userId, campaignId: campaign_id, force })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Research failed");
+        return toolError(error, "Research failed");
       }
     }
   );
@@ -343,7 +379,7 @@ export function registerCampaignTools(server: McpServer): void {
           await api.getResearch({ callerUserId: userId, campaignId: campaign_id })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Research fetch failed");
+        return toolError(error, "Research fetch failed");
       }
     }
   );
@@ -362,15 +398,36 @@ export function registerCampaignTools(server: McpServer): void {
       if (!userId) return errorResult(NOT_AUTHED);
       try {
         const result = await api.generatePosts({ callerUserId: userId, campaignId: campaign_id });
+        // Drafts in hand is the moment the "so what happens to these?" question
+        // actually arises — so the distribution choice (with live network
+        // proof) belongs on THIS result, not only back at create time.
+        const visibility =
+          typeof result.visibility === "string" ? result.visibility : null;
+        const adminUrl = `${config.webappUrl}/amplify/workbench/${campaign_id}`;
+        const offer =
+          visibility === "private"
+            ? {
+                decision_offer: distributionOffer(
+                  false,
+                  adminUrl,
+                  await getNetworkEvidence()
+                ),
+              }
+            : {};
         return textResult({
           ...result,
           user_note:
-            "Nothing has been posted. On a private campaign (the default here) these drafts sit in the workbench until the user posts them; on a public one they enter the community earn feed. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies before anything goes out.",
+            visibility === "public"
+              ? "This campaign is public, so these drafts are now in the community earn feed — network members can claim and post them, billing per posted reply. Read them with get_posts and prune with review_posts before the network gets to the weak ones."
+              : visibility === "private"
+                ? "Nothing has been posted. These drafts sit in the workbench until the user posts them. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies — and since the drafts now exist, this is the moment to relay the decision below: the user can post them themselves, or the community can. That half of the platform is live and measurable; the offer carries today's numbers and real links."
+                : "Nothing has been posted. On a private campaign (the default here) these drafts sit in the workbench until the user posts them; on a public one they enter the community earn feed. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies before anything goes out.",
           next_step:
             "get_posts (free) to read what was found, then review_posts with dry_run:true to see which are worth keeping.",
+          ...offer,
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Post generation failed");
+        return toolError(error, "Post generation failed");
       }
     }
   );
@@ -405,7 +462,7 @@ export function registerCampaignTools(server: McpServer): void {
           })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Posts fetch failed");
+        return toolError(error, "Posts fetch failed");
       }
     }
   );
@@ -450,7 +507,7 @@ export function registerCampaignTools(server: McpServer): void {
             })
           : textResult(result);
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Post review failed");
+        return toolError(error, "Post review failed");
       }
     }
   );
@@ -481,7 +538,7 @@ export function registerCampaignTools(server: McpServer): void {
           })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Reply regeneration failed");
+        return toolError(error, "Reply regeneration failed");
       }
     }
   );
@@ -522,7 +579,7 @@ export function registerCampaignTools(server: McpServer): void {
             "Pass `checked_at` back as `since` next time so this stays a running log rather than a repeat.",
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Activity fetch failed");
+        return toolError(error, "Activity fetch failed");
       }
     }
   );
@@ -555,7 +612,7 @@ export function registerCampaignTools(server: McpServer): void {
             "approval_rate is over judged replies only (see approval_sample); survival_rate is null until enough replies were checked; engagement covers only swept replies. A removed reply is usually a moderator decision, not fraud.",
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Results fetch failed");
+        return toolError(error, "Results fetch failed");
       }
     }
   );
@@ -595,7 +652,13 @@ export function registerCampaignTools(server: McpServer): void {
           .enum(["public", "private"])
           .optional()
           .describe(
-            "Who posts the drafted replies. private = the user posts them from the workbench; public = the community earn feed distributes them and members post them, billing the user per posted reply. Ask first."
+            "Who posts the drafted replies. private = the user posts them from the workbench; public = the community earn feed distributes them and members post them, billing the user per posted reply. Flipping to public REQUIRES confirm: true — ask the user first, then pass it."
+          ),
+        confirm: z
+          .boolean()
+          .optional()
+          .describe(
+            "Required (true) when setting visibility to public — confirms the user agreed to community distribution and per-posted-reply billing. Without it the API returns confirmation_required."
           ),
         platform: z
           .enum(["twitter", "linkedin", "reddit", "youtube"])
@@ -630,6 +693,7 @@ export function registerCampaignTools(server: McpServer): void {
           relevanceThreshold: args.relevance_threshold,
           isActive: args.is_active,
           visibility: args.visibility,
+          confirm: args.confirm,
           platform: args.platform,
           targetSubreddits: args.target_subreddits,
           targetYoutubeChannels: args.target_youtube_channels,
@@ -667,13 +731,14 @@ export function registerCampaignTools(server: McpServer): void {
             ? {
                 decision_offer: distributionOffer(
                   (result.campaign.visibility as string) === "public",
-                  result.campaign.admin_url
+                  result.campaign.admin_url,
+                  await getNetworkEvidence()
                 ),
               }
             : {}),
         });
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Campaign update failed");
+        return toolError(error, "Campaign update failed");
       }
     }
   );
@@ -792,13 +857,14 @@ export function registerCampaignTools(server: McpServer): void {
           });
         }
         if (error instanceof ApiError && error.status === 429) {
+          // A cap doing its job, not a fault — tagged so it never lands in the
+          // failure metric, and so "how often do users hit their cap" is visible.
           return errorResult(
-            `${error.message} Nothing was scheduled. Either propose a smaller schedule, or ask the user to raise the limit for this app under Profile → Connected Apps.`
+            `${error.message} Nothing was scheduled. Either propose a smaller schedule, or ask the user to raise the limit for this app under Profile → Connected Apps.`,
+            { outcome: "refused", reason_code: "daily_spend_cap_exceeded" }
           );
         }
-        return errorResult(
-          error instanceof Error ? error.message : "Setting the schedule failed"
-        );
+        return toolError(error, "Setting the schedule failed");
       }
     }
   );
@@ -823,7 +889,7 @@ export function registerCampaignTools(server: McpServer): void {
           await api.addDelegate({ callerUserId: userId, campaignId: campaign_id, userId: user_id })
         );
       } catch (error) {
-        return errorResult(error instanceof Error ? error.message : "Adding delegate failed");
+        return toolError(error, "Adding delegate failed");
       }
     }
   );
