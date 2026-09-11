@@ -8,7 +8,8 @@
  * - createContentCampaign  (dry_run: false) → creates + auto-activates the
  *   campaign and charges 1000 credits.
  *
- * Submissions and winner selection happen in the ProductClank web app (v1).
+ * getContentCampaignResults reads back what the campaign produced (GET).
+ * Winner selection still happens in the ProductClank web app.
  */
 
 import { request } from "./client.js";
@@ -111,4 +112,97 @@ export function createContentCampaign(
     method: "POST",
     body: JSON.stringify(buildBody(params, false)),
   });
+}
+
+/* ── Results ─────────────────────────────────────────────────────────────── */
+
+export interface ContentCampaignSubmission {
+  id: string;
+  /** The published post. Null while a participant has submitted an image only. */
+  post_url: string | null;
+  image_url: string | null;
+  description: string | null;
+  submission_type: string | null;
+  status: string | null;
+  review_notes: string | null;
+  reviewed_at: string | null;
+  points_allocated: number | null;
+  created_at: string | null;
+  creator: {
+    user_id: string;
+    name: string | null;
+    avatar: string | null;
+    fid: number | null;
+    x_username: string | null;
+  };
+}
+
+export interface ContentCampaignResults {
+  success: boolean;
+  campaign: {
+    id: string;
+    campaign_number: number;
+    title: string | null;
+    description: string | null;
+    product_id: string | null;
+    /**
+     * Derived lifecycle — use this, never `raw_status`. "processing" means the
+     * AI brief is still generating and the campaign is not live yet.
+     */
+    state: "processing" | "active" | "paused" | "ended" | "cancelled";
+    state_label: string;
+    is_accepting_submissions: boolean;
+    raw_status: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    reward_type: string | null;
+    participants_count: number | null;
+    public_url: string;
+  };
+  counts: { total: number; pending: number; approved: number; rejected: number };
+  submissions: ContentCampaignSubmission[];
+  winners: {
+    id: string;
+    user_id: string;
+    submission_id: string | null;
+    winner_type: string | null;
+    reward_amount: number | null;
+  }[];
+  pagination: {
+    limit: number;
+    offset: number;
+    returned: number;
+    total_matching: number;
+    has_more: boolean;
+  };
+}
+
+export interface ContentCampaignResultsParams {
+  callerUserId: string;
+  /** Campaign UUID or its public campaign number. */
+  campaignId: string;
+  /** Filter submissions by review state. */
+  status?: "pending" | "approved" | "rejected";
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Read what a content campaign actually produced. Free, read-only.
+ * Wraps GET /api/v1/agents/campaigns/content/[campaignId].
+ */
+export function getContentCampaignResults(
+  params: ContentCampaignResultsParams
+): Promise<ContentCampaignResults> {
+  const query = new URLSearchParams();
+  if (params.status) query.set("status", params.status);
+  if (params.limit != null) query.set("limit", String(params.limit));
+  if (params.offset != null) query.set("offset", String(params.offset));
+  const qs = query.toString();
+
+  return request(
+    params.callerUserId,
+    `/agents/campaigns/content/${encodeURIComponent(params.campaignId)}${qs ? `?${qs}` : ""}`,
+    { method: "GET" }
+  );
 }

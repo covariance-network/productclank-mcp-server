@@ -1,7 +1,7 @@
 {
   "name": "@productclank/mcp-server",
-  "version": "0.8.0",
-  "description": "ProductClank MCP Server — custom connector for Claude & ChatGPT for ProductClank campaigns (boost + content)",
+  "version": "0.9.2",
+  "description": "ProductClank MCP Server \u2014 custom connector for Claude & ChatGPT for ProductClank campaigns (boost + content)",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

@@ -1,13 +1,13 @@
 /**
  * Content-campaign domain — rally the community to CREATE content for a product.
  *
- * Two tools over one endpoint (POST /agents/campaigns/content):
+ * Three tools over the content-campaign endpoints:
  * - suggest_content_campaign → FREE AI-drafted preview (dry_run). Nothing is
  *   created and no credits are charged. Show it to the user for approval.
  * - create_content_campaign  → launches + auto-activates the campaign and
  *   charges 1000 credits.
- *
- * Submissions and winner selection happen in the ProductClank web app (v1).
+ * - get_content_campaign_results → FREE read of what the campaign produced
+ *   (GET /agents/campaigns/content/{id}). Winner selection stays in the web app.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -22,7 +22,7 @@ import {
   type DecisionOffer,
 } from "./_shared.js";
 
-// Shared input schema for both content tools — you (the agent) write the brief
+// Shared input schema for the two write tools — you (the agent) write the brief
 // from what you know about the product; the platform's AI expands it.
 const contentInputSchema = {
   product_id: z.string().describe("Product UUID from search_products"),
@@ -183,6 +183,71 @@ export function registerContentTools(server: McpServer): void {
         // Surface actionable API errors (e.g. insufficient credits) verbatim.
         return errorResult(
           error instanceof Error ? error.message : "Content-campaign launch failed"
+        );
+      }
+    }
+  );
+  // ─── get_content_campaign_results (free / read-only) ──────────────────────
+  server.registerTool(
+    "get_content_campaign_results",
+    {
+      title: "Content campaign results",
+      description:
+        "See what a content campaign actually produced: how many people submitted, the LIVE links to the content they published, which submissions were approved or rejected, and any winners picked. Free and read-only — safe to poll. This is how you close the loop on create_content_campaign; without it you only know a campaign was paid for, not whether it worked. Right after launch expect state 'processing' (the AI brief is still generating) and zero submissions — that is normal, not a failure. Accepts the campaign UUID or its public campaign number.",
+      inputSchema: {
+        campaign_id: z
+          .string()
+          .describe("Campaign UUID or public campaign number from create_content_campaign"),
+        status: z
+          .enum(["pending", "approved", "rejected"])
+          .optional()
+          .describe("Only return submissions in this review state"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("Submissions per page (default 50)"),
+        offset: z.number().int().min(0).optional().describe("Pagination offset"),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ campaign_id, status, limit, offset }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.getContentCampaignResults({
+          callerUserId: userId,
+          campaignId: campaign_id,
+          status,
+          limit,
+          offset,
+        });
+
+        const { counts, campaign } = result;
+        // Steer the agent away from reporting raw totals as success: a pile of
+        // pending submissions is unreviewed work, not delivered content.
+        const note =
+          campaign.state === "processing"
+            ? "The campaign is still generating its brief and is not live yet — no submissions are expected. Check again in a few minutes."
+            : counts.total === 0
+              ? campaign.is_accepting_submissions
+                ? "Live, but nobody has submitted yet. Share the public_url — a campaign nobody sees gets no submissions."
+                : "This campaign ended without a single submission. Say so plainly and treat the credits as spent."
+              : `${counts.approved} approved, ${counts.pending} awaiting review, ${counts.rejected} rejected out of ${counts.total}. Only approved submissions count as delivered content — report pending as unreviewed, never as results.`;
+
+        return textResult({
+          ...result,
+          user_note: note,
+          reading_guide:
+            "Use `state`, not `raw_status` — a campaign past its end date reads 'ended' even while raw_status still says 'active'. `post_url` is the live content a participant published; open it to judge quality. Winner selection happens in the web app.",
+        });
+      } catch (error) {
+        return errorResult(
+          error instanceof Error
+            ? error.message
+            : "Content-campaign results fetch failed"
         );
       }
     }
