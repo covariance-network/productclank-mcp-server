@@ -241,6 +241,12 @@ export function registerCampaignTools(server: McpServer): void {
           .describe(
             "Who posts the drafted replies. private (default) = they wait in the user's workbench for the user to post; public = the community earn feed distributes them and network members post them, billing the user per posted reply. Reversible either way — ask the user rather than assuming."
           ),
+        post_visibility: z
+          .enum(["public", "private"])
+          .optional()
+          .describe(
+            "Visibility of each discovered post, independent of the campaign. 'public' campaign + 'private' posts = HELD mode: drafts are found and written but nobody can claim them until publish_posts releases the ones the user approves. Use it whenever the user wants to review wording before real people post."
+          ),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
@@ -259,6 +265,7 @@ export function registerCampaignTools(server: McpServer): void {
           replyLength: args.reply_length,
           replyGuidelines: args.reply_guidelines,
           visibility: args.visibility ?? "private",
+          postVisibility: args.post_visibility,
           platform: args.platform,
           targetSubreddits: args.target_subreddits,
           targetYoutubeChannels: args.target_youtube_channels,
@@ -654,6 +661,12 @@ export function registerCampaignTools(server: McpServer): void {
           .describe(
             "Who posts the drafted replies. private = the user posts them from the workbench; public = the community earn feed distributes them and members post them, billing the user per posted reply. Flipping to public REQUIRES confirm: true — ask the user first, then pass it."
           ),
+        post_visibility: z
+          .enum(["public", "private"])
+          .optional()
+          .describe(
+            "Visibility of posts discovered FROM NOW ON, without touching the campaign flag or existing posts. 'private' turns on held mode (release with publish_posts); 'public' makes new drafts claimable on arrival. No confirm needed."
+          ),
         confirm: z
           .boolean()
           .optional()
@@ -693,6 +706,7 @@ export function registerCampaignTools(server: McpServer): void {
           relevanceThreshold: args.relevance_threshold,
           isActive: args.is_active,
           visibility: args.visibility,
+          postVisibility: args.post_visibility,
           confirm: args.confirm,
           platform: args.platform,
           targetSubreddits: args.target_subreddits,
@@ -890,6 +904,59 @@ export function registerCampaignTools(server: McpServer): void {
         );
       } catch (error) {
         return toolError(error, "Adding delegate failed");
+      }
+    }
+  );
+  server.registerTool(
+    "edit_reply",
+    {
+      title: "Edit a reply draft",
+      description:
+        "Rewrite the text of ONE reply draft before the community posts it. Free. Use it when the user wants different wording on a specific draft from get_posts — the edit lands on the exact reply a creator will claim, so it is what gets posted. Refuses a reply a creator has already claimed (already_claimed): edit before you publish. 280 characters on X, 2000 elsewhere.",
+      inputSchema: {
+        campaign_id: z.string(),
+        reply_id: z.string().describe("Reply id from get_posts"),
+        reply_text: z.string().min(1).describe("The full replacement text"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ campaign_id, reply_id, reply_text }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.editReply({ callerUserId: userId, campaignId: campaign_id, replyId: reply_id, replyText: reply_text });
+        return textResult({ ...result, user_note: "Updated. If the campaign is in held mode, publish_posts releases this post when the user is happy with the wording." });
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Reply edit failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "publish_posts",
+    {
+      title: "Publish held drafts to the community",
+      description:
+        "Release chosen posts (and their reply drafts) to the community earn feed. Free. This is the approval step for a campaign created with post_visibility 'private' (held mode): drafts are found and written but nobody can claim them until you publish them. Pass the post_ids the user approved, or all:true. If the campaign is still private this makes it public — which turns on per-posted-reply billing (20 credits each) — so the API demands confirm:true; only pass it after the user has agreed. Unlike update_campaign's visibility flip, this touches only the posts you name and leaves future drafts held.",
+      inputSchema: {
+        campaign_id: z.string(),
+        post_ids: z.array(z.string()).optional().describe("Post ids from get_posts to release. Omit with all:true to release every held post."),
+        all: z.boolean().optional().describe("Release every held post in the campaign"),
+        confirm: z.boolean().optional().describe("Required only when the campaign itself is still private — confirms the user agreed to community distribution and per-reply billing"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ campaign_id, post_ids, all, confirm }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.publishPosts({ callerUserId: userId, campaignId: campaign_id, postIds: post_ids, all, confirm });
+        return textResult({
+          ...result,
+          user_note: `${result.published} post(s) released; ${result.held_remaining} still held. ${result.note}`,
+        });
+      } catch (error) {
+        return errorResult(error instanceof Error ? error.message : "Publish failed");
       }
     }
   );

@@ -40,6 +40,8 @@ export interface CreateCampaignParams {
   /** private = drafts stay in the owner's workbench; public = community earn
    *  feed distribution (network replies bill the owner). */
   visibility?: "public" | "private";
+  /** Visibility of each discovered post, independent of the campaign (held mode = public campaign + private posts). */
+  postVisibility?: "public" | "private";
   /** Which network discovery works. NOT `sources` — see updateCampaign. */
   platform?: CampaignPlatform;
   /** Reddit only. Bare names or "r/x"; omit for all of Reddit. */
@@ -79,6 +81,7 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
       ...(params.minFollowerCount != null ? { min_follower_count: params.minFollowerCount } : {}),
       ...(params.maxPostAgeDays != null ? { max_post_age_days: params.maxPostAgeDays } : {}),
       ...(params.visibility ? { visibility: params.visibility } : {}),
+      ...(params.postVisibility ? { post_visibility: params.postVisibility } : {}),
       ...(params.platform ? { platform: params.platform } : {}),
       ...(params.targetSubreddits ? { target_subreddits: params.targetSubreddits } : {}),
       ...(params.targetYoutubeChannels
@@ -231,6 +234,7 @@ export interface UpdateCampaignParams {
   relevanceThreshold?: number;
   isActive?: boolean;
   visibility?: "public" | "private";
+  postVisibility?: "public" | "private";
   /** Required (true) when flipping private → public — the backend 400s
    *  `confirmation_required` without it, because public authorizes per-posted-
    *  reply billing. */
@@ -414,6 +418,55 @@ export function setCampaignSchedule(params: {
         ? { frequency_per_day: params.frequencyPerDay }
         : {}),
       ...(params.postsPerRun != null ? { posts_per_run: params.postsPerRun } : {}),
+      ...(params.confirm ? { confirm: true } : {}),
+    }),
+  });
+}
+
+
+/* ── Reseller approval flow ─────────────────────────────────────────────── */
+
+export interface EditReplyResult {
+  success: boolean;
+  reply: { id: string; post_id: string; reply_text: string; previous_text: string };
+}
+
+/** PATCH /agents/campaigns/{id}/replies/{replyId} — edit one draft's text. Free. */
+export function editReply(params: {
+  callerUserId: string;
+  campaignId: string;
+  replyId: string;
+  replyText: string;
+}): Promise<EditReplyResult> {
+  return request(
+    params.callerUserId,
+    `/agents/campaigns/${encodeURIComponent(params.campaignId)}/replies/${encodeURIComponent(params.replyId)}`,
+    { method: "PATCH", body: JSON.stringify({ reply_text: params.replyText }) }
+  );
+}
+
+export interface PublishPostsResult {
+  success: boolean;
+  published: number;
+  published_ids: string[];
+  skipped_ids: string[];
+  held_remaining: number;
+  campaign: { id: string; is_public: boolean; is_active: boolean | null; status: string | null };
+  note: string;
+}
+
+/** POST /agents/campaigns/{id}/publish — release held posts to the community. Free. */
+export function publishPosts(params: {
+  callerUserId: string;
+  campaignId: string;
+  postIds?: string[];
+  all?: boolean;
+  confirm?: boolean;
+}): Promise<PublishPostsResult> {
+  return request(params.callerUserId, `/agents/campaigns/${encodeURIComponent(params.campaignId)}/publish`, {
+    method: "POST",
+    body: JSON.stringify({
+      ...(params.all ? { all: true } : { post_ids: params.postIds ?? [] }),
       ...(params.confirm ? { confirm: true } : {}),
     }),
   });
