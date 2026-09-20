@@ -150,8 +150,40 @@ const bearerAuthUnlessDiscovery: express.RequestHandler = (req, res, next) => {
   return bearerAuth(req, res, next);
 };
 
+// Some minimal HTTP clients — Meta's Muse directory test harness among them —
+// send `Accept: application/json` with no `text/event-stream`. The SDK 406s
+// that unconditionally (the spec says clients MUST list both), even in its
+// JSON-response mode. So: for such a request we (1) widen the Accept header
+// before the SDK sees it and (2) open the session's transport in
+// `enableJsonResponse` mode, so every POST in that session answers with a plain
+// JSON body instead of an SSE stream. Sessions opened by SSE-capable clients
+// (Claude, ChatGPT, the official SDK) are untouched. None of our tools emit
+// notifications mid-call, so JSON mode loses nothing for the JSON-only client.
+function wantsJsonOnly(req: express.Request): boolean {
+  const accept = req.headers.accept ?? "";
+  return accept.includes("application/json") && !accept.includes("text/event-stream");
+}
+
+// The SDK hands the request to Hono's Node adapter, which rebuilds the web
+// `Request` from `rawHeaders`, not from the parsed `headers` object — so both
+// must be rewritten or the SDK still sees the original Accept value.
+const WIDENED_ACCEPT = "application/json, text/event-stream";
+function widenAcceptHeader(req: express.Request): void {
+  req.headers.accept = WIDENED_ACCEPT;
+  const raw = req.rawHeaders;
+  for (let i = 0; i + 1 < raw.length; i += 2) {
+    if (raw[i].toLowerCase() === "accept") {
+      raw[i + 1] = WIDENED_ACCEPT;
+      return;
+    }
+  }
+  raw.push("Accept", WIDENED_ACCEPT);
+}
+
 app.post("/mcp", bearerAuthUnlessDiscovery, async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  const jsonOnly = wantsJsonOnly(req);
+  if (jsonOnly) widenAcceptHeader(req);
 
   if (sessionId && transports.has(sessionId)) {
     beginRequest(sessionId);
@@ -168,6 +200,7 @@ app.post("/mcp", bearerAuthUnlessDiscovery, async (req, res) => {
     const server = createMcpServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
+      enableJsonResponse: jsonOnly,
       onsessioninitialized: (newSessionId) => {
         transports.set(newSessionId, transport);
         touchSession(newSessionId);
