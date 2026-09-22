@@ -15,73 +15,396 @@
     "planned": "Intended as an MCP tool; not built yet (see `tier`).",
     "excluded": "Intentionally NOT an MCP tool (see `note`)."
   },
-  "_profiles_comment": "The server mounts the SAME tools at two URLs with different tool profiles (src/tools/index.ts): /mcp serves `full` (every live tool) and /creator serves `creator` (creator campaigns only \u2014 a brand commissions creators, creators are paid for original content they publish themselves). `mcp` status above is about the FULL profile, which is what the parity check cares about; an entry carries an optional `profiles` array when it is NOT in every profile.",
+  "_profiles_comment": "The server mounts the SAME tools at two URLs with different tool profiles (src/tools/index.ts): /mcp serves `full` (every live tool) and /creator serves `creator` (creator campaigns only — a brand commissions creators, creators are paid for original content they publish themselves). `mcp` status above is about the FULL profile, which is what the parity check cares about; an entry carries an optional `profiles` array when it is NOT in every profile.",
   "profiles": {
-    "full": "Served at /mcp \u2014 Claude, ChatGPT, the MCP registry. Every live tool.",
-    "creator": "Served at /creator \u2014 submitted to Meta's Muse connector directory. Excludes engagement-signal tools pending Meta approval."
+    "full": "Served at /mcp — Claude, ChatGPT, the MCP registry. Every live tool.",
+    "creator": "Served at /creator — submitted to Meta's Muse connector directory. Excludes engagement-signal tools pending Meta approval."
   },
   "endpoints": [
-    { "method": "GET",  "path": "/agents/products/search",                 "mcp": "live",    "tool": "search_products" },
-    { "method": "POST", "path": "/agents/products",                        "mcp": "live",    "tool": "create_product", "note": "List a token-free product (LIST_WITHOUT_TOKEN). URL-first: server auto-fills name/tagline/description/logo/X via extractFromUrl; explicit fields override; socials optional. Idempotent per owner. Free." },
-    { "method": "POST", "path": "/agents/campaigns/boost",                 "mcp": "live",    "tool": "boost_post", "profiles": ["full"], "note": "LIVE on /mcp only. Deliberately absent from the /creator profile: it sells `likes` and `repost` \u2014 engagement signals, which Meta's Spam community standard bars from being paid for \u2014 and accepts Instagram post URLs. Add it back to the creator profile once Meta has approved the connector." },
-    { "method": "GET",  "path": "/agents/campaigns/content/{id}",          "mcp": "live",    "tool": "get_content_campaign_results", "note": "Read what a content campaign produced: derived lifecycle state (processing|active|paused|ended|cancelled — NOT raw_status), submission counts by review state, live post URLs + author, and winners. Free, read-only, paginated; accepts uuid or campaign_number. Closes the loop on create_content_campaign; winner selection stays in the webapp." },
-    { "method": "PATCH", "path": "/agents/campaigns/{id}/replies/{replyId}", "mcp": "live",    "tool": "edit_reply", "note": "Edit one reply draft's text before the community posts it; refuses claimed replies. Free." },
-    { "method": "POST",  "path": "/agents/campaigns/{id}/publish",            "mcp": "live",    "tool": "publish_posts", "note": "Held-mode release: flips chosen CommuniplyPost.is_public=true. Private campaign → requires confirm:true (turns on per-reply billing). Free." },
-    { "method": "POST", "path": "/agents/campaigns/content",               "mcp": "live",    "tool": "create_content_campaign", "note": "Two tools over one endpoint: suggest_content_campaign (dry_run:true, free preview) + create_content_campaign (dry_run:false, launch, 1000cr). Content = Growth Boost / take_action; results readable via GET /agents/campaigns/content/{id}; winner selection stays in the webapp." },
-    { "method": "GET",  "path": "/agents/credits/balance",                 "mcp": "live",    "tool": "check_balance", "note": "Free. Per-user agent key \u2192 the endpoint reports the connected user's own balance (direct-Supabase workaround removed in v0.8.0)." },
-
-    { "method": "GET",  "path": "/agents/content/spaces",                  "mcp": "live",    "tool": "list_content_spaces", "note": "Content Studio: content-enabled spaces the caller may draft into (owner / account-delegate / campaign-member). Free." },
-    { "method": "POST", "path": "/agents/content/candidates",              "mcp": "live",    "tool": "write_content_candidates", "note": "Content Studio: draft up to 25 ContentDraft candidates (source='agent') into a space, written in the brand voice. FREE; auto-reviewed (score-only) in the background; never auto-published — a human stages in the webapp. platform must be a workspace platform. Distinct from campaigns/content (community content campaign)." },
-    { "method": "GET",  "path": "/agents/content/workspace",               "mcp": "live",    "tool": "get_content_workspace", "note": "Content Studio: the brand's calibration — voice, platforms, post types, playbook, threshold, topic inventory, style guides. Free. enabled:false when no workspace." },
-    { "method": "POST", "path": "/agents/content/workspace",               "mcp": "live",    "tool": "setup_content_space", "note": "Content Studio onboarding: turn content on (space_id or new_space:{name} → solo AmplifySpace) with voice/platforms/post_types/topics as fields (free) or a pasted brand_doc (5cr). Also updates settings later." },
-    { "method": "GET",  "path": "/agents/content/topics",                  "mcp": "live",    "tool": "manage_content_topics", "note": "Content Studio: topic inventory list. Free." },
-    { "method": "POST", "path": "/agents/content/topics",                  "mcp": "live",    "tool": "manage_content_topics", "note": "Content Studio: add ≤12 topics (keywords proposed when omitted). Free." },
-    { "method": "PATCH","path": "/agents/content/topics",                  "mcp": "live",    "tool": "manage_content_topics", "note": "Content Studio: edit / pause a topic. Free." },
-    { "method": "DELETE","path": "/agents/content/topics",                 "mcp": "live",    "tool": "manage_content_topics", "note": "Content Studio: remove a topic. Free." },
-    { "method": "POST", "path": "/agents/content/topics/suggest",          "mcp": "live",    "tool": "manage_content_topics", "note": "Content Studio: KB-grounded topic ideas (action 'suggest'). Free." },
-    { "method": "GET",  "path": "/agents/content/queue",                   "mcp": "live",    "tool": "get_content_queue", "note": "Content Studio: the space's drafts with reviewer score/verdict/summary. Free." },
-    { "method": "PATCH","path": "/agents/content/drafts",                  "mcp": "live",    "tool": "revise_content_draft", "note": "Content Studio: stage / discard / edit (free); revise (presets: shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal) / fix / humanize / review (2cr). Never publishes." },
-    { "method": "POST", "path": "/agents/content/feedback",                "mcp": "live",    "tool": "teach_content_voice", "note": "Content Studio learning loop: a reaction → durable KB rule (1cr), applied immediately by default (apply:false leaves it pending in web Settings)." },
-
-    { "method": "POST", "path": "/agents/campaigns",                       "mcp": "live",    "tool": "create_campaign", "note": "Discovery campaign, 10cr. Campaigns are stamped creator_id = the connected user (per-user agent); every read/op below is scoped to the acting user's own agent key. `visibility` param: REST default public (network distribution, network replies bill the owner); the MCP tool defaults PRIVATE (owner's workbench only) and requires explicit user intent for public. `platform` twitter|linkedin|reddit|youtube (default twitter) picks the discovery pipeline; `target_subreddits` / `target_youtube_channels` narrow it (rejected with 400 on a mismatched platform rather than silently ignored). tiktok is NOT offered \u2014 screenshot-only proof, which agents cannot supply." },
-    { "method": "GET",  "path": "/agents/campaigns",                       "mcp": "live",    "tool": "list_campaigns", "note": "Free. Returns ALL the user's campaigns — web-created included (creator_id scope since v0.8.1/app widening), not just connector-created." },
-    { "method": "GET",  "path": "/agents/campaigns/{id}",                  "mcp": "live",    "tool": "get_campaign", "note": "Free. Config + posts/replies stats." },
-    { "method": "POST", "path": "/agents/campaigns/{id}/generate-posts",   "mcp": "live",    "tool": "generate_posts", "note": "12cr/post discovered; Apify discovery + Claude reply drafting, can take minutes." },
-    { "method": "POST", "path": "/agents/campaigns/{id}/research",         "mcp": "live",    "tool": "run_research", "note": "FREE topic/competitor analysis, 7-day cache; the sanctioned pre-flight before generate_posts." },
-    { "method": "GET",  "path": "/agents/campaigns/{id}/research",         "mcp": "live",    "tool": "get_research" },
-    { "method": "GET",  "path": "/agents/campaigns/{id}/posts",           "mcp": "live",    "tool": "get_posts" },
-    { "method": "POST", "path": "/agents/campaigns/{id}/review-posts",     "mcp": "live",    "tool": "review_posts", "note": "2cr/post reviewed — dry_run billed too (the AI review runs either way). The daily-spend cap sees the real pending charge." },
-    { "method": "POST", "path": "/agents/campaigns/{id}/regenerate-replies","mcp": "live",   "tool": "regenerate_replies", "note": "5cr/reply with edit_request; claimed replies refused. The daily-spend cap sees the real pending charge." },
-    { "method": "POST", "path": "/agents/campaigns/{id}/delegates",        "mcp": "live",    "tool": "add_delegate", "note": "Free. Grants a webapp user My-Campaigns access to an agent-created campaign." },
-    { "method": "PATCH","path": "/agents/campaigns/{id}",                  "mcp": "live",    "tool": "update_campaign", "note": "Free. Visibility private\u2192public REQUIRES confirm:true (400 confirmation_required otherwise) since v0.8.1. Keywords MERGE (add/remove, min 1 max 40). `sources` \u2192 enabled_verticals (keywords always forced in) is the only /v1 way to APPLY research phrases/influencers/lists. monitor_accounts \u2192 research_analysis.selectedInfluencerUsernames (auto-enables influencers). relevance_threshold 1-10, is_active pause/resume, visibility flip ALSO cascades CommuniplyPost.is_public \u2014 the earn feed requires both, so a campaign-only flip would be cosmetic. Also `platform` (409 platform_locked once ANY post exists \u2014 switching would mix two platforms' posts and proof rules in one funnel) and `target_subreddits` / `target_youtube_channels` (replace-semantics, [] clears; validated against the platform the campaign will have AFTER the request, so switch+retarget in one call works)." },
-    { "method": "GET",  "path": "/agents/campaigns/{id}/activity",         "mcp": "live",    "tool": "get_campaign_activity", "note": "Free, no scraping. Since-watermark delta: new posts (semantic_relevance_score \u2014 the score the gate decides on), replies claimed since with live reply_url + survival/engagement, `quiet` flag, and `checked_at` to pass back as `since`." },
-    { "method": "GET",  "path": "/agents/campaigns/{id}/results",          "mcp": "live",    "tool": "get_campaign_results", "note": "Free and scrape-free BY DESIGN \u2014 the webapp analytics route spends Apify credits, so an agent polling that would drain the user. Funnel + approval rate over judged replies only + survival gated by SURVIVAL_VOLUME_FLOOR + spend from CreditTransactions.campaign_id + credits_per_usable_reply." },
-    { "method": "GET",  "path": "/agents/campaigns/{id}/schedule",         "mcp": "live",    "tool": "set_campaign_schedule", "note": "Read side of the schedule (current config, projection, balance, cap, limits, blockers). The MCP tool covers reads via its un-confirmed call, which changes nothing and returns the same projection; get_campaign also carries the current schedule state." },
-    { "method": "PUT",  "path": "/agents/campaigns/{id}/schedule",         "mcp": "live",    "tool": "set_campaign_schedule", "note": "Standing discovery. Free to call, but AUTHORIZES UNATTENDED SPEND \u2014 the hourly cron bills the OWNER 12cr per post found with no human in the loop. `enabled:true` without `confirm:true` \u2192 400 confirmation_required + cost projection (the v0.5.2 communication contract enforced at the API layer, so the REST/skill path gets it too). CRITICAL: scheduled runs bill creator_id directly and NEVER pass through validateCallerUserId, so the per-user daily spend cap cannot brake them per-run \u2014 it is enforced HERE as a ceiling (429 daily_spend_cap_exceeded). Agent limits 4 runs/day, 20 posts/run, 600cr/day projected (workbench allows 24\u00d7100), because the cron clears only ~2-4 campaigns per 300s invocation." },
-    { "method": "GET",  "path": "/agents/credits/history",                 "mcp": "live",    "tool": "credit_history", "note": "Free. Returns the connected user's transactions (per-user agent key)." },
-
-    { "method": "GET",  "path": "/agents/participate/feed",               "mcp": "live",    "tool": "find_opportunities", "note": "Free. Globally unclaimed reply + quote-post drafts (a claimed draft drops out for everyone). URL-provable actions only at BOTH layers (AGENT_COMPLETABLE_ACTION_TYPES = reply, quote): like/repost need an uploaded screenshot and there is no agent upload path, so the backend 400s on ?actionType=like|repost. An empty feed is normal, not an error." },
-    { "method": "POST", "path": "/agents/participate/submit",             "mcp": "live",    "tool": "submit_participation", "note": "Reply claims on X / Reddit / YouTube / LinkedIn, plus X quote-post claims (verifyQuoteTweet: author-match + must quote the source, rejected up front). Attribution runs off the EARNING user's linked handle for that platform (ensure*Handle, same helpers as the web path) — unlinked → 'add your handle'. X additionally gets a synchronous author-match against the live post. Likes/reposts + TikTok need an uploaded screenshot → action_type_unavailable." },
-    { "method": "GET",  "path": "/agents/participate/earnings",           "mcp": "live",    "tool": "get_earnings", "note": "Free. Scoped to the acting user via their per-user agent key." },
-
-    { "method": "GET",  "path": "/agents/participate/campaigns",          "mcp": "live",    "tool": "find_open_campaigns", "note": "Free. Active public take-action/content campaigns + community campaigns from the acting user's spaces; kind = content | take_action." },
-    { "method": "GET",  "path": "/agents/participate/campaigns/{id}",     "mcp": "live",    "tool": "get_campaign_brief", "note": "Free. Full brief + judging criteria + rewards + the user's remaining submission allowance." },
-    { "method": "POST", "path": "/agents/participate/campaigns/{id}/submissions", "mcp": "live", "tool": "submit_campaign_work", "note": "Free — EARNS on approval (community→Stars, public→points). Lands PENDING in CampaignSubmissions. cast_url and/or media_url and/or description; media_url = hosted image/video for ad-hoc creative tasks (LINKS ONLY, no uploads) — direct-image/X URLs go to image_url and render inline in the owner review modal, everything else stays a link. Guards: URL validity, campaign-wide duplicate proof, X-post author-match vs the acting user's linked handle, per-agent daily cap." },
-    { "method": "GET",  "path": "/agents/participate/campaigns/{id}/my-submissions", "mcp": "live", "tool": "get_my_submissions", "note": "Free. Status + review notes; point allocations hidden until rewards ship (web parity)." },
-
-    { "method": "POST", "path": "/agents/participate/claim-signature",    "mcp": "excluded", "note": "Tier 3. $PRO pays the AGENT's wallet and is gated on erc8004_agent_id + allowlist; there is no path to pay a human user's wallet yet." },
-    { "method": "POST", "path": "/agents/participate/record-claim",       "mcp": "excluded", "note": "Tier 3. Pairs with claim-signature (agent-wallet-only $PRO claim)." },
-
-    { "method": "POST", "path": "/agents/register",                       "mcp": "excluded", "note": "OAuth connect auto-resolves the user; the connector never registers agents." },
-    { "method": "POST", "path": "/agents/create-link",                    "mcp": "excluded", "note": "Owner-linking is replaced by the OAuth consent flow." },
-    { "method": "GET",  "path": "/agents/me",                             "mcp": "excluded", "note": "Identity comes from the OAuth session, not a tool." },
-    { "method": "POST", "path": "/agents/rotate-key",                     "mcp": "excluded", "note": "Key management is not a connector concern." },
-    { "method": "POST", "path": "/agents/import",                         "mcp": "excluded", "note": "ERC-8004 pre-registration helper; not relevant to the connector." },
-    { "method": "GET",  "path": "/agents/by-user",                        "mcp": "excluded", "note": "Public listing helper; not needed in-connector." },
-    { "method": "POST", "path": "/agents/authorize",                      "mcp": "excluded", "note": "No longer used by the connector (per-user agents since v0.8.0; consent is recorded by /agents/connector/provision). Trusted-agent route kept for other first-party bots." },
-    { "method": "DELETE","path": "/agents/authorize",                     "mcp": "excluded", "note": "Authorization revocation is handled via Claude connector settings + webapp." },
-    { "method": "POST", "path": "/agents/credits/topup",                  "mcp": "excluded", "note": "POLICY: keep crypto/USDC top-up OUT of the connector (Anthropic directory bars money movement). Top-up stays on the webapp; the connector only spends a prefunded balance." },
-    { "method": "POST", "path": "/agents/telegram/create-link",           "mcp": "excluded", "note": "Telegram-specific; not relevant to the Claude connector." },
-    { "method": "GET",  "path": "/agents/telegram/lookup",                "mcp": "excluded", "note": "Telegram-specific; not relevant to the Claude connector." }
+    {
+      "method": "GET",
+      "path": "/agents/products/search",
+      "mcp": "live",
+      "tool": "search_products"
+    },
+    {
+      "method": "POST",
+      "path": "/agents/products",
+      "mcp": "live",
+      "tool": "create_product",
+      "note": "List a token-free product (LIST_WITHOUT_TOKEN). URL-first: server auto-fills name/tagline/description/logo/X via extractFromUrl; explicit fields override; socials optional. Idempotent per owner. Free."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/boost",
+      "mcp": "live",
+      "tool": "boost_post",
+      "profiles": [
+        "full"
+      ],
+      "note": "LIVE on /mcp only. Deliberately absent from the /creator profile: it sells `likes` and `repost` — engagement signals, which Meta's Spam community standard bars from being paid for — and accepts Instagram post URLs. Add it back to the creator profile once Meta has approved the connector."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/content/{id}",
+      "mcp": "live",
+      "tool": "get_content_campaign_results",
+      "note": "Read what a content campaign produced: derived lifecycle state (processing|active|paused|ended|cancelled — NOT raw_status), submission counts by review state, live post URLs + author, and winners. Free, read-only, paginated; accepts uuid or campaign_number. Closes the loop on create_content_campaign; winner selection stays in the webapp."
+    },
+    {
+      "method": "PATCH",
+      "path": "/agents/campaigns/{id}/replies/{replyId}",
+      "mcp": "live",
+      "tool": "edit_reply",
+      "note": "Edit one reply draft's text before the community posts it; refuses claimed replies. Free."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/{id}/publish",
+      "mcp": "live",
+      "tool": "publish_posts",
+      "note": "Held-mode release: flips chosen CommuniplyPost.is_public=true. Private campaign → requires confirm:true (turns on per-reply billing). Free."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/content",
+      "mcp": "live",
+      "tool": "create_content_campaign",
+      "note": "Two tools over one endpoint: suggest_content_campaign (dry_run:true, free preview) + create_content_campaign (dry_run:false, launch, 1000cr). Content = Growth Boost / take_action; results readable via GET /agents/campaigns/content/{id}; winner selection stays in the webapp."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/credits/balance",
+      "mcp": "live",
+      "tool": "check_balance",
+      "note": "Free. Per-user agent key → the endpoint reports the connected user's own balance (direct-Supabase workaround removed in v0.8.0)."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/content/spaces",
+      "mcp": "live",
+      "tool": "list_content_spaces",
+      "note": "Content Studio: content-enabled spaces the caller may draft into (owner / account-delegate / campaign-member). Free."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/candidates",
+      "mcp": "live",
+      "tool": "write_content_candidates",
+      "note": "Content Studio: draft up to 25 ContentDraft candidates (source='agent') into a space, written in the brand voice. FREE; auto-reviewed (score-only) in the background; never auto-published — a human stages in the webapp. platform must be a workspace platform. Distinct from campaigns/content (community content campaign)."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/content/workspace",
+      "mcp": "live",
+      "tool": "get_content_workspace",
+      "note": "Content Studio: the brand's calibration — voice, platforms, post types, playbook, threshold, topic inventory, style guides. Free. enabled:false when no workspace."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/workspace",
+      "mcp": "live",
+      "tool": "setup_content_space",
+      "note": "Content Studio onboarding: turn content on (space_id or new_space:{name} → solo AmplifySpace) with voice/platforms/post_types/topics as fields (free) or a pasted brand_doc (5cr). Also updates settings later."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/content/topics",
+      "mcp": "live",
+      "tool": "manage_content_topics",
+      "note": "Content Studio: topic inventory list. Free."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/topics",
+      "mcp": "live",
+      "tool": "manage_content_topics",
+      "note": "Content Studio: add ≤12 topics (keywords proposed when omitted). Free."
+    },
+    {
+      "method": "PATCH",
+      "path": "/agents/content/topics",
+      "mcp": "live",
+      "tool": "manage_content_topics",
+      "note": "Content Studio: edit / pause a topic. Free."
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/content/topics",
+      "mcp": "live",
+      "tool": "manage_content_topics",
+      "note": "Content Studio: remove a topic. Free."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/topics/suggest",
+      "mcp": "live",
+      "tool": "manage_content_topics",
+      "note": "Content Studio: KB-grounded topic ideas (action 'suggest'). Free."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/content/queue",
+      "mcp": "live",
+      "tool": "get_content_queue",
+      "note": "Content Studio: the space's drafts with reviewer score/verdict/summary. Free."
+    },
+    {
+      "method": "PATCH",
+      "path": "/agents/content/drafts",
+      "mcp": "live",
+      "tool": "revise_content_draft",
+      "note": "Content Studio: stage / discard / edit (free); revise (presets: shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal) / fix / humanize / review (2cr). Never publishes."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/feedback",
+      "mcp": "live",
+      "tool": "teach_content_voice",
+      "note": "Content Studio learning loop: a reaction → durable KB rule (1cr), applied immediately by default (apply:false leaves it pending in web Settings)."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/analyze-url",
+      "mcp": "live",
+      "tool": "analyze_url"
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns",
+      "mcp": "live",
+      "tool": "create_campaign",
+      "note": "Discovery campaign, 10cr. Campaigns are stamped creator_id = the connected user (per-user agent); every read/op below is scoped to the acting user's own agent key. `visibility` param: REST default public (network distribution, network replies bill the owner); the MCP tool defaults PRIVATE (owner's workbench only) and requires explicit user intent for public. `platform` twitter|linkedin|reddit|youtube (default twitter) picks the discovery pipeline; `target_subreddits` / `target_youtube_channels` narrow it (rejected with 400 on a mismatched platform rather than silently ignored). tiktok is NOT offered — screenshot-only proof, which agents cannot supply."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns",
+      "mcp": "live",
+      "tool": "list_campaigns",
+      "note": "Free. Returns ALL the user's campaigns — web-created included (creator_id scope since v0.8.1/app widening), not just connector-created."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/{id}",
+      "mcp": "live",
+      "tool": "get_campaign",
+      "note": "Free. Config + posts/replies stats."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/{id}/generate-posts",
+      "mcp": "live",
+      "tool": "generate_posts",
+      "note": "12cr/post discovered; Apify discovery + Claude reply drafting, can take minutes."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/{id}/research",
+      "mcp": "live",
+      "tool": "run_research",
+      "note": "FREE topic/competitor analysis, 7-day cache; the sanctioned pre-flight before generate_posts."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/{id}/research",
+      "mcp": "live",
+      "tool": "get_research"
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/{id}/posts",
+      "mcp": "live",
+      "tool": "get_posts"
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/{id}/review-posts",
+      "mcp": "live",
+      "tool": "review_posts",
+      "note": "2cr/post reviewed — dry_run billed too (the AI review runs either way). The daily-spend cap sees the real pending charge."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/{id}/regenerate-replies",
+      "mcp": "live",
+      "tool": "regenerate_replies",
+      "note": "5cr/reply with edit_request; claimed replies refused. The daily-spend cap sees the real pending charge."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/{id}/delegates",
+      "mcp": "live",
+      "tool": "add_delegate",
+      "note": "Free. Grants a webapp user My-Campaigns access to an agent-created campaign."
+    },
+    {
+      "method": "PATCH",
+      "path": "/agents/campaigns/{id}",
+      "mcp": "live",
+      "tool": "update_campaign",
+      "note": "Free. Visibility private→public REQUIRES confirm:true (400 confirmation_required otherwise) since v0.8.1. Keywords MERGE (add/remove, min 1 max 40). `sources` → enabled_verticals (keywords always forced in) is the only /v1 way to APPLY research phrases/influencers/lists. monitor_accounts → research_analysis.selectedInfluencerUsernames (auto-enables influencers). relevance_threshold 1-10, is_active pause/resume, visibility flip ALSO cascades CommuniplyPost.is_public — the earn feed requires both, so a campaign-only flip would be cosmetic. Also `platform` (409 platform_locked once ANY post exists — switching would mix two platforms' posts and proof rules in one funnel) and `target_subreddits` / `target_youtube_channels` (replace-semantics, [] clears; validated against the platform the campaign will have AFTER the request, so switch+retarget in one call works)."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/{id}/activity",
+      "mcp": "live",
+      "tool": "get_campaign_activity",
+      "note": "Free, no scraping. Since-watermark delta: new posts (semantic_relevance_score — the score the gate decides on), replies claimed since with live reply_url + survival/engagement, `quiet` flag, and `checked_at` to pass back as `since`."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/{id}/results",
+      "mcp": "live",
+      "tool": "get_campaign_results",
+      "note": "Free and scrape-free BY DESIGN — the webapp analytics route spends Apify credits, so an agent polling that would drain the user. Funnel + approval rate over judged replies only + survival gated by SURVIVAL_VOLUME_FLOOR + spend from CreditTransactions.campaign_id + credits_per_usable_reply."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/{id}/schedule",
+      "mcp": "live",
+      "tool": "set_campaign_schedule",
+      "note": "Read side of the schedule (current config, projection, balance, cap, limits, blockers). The MCP tool covers reads via its un-confirmed call, which changes nothing and returns the same projection; get_campaign also carries the current schedule state."
+    },
+    {
+      "method": "PUT",
+      "path": "/agents/campaigns/{id}/schedule",
+      "mcp": "live",
+      "tool": "set_campaign_schedule",
+      "note": "Standing discovery. Free to call, but AUTHORIZES UNATTENDED SPEND — the hourly cron bills the OWNER 12cr per post found with no human in the loop. `enabled:true` without `confirm:true` → 400 confirmation_required + cost projection (the v0.5.2 communication contract enforced at the API layer, so the REST/skill path gets it too). CRITICAL: scheduled runs bill creator_id directly and NEVER pass through validateCallerUserId, so the per-user daily spend cap cannot brake them per-run — it is enforced HERE as a ceiling (429 daily_spend_cap_exceeded). Agent limits 4 runs/day, 20 posts/run, 600cr/day projected (workbench allows 24×100), because the cron clears only ~2-4 campaigns per 300s invocation."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/credits/history",
+      "mcp": "live",
+      "tool": "credit_history",
+      "note": "Free. Returns the connected user's transactions (per-user agent key)."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/participate/feed",
+      "mcp": "live",
+      "tool": "find_opportunities",
+      "note": "Free. Globally unclaimed reply + quote-post drafts (a claimed draft drops out for everyone). URL-provable actions only at BOTH layers (AGENT_COMPLETABLE_ACTION_TYPES = reply, quote): like/repost need an uploaded screenshot and there is no agent upload path, so the backend 400s on ?actionType=like|repost. An empty feed is normal, not an error."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/submit",
+      "mcp": "live",
+      "tool": "submit_participation",
+      "note": "Reply claims on X / Reddit / YouTube / LinkedIn, plus X quote-post claims (verifyQuoteTweet: author-match + must quote the source, rejected up front). Attribution runs off the EARNING user's linked handle for that platform (ensure*Handle, same helpers as the web path) — unlinked → 'add your handle'. X additionally gets a synchronous author-match against the live post. Likes/reposts + TikTok need an uploaded screenshot → action_type_unavailable."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/participate/earnings",
+      "mcp": "live",
+      "tool": "get_earnings",
+      "note": "Free. Scoped to the acting user via their per-user agent key."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/participate/campaigns",
+      "mcp": "live",
+      "tool": "find_open_campaigns",
+      "note": "Free. Active public take-action/content campaigns + community campaigns from the acting user's spaces; kind = content | take_action."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/participate/campaigns/{id}",
+      "mcp": "live",
+      "tool": "get_campaign_brief",
+      "note": "Free. Full brief + judging criteria + rewards + the user's remaining submission allowance."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/campaigns/{id}/submissions",
+      "mcp": "live",
+      "tool": "submit_campaign_work",
+      "note": "Free — EARNS on approval (community→Stars, public→points). Lands PENDING in CampaignSubmissions. cast_url and/or media_url and/or description; media_url = hosted image/video for ad-hoc creative tasks (LINKS ONLY, no uploads) — direct-image/X URLs go to image_url and render inline in the owner review modal, everything else stays a link. Guards: URL validity, campaign-wide duplicate proof, X-post author-match vs the acting user's linked handle, per-agent daily cap."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/participate/campaigns/{id}/my-submissions",
+      "mcp": "live",
+      "tool": "get_my_submissions",
+      "note": "Free. Status + review notes; point allocations hidden until rewards ship (web parity)."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/claim-signature",
+      "mcp": "excluded",
+      "note": "Tier 3. $PRO pays the AGENT's wallet and is gated on erc8004_agent_id + allowlist; there is no path to pay a human user's wallet yet."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/record-claim",
+      "mcp": "excluded",
+      "note": "Tier 3. Pairs with claim-signature (agent-wallet-only $PRO claim)."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/register",
+      "mcp": "excluded",
+      "note": "OAuth connect auto-resolves the user; the connector never registers agents."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/create-link",
+      "mcp": "excluded",
+      "note": "Owner-linking is replaced by the OAuth consent flow."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/me",
+      "mcp": "excluded",
+      "note": "Identity comes from the OAuth session, not a tool."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/rotate-key",
+      "mcp": "excluded",
+      "note": "Key management is not a connector concern."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/import",
+      "mcp": "excluded",
+      "note": "ERC-8004 pre-registration helper; not relevant to the connector."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/by-user",
+      "mcp": "excluded",
+      "note": "Public listing helper; not needed in-connector."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/authorize",
+      "mcp": "excluded",
+      "note": "No longer used by the connector (per-user agents since v0.8.0; consent is recorded by /agents/connector/provision). Trusted-agent route kept for other first-party bots."
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/authorize",
+      "mcp": "excluded",
+      "note": "Authorization revocation is handled via Claude connector settings + webapp."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/credits/topup",
+      "mcp": "excluded",
+      "note": "POLICY: keep crypto/USDC top-up OUT of the connector (Anthropic directory bars money movement). Top-up stays on the webapp; the connector only spends a prefunded balance."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/telegram/create-link",
+      "mcp": "excluded",
+      "note": "Telegram-specific; not relevant to the Claude connector."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/telegram/lookup",
+      "mcp": "excluded",
+      "note": "Telegram-specific; not relevant to the Claude connector."
+    }
   ]
 }

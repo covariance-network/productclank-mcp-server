@@ -1,7 +1,8 @@
 /**
  * Campaigns domain — the full "grow this product" loop.
  *
- * create_campaign (10 cr) → run_research (free) → generate_posts (12 cr/post)
+ * analyze_url (3 cr, only if you cannot browse) → create_campaign (10 cr) →
+ * run_research (free) → generate_posts (12 cr/post)
  * → get_posts (free) → review_posts (2 cr/post) → regenerate_replies (5 cr/reply)
  * → add_delegate (free, hands the campaign to a human in the webapp).
  *
@@ -188,6 +189,61 @@ export function registerCampaignTools(
   profile: ToolProfile = "full"
 ): void {
   const campaignKinds = profile === "creator" ? "discovery" : "discovery/boost";
+
+  server.registerTool(
+    "analyze_url",
+    {
+      title: "Derive a campaign brief from a product URL",
+      description:
+        "Read a product's website and propose the two fields create_campaign requires: keywords and search_context (plus a suggested title). 3 credits, charged only when a brief comes back. Creates nothing — no campaign, no product, no discovery, and no commitment to create one. USE THIS ONLY WHEN YOU CANNOT FETCH THE PAGE YOURSELF. If you can browse from this client, do the derivation in the conversation instead: it is free, you can iterate with the user before anything is spent, and you know what they have told you about their audience — a one-shot page read does not. Reach for this when web access is unavailable or the fetch failed, and say plainly that it costs 3 credits before calling. It returns 8-15 keywords: put them in front of the user and cut to the 3-8 that match how their buyers actually talk, because create_campaign is what the campaign then runs on.",
+      inputSchema: {
+        url: z.string().describe("The product's website"),
+        platform: z
+          .enum(["twitter", "linkedin", "reddit", "youtube"])
+          .optional()
+          .describe(
+            "Platform the brief is written for — the vocabulary adapts (videos on YouTube, threads on Reddit). Pass the same value you will pass to create_campaign. Defaults to twitter."
+          ),
+        product_id: z
+          .string()
+          .optional()
+          .describe(
+            "Existing product UUID (search_products / create_product) — its name and tagline sharpen the brief."
+          ),
+        product_name: z.string().optional().describe("Overrides the listing's name"),
+        product_tagline: z.string().optional().describe("Overrides the listing's tagline"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async (args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.analyzeUrlForCampaign({
+          callerUserId: userId,
+          url: args.url,
+          platform: args.platform,
+          productId: args.product_id,
+          productName: args.product_name,
+          productTagline: args.product_tagline,
+        });
+        return textResult({
+          platform: result.platform,
+          product: result.product,
+          keywords: result.keywords,
+          search_context: result.search_context,
+          suggested_title: result.suggested_title,
+          credits: result.credits,
+          next_step:
+            "Nothing was created. Show the user these keywords and the search context, let them cut and edit, then pass the approved versions to create_campaign (10 credits).",
+          user_note:
+            "This is a proposal read off the website, not a campaign. It returns keywords broadly; 3-8 focused phrases discover better than 15 loose ones, and the user knows which are noise.",
+        });
+      } catch (error) {
+        return toolError(error, "URL analysis failed");
+      }
+    }
+  );
 
   server.registerTool(
     "create_campaign",
