@@ -3,7 +3,8 @@
  *
  * Wraps /agents/campaigns/** — create (10 cr), list/get/posts (free),
  * research (free, cached 7 days), generate-posts (12 cr/post),
- * review-posts (2 cr/post), regenerate-replies (5 cr/reply), delegates (free).
+ * review-posts (2 cr/post), regenerate-replies (5 cr/reply), delegates (free),
+ * analyze-url (3 cr, pre-create brief derivation).
  * Every call authenticates as the acting user's own per-user agent (see
  * client.ts) — the key itself scopes access; no caller_user_id is sent.
  */
@@ -57,6 +58,47 @@ export interface CreateCampaignParams {
  * work it cannot complete.
  */
 export type CampaignPlatform = "twitter" | "linkedin" | "reddit" | "youtube";
+
+export interface AnalyzeUrlParams {
+  callerUserId: string;
+  /** The product's website. */
+  url: string;
+  /** Platform the brief is written for; the vocabulary adapts. */
+  platform?: CampaignPlatform;
+  /** Optional listing whose name/tagline sharpen the brief. */
+  productId?: string;
+  productName?: string;
+  productTagline?: string;
+}
+
+/**
+ * Derive a campaign brief (keywords + search_context) from a product URL.
+ * 3 credits, charged only on success. Creates nothing.
+ *
+ * This is the fallback for a client that CANNOT browse the web. When the
+ * assistant can read the page itself, it should — that derivation is free and
+ * better informed by the conversation.
+ */
+export function analyzeUrlForCampaign(params: AnalyzeUrlParams): Promise<{
+  success: boolean;
+  platform: CampaignPlatform;
+  product: { id: string; name: string; tagline: string | null } | null;
+  search_context: string;
+  keywords: string[];
+  suggested_title: string | null;
+  credits: { credits_used: number; credits_remaining: number };
+}> {
+  return request(params.callerUserId, "/agents/campaigns/analyze-url", {
+    method: "POST",
+    body: JSON.stringify({
+      url: params.url,
+      ...(params.platform ? { platform: params.platform } : {}),
+      ...(params.productId ? { product_id: params.productId } : {}),
+      ...(params.productName ? { product_name: params.productName } : {}),
+      ...(params.productTagline ? { product_tagline: params.productTagline } : {}),
+    }),
+  });
+}
 
 export function createCampaign(params: CreateCampaignParams): Promise<{
   success: boolean;
