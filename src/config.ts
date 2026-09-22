@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 /**
  * Environment configuration for the ProductClank MCP server.
  *
@@ -13,9 +15,34 @@ function optional(name: string, fallback: string): string {
 
 /**
  * Server version — reported over MCP (`initialize`), on /health, and as a
- * property on every analytics event. Keep in sync with package.json.
+ * property on every analytics event.
+ *
+ * Read from package.json rather than duplicated here. It used to be a literal
+ * with a "keep in sync" comment, and it did not stay in sync: 0.9.6 deployed
+ * correctly while /health still said 0.9.5, which is indistinguishable from a
+ * deploy that silently did not land. The version is how a deploy is verified,
+ * so it cannot be a second copy someone has to remember.
+ *
+ * `../package.json` resolves from this module's location in both layouts:
+ * `dist/config.js` -> /app/package.json in the container, and `src/config.ts`
+ * -> the repo root under tsx. If it cannot be read we report it as unknown —
+ * a missing version is honest, a stale one is a trap.
  */
-export const SERVER_VERSION = "0.9.5";
+function readPackageVersion(): string {
+  try {
+    const raw = readFileSync(new URL("../package.json", import.meta.url), "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    const version =
+      parsed && typeof parsed === "object" && "version" in parsed
+        ? (parsed as { version?: unknown }).version
+        : undefined;
+    return typeof version === "string" && version ? version : "0.0.0-unknown";
+  } catch {
+    return "0.0.0-unknown";
+  }
+}
+
+export const SERVER_VERSION = readPackageVersion();
 
 const issuer = optional(
   "OAUTH_ISSUER",
