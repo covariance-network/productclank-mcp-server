@@ -2,12 +2,41 @@
 
 **Launch community growth campaigns from your AI assistant.** ProductClank turns real communities (and their agents) into a distribution network — this MCP server lets Claude, ChatGPT, or any MCP client rally that network on your behalf: boost a post with real replies, likes, and reposts; launch community content campaigns; draft social content into your own pipeline.
 
-- **Remote server:** `https://mcp.productclank.com/mcp` (Streamable HTTP)
+- **Remote server:** `https://mcp.productclank.com/mcp` (Streamable HTTP) — see [Endpoints](#endpoints) for the creator-campaign endpoint
 - **Auth:** OAuth 2.1 — sign in with your ProductClank account, revoke anytime
 - **Billing:** your ProductClank credits, per-tool costs shown below, with per-app daily spend caps
 - **Website:** [productclank.com/mcp](https://www.productclank.com/mcp)
 
 The **same URL** works in both Claude and ChatGPT — the only difference is where each app hides its "add a connector" screen (and, for ChatGPT, a plan/Developer-mode requirement). Once connected, both drive the identical tools below.
+
+## Endpoints
+
+The server mounts the same MCP implementation at two URLs, each serving a
+different **tool profile** (`src/tools/index.ts`):
+
+| Endpoint | Profile | Served to | Tools |
+|---|---|---|---|
+| `https://mcp.productclank.com/mcp` | `full` | Claude, ChatGPT, the MCP registry — **the URL in every connect guide below** | all of them, `boost_post` included |
+| `https://mcp.productclank.com/creator` | `creator` | Meta's Muse connector directory | everything except `boost_post` |
+
+The creator profile is the connector as a **creator-campaign** product: a brand
+commissions creators, and creators are paid for original content they publish
+from their own accounts. `boost_post` is the one tool that does not fit — it
+sells `likes` and `repost`, which are engagement signals, and accepts Instagram
+post URLs — and Meta's Spam community standard bars paying for engagement. So
+it is excluded from `/creator` **pending Meta approval**, after which it can be
+added back.
+
+The split is by URL rather than by OAuth client on purpose: `tools/list` is
+deliberately unauthenticated (so directory health checks can introspect), which
+means a reviewer can list tools before any client identity exists. Prompts and
+the `productclank://capabilities` resource are filtered the same way, so nothing
+the creator endpoint serves mentions boosts, likes or reposts.
+
+Both endpoints share one OAuth authorization server, one set of tokens, one
+session sweeper and the same JSON-only-client handling; each is its own RFC 9728
+protected resource (`/.well-known/oauth-protected-resource/mcp` and
+`…/creator`).
 
 ## Connect from Claude
 
@@ -58,7 +87,7 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `update_campaign` | Merge keywords, enable the discovery sources research found, move the relevance bar, pause/resume, re-aim the platform targeting, change who posts the drafts | free |
 | `set_campaign_schedule` | Put discovery on a schedule so it keeps finding conversations between sessions. Shows the projected daily cost and requires an explicit yes before enabling | free to set · 12cr per post found |
 | `add_delegate` | Hand a campaign to a human to manage in the web app | free |
-| `boost_post` | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 10 AI-drafted quote posts (200 cr, X only — a repost with each member's own text, landing in their followers' feeds), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 200–300 cr |
+| `boost_post` <br>_(`/mcp` only — see [Endpoints](#endpoints))_ | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 10 AI-drafted quote posts (200 cr, X only — a repost with each member's own text, landing in their followers' feeds), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 200–300 cr |
 
 ### Earn — participate in campaigns for the connected user
 
@@ -141,7 +170,8 @@ centrally in [`src/tools/instrument.ts`](./src/tools/instrument.ts).
 A thin Express + [`@modelcontextprotocol/sdk`](https://www.npmjs.com/package/@modelcontextprotocol/sdk) wrapper over ProductClank's public agent REST API (`/api/v1/agents/*`). The REST API is canonical; this server and the [ProductClank agent skill](https://github.com/covariance-network/productclank-agent-skill) are parallel wrappers — [`capabilities.json`](./capabilities.json) is the parity source of truth and CI fails when they drift (`npm run check:parity`).
 
 ```
-Claude / MCP client ──▶ mcp.productclank.com/mcp (this server)
+Claude / MCP client ──▶ mcp.productclank.com/mcp      (profile: full)
+Meta Muse directory ──▶ mcp.productclank.com/creator  (profile: creator, no boost_post)
                           │  OAuth 2.1 AS ──▶ productclank.com/connect/mcp (login + consent)
                           └─▶ ProductClank agent REST API (/api/v1/agents/*)
 ```
