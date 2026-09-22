@@ -67,6 +67,7 @@ function distributionOffer(
 }
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolProfile } from "./index.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
 import { ApiError } from "../lib/api/client.js";
@@ -180,7 +181,14 @@ function isConfirmationRequired(body: unknown): body is ConfirmationRequiredBody
   );
 }
 
-export function registerCampaignTools(server: McpServer): void {
+// One description names boost (an engagement-signal tool the creator profile
+// does not serve), so the registrar is profile-aware. See ./index.ts.
+export function registerCampaignTools(
+  server: McpServer,
+  profile: ToolProfile = "full"
+): void {
+  const campaignKinds = profile === "creator" ? "discovery" : "discovery/boost";
+
   server.registerTool(
     "create_campaign",
     {
@@ -301,7 +309,7 @@ export function registerCampaignTools(server: McpServer): void {
     {
       title: "List the user's campaigns",
       description:
-        "List ALL the connected user's discovery/boost campaigns, newest first — including ones created in the ProductClank web app, not just via this connector. Free. Use to find a campaign id before get_campaign / generate_posts / get_posts.",
+        `List ALL the connected user's ${campaignKinds} campaigns, newest first — including ones created in the ProductClank web app, not just via this connector. Free. Use to find a campaign id before get_campaign / generate_posts / get_posts.`,
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 20"),
         offset: z.number().int().min(0).optional(),

@@ -8,17 +8,30 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolProfile } from "./index.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
 import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
-export function registerParticipationTools(server: McpServer): void {
+// One description names the like/repost actions, which the creator profile does
+// not serve (they are proved and rewarded in the web app, never here), so the
+// registrar is profile-aware. See ./index.ts.
+export function registerParticipationTools(
+  server: McpServer,
+  profile: ToolProfile = "full"
+): void {
+  const screenshotActions =
+    profile === "creator"
+      ? ""
+      : " Likes and reposts are proved with a screenshot and stay in the web app (app.productclank.com/communiply/feed).";
+
   server.registerTool(
     "find_opportunities",
     {
       title: "Find earning opportunities",
       description:
-        "Browse unclaimed drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: pick an opportunity → the user posts it (verbatim or personalized) from their own account → call submit_participation with the URL of what they posted. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable. Likes and reposts are proved with a screenshot and stay in the web app (app.productclank.com/communiply/feed).",
+        "Browse unclaimed drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: pick an opportunity → the user posts it (verbatim or personalized) from their own account → call submit_participation with the URL of what they posted. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable." +
+        screenshotActions,
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
         offset: z.number().int().min(0).optional(),

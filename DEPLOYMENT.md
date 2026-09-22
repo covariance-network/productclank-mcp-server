@@ -92,7 +92,18 @@ curl https://mcp.productclank.com/.well-known/oauth-protected-resource
 curl https://mcp.productclank.com/.well-known/oauth-authorization-server/mcp
 curl https://mcp.productclank.com/.well-known/oauth-protected-resource/mcp
 # oauth-protected-resource must report:  "resource":"https://mcp.productclank.com/mcp"
+# …and the creator endpoint is its own protected resource:
+curl https://mcp.productclank.com/.well-known/oauth-protected-resource/creator
+# must report:  "resource":"https://mcp.productclank.com/creator"
 ```
+
+**Both endpoints are live and serve the right tool profile:**
+```bash
+curl -s https://mcp.productclank.com/health
+# → {"status":"ok","version":"…","sessions":N,"sessions_by_profile":{"full":…,"creator":…},…}
+```
+`tools/list` on `/mcp` must include `boost_post`; on `/creator` it must not
+(see "Two endpoints" below).
 
 > **ChatGPT connect:** Settings → Apps & Connectors → Advanced → enable
 > **Developer mode**, then add a custom connector with the URL above and OAuth.
@@ -125,15 +136,47 @@ post. Confirm the campaign appears in the user's **My Campaigns** on the webapp.
 
 - Bump the version in `package.json` and `src/config.ts` **and `server.json`** —
   the MCP Registry manifest does not update itself and silently drifts otherwise.
+- If you add or remove a tool, decide which **profiles** serve it (see below)
+  and record it in `capabilities.json`.
 - If the release depends on new app-repo behavior, **deploy the app repo first**;
   tools must degrade gracefully against the older API.
 
 ---
 
+## Two endpoints, two tool profiles
+
+The server mounts the same MCP implementation twice (`src/index.ts`
+→ `mountMcpEndpoint`), each with its own tool profile and its own in-memory
+session map:
+
+| Endpoint | Profile | Served to | `boost_post` |
+|---|---|---|---|
+| `/mcp` | `full` | Claude, ChatGPT, the MCP registry | yes — unchanged, a live revenue path |
+| `/creator` | `creator` | Meta's Muse connector directory (muse.ai/platform) | **no** |
+
+`/creator` is the connector presented as a creator-campaign product: a brand
+commissions creators, and creators are paid for original content they publish
+from their own accounts. `boost_post` sells `likes` and `repost` — engagement
+signals — and accepts Instagram post URLs, and Meta's Spam community standard
+bars paying for engagement, so it is excluded there **until Meta approves the
+connector**; then it can be added back by dropping the profile check in
+`src/tools/index.ts`. The prompts and the `productclank://capabilities` resource
+are filtered the same way, so no creator-endpoint text mentions boosts, likes or
+reposts.
+
+The boundary is the URL, not the OAuth client, because `tools/list` is
+unauthenticated by design (directory health checks introspect it), so a reviewer
+can list tools before any client identity exists.
+
+Auth, the idle-session sweep, the JSON-only Accept shim and the OAuth documents
+apply identically to both; `/health` reports the per-endpoint session counts in
+`sessions_by_profile` (`sessions` stays the total).
+
 ## Known MVP limitations (tracked follow-ups)
 - ~~Shared rate limit~~ — RESOLVED in v0.8.0: each user has their own agent
   (`rate_limit_daily` 50/day, campaign creates + participation submissions).
-- **Single instance.** MCP transport sessions are in-memory — run one instance.
+- **Single instance.** MCP transport sessions are in-memory (per endpoint) —
+  run one instance.
   OAuth tokens ARE persisted (Supabase), so a redeploy does not sign users out.
 - **Supabase login required.** Identity is derived from the Supabase session;
   Privy-wallet-only users must sign in with Google/email to connect.

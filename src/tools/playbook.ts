@@ -8,7 +8,13 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import type { ToolProfile } from "./index.js";
 
+// The prompt and the capabilities resource both advertise boost_post. The
+// creator profile does not register that tool (Meta review — see
+// ./index.ts), so its copy must never mention boost, likes or reposts:
+// a directory reviewer reads prompts/list and resources/read the same way
+// they read tools/list. Everything below is therefore built per profile.
 const PLAYBOOK = `You are operating ProductClank — a community-powered growth platform — for the connected user. Goal: grow the product below with real community engagement, spending the user's credits deliberately.
 
 Product to grow: {{product}}
@@ -16,10 +22,10 @@ Product to grow: {{product}}
 ## Operating procedure
 
 1. **Resolve the product.** Call search_products with the product name. If it isn't listed, call create_product with its website URL (free — the server auto-fills the listing).
-2. **Check the budget.** Call check_balance. Rough costs: discovery campaign 10 to create + 12/post discovered; post review 2/post; reply redraft 5/reply; boost 200–300; content campaign 1000. Never start a paid step the balance can't cover, and confirm each spend with the user first.
+2. **Check the budget.** Call check_balance. Rough costs: discovery campaign 10 to create + 12/post discovered; post review 2/post; reply redraft 5/reply; {{boost_cost}}content campaign 1000. Never start a paid step the balance can't cover, and confirm each spend with the user first.
 3. **Pick the play (combine when budget allows):**
    - **Conversations play** — first READ THE PRODUCT'S SITE: fetch its website (and anything else the user pointed at) and derive the keywords and search_context from who the audience actually is and the phrases they use when they have the problem — not from the product's name. That derivation is your work, done here, free; if you cannot browse from this client, say so and build it from what the user tells you instead of guessing. Then create_campaign with 3–8 focused keywords and the platform the audience is actually on — twitter (default), linkedin, reddit or youtube; for reddit/youtube also pass target_subreddits / target_youtube_channels (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply; the create result carries live network numbers and real posted-reply links so that choice is made on evidence). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone. Manage anytime in the workbench via the campaign's admin_url.
-   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote — a quote post is a repost with the member's own text, X only, the highest-reach option).
+{{moment_play}}
    - **Content play** — the user wants the community creating content: suggest_content_campaign (FREE dry-run) → create_content_campaign once they approve the 1000-credit spend → get_content_campaign_results (FREE) to see what was actually published. Straight after launch it reads state 'processing' with zero submissions — that is the brief still generating, not a failure.
    - **Own-content play** — the user wants to publish their OWN posts: that is the Content Studio, not a campaign. Use the setup_content_space prompt (free interview → calibrated space → first drafts → approve / tweak / teach loop).
 4. **Close the loop.** After each paid step: get_campaign_results for conversations/moment campaigns and get_content_campaign_results for content campaigns (submissions, live links to what was published, approved vs pending), credit_history for the ledger, and report both to the user with what you'd do next. Hand long-running campaigns to the human with add_delegate so they can manage them at app.productclank.com/my-campaigns.
@@ -32,6 +38,46 @@ Product to grow: {{product}}
 - One step at a time — never chain paid calls without reporting results in between.
 - If a call returns a daily-spend-cap error, stop and tell the user to adjust it in ProductClank → Profile → Connected Apps.
 - Recurring spend needs a stated number and a real yes. A confirmation prompt is a question for the user, never a step to retry past.`;
+
+/** Boost is a `full`-profile cost; the creator profile never quotes it. */
+const BOOST_COST_CLAUSE: Record<ToolProfile, string> = {
+  full: "boost 200–300; ",
+  creator: "",
+};
+
+/**
+ * Step 3's second bullet. The full profile sends a specific post to the
+ * network for reach; the creator profile has no such tool, so it commissions
+ * creators to write their OWN response to the moment instead — described only
+ * in terms of tools that profile actually registers.
+ */
+const MOMENT_PLAY: Record<ToolProfile, string> = {
+  full:
+    "   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote — a quote post is a repost with the member's own text, X only, the highest-reach option).",
+  creator:
+    "   - **Moment play** — a conversation is happening right now and the user wants creators in it: run the conversations play above with a narrow brief — create_campaign on the 3–5 keywords of that specific moment, then generate_posts → get_posts → review_posts so creators write their own replies to it from their own accounts. If the moment deserves standalone pieces rather than replies, commission them with suggest_content_campaign (FREE dry-run) → create_content_campaign.",
+};
+
+/**
+ * The boost row of the capabilities resource's Grow table — a whole table row
+ * (leading newline included) on the full profile, nothing at all on creator.
+ */
+const BOOST_CAPABILITY_ROW: Record<ToolProfile, string> = {
+  full: "\n| boost_post | 200 (replies, quote) / 300 (likes, repost) |",
+  creator: "",
+};
+
+/** The plays named in the prompt's own description (shown by prompts/list). */
+const PROMPT_PLAYS: Record<ToolProfile, string> = {
+  full: "campaign/boost/content plays",
+  creator: "campaign/content plays",
+};
+
+function playbookFor(profile: ToolProfile, product: string): string {
+  return PLAYBOOK.replace("{{product}}", product)
+    .replace("{{boost_cost}}", BOOST_COST_CLAUSE[profile])
+    .replace("{{moment_play}}", MOMENT_PLAY[profile]);
+}
 
 
 const CONTENT_SETUP = `You are setting up ProductClank's content engine for the connected user — a drafting pipeline that writes posts in THEIR brand voice on THEIR topics, scores every draft, and queues it for their approval. Nothing publishes without them. Your job in this conversation: calibrate it, then draft the first posts.
@@ -67,13 +113,16 @@ For each draft, ask: approve, tweak, or drop? Tweaks are one click — revise_co
 - Stage and discard are the user's decisions. Never publish, never claim you did.
 - If a call says content is not enabled or the space is unknown, go back to setup — do not invent a space_id.`;
 
-export function registerPlaybook(server: McpServer): void {
+export function registerPlaybook(
+  server: McpServer,
+  profile: ToolProfile = "full"
+): void {
   server.registerPrompt(
     "grow_product",
     {
       title: "Grow a product on ProductClank",
       description:
-        "A ready-made operating procedure for growing a product with ProductClank campaigns: resolve product → budget → research (free) → campaign/boost/content plays → report results.",
+        `A ready-made operating procedure for growing a product with ProductClank campaigns: resolve product → budget → research (free) → ${PROMPT_PLAYS[profile]} → report results.`,
       argsSchema: {
         product: z
           .string()
@@ -86,7 +135,7 @@ export function registerPlaybook(server: McpServer): void {
           role: "user",
           content: {
             type: "text",
-            text: PLAYBOOK.replace("{{product}}", product),
+            text: playbookFor(profile, product),
           },
         },
       ],
@@ -143,8 +192,7 @@ export function registerPlaybook(server: McpServer): void {
 | set_campaign_schedule | free to set — then 12 per post found, on its own, until stopped |
 | review_posts | 2 per post (dry_run billed too) |
 | regenerate_replies | 5 per reply |
-| add_delegate | free |
-| boost_post | 200 (replies, quote) / 300 (likes, repost) |
+| add_delegate | free |${BOOST_CAPABILITY_ROW[profile]}
 
 ## Content
 | Tool | Cost |

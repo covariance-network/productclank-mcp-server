@@ -15,10 +15,15 @@
     "planned": "Intended as an MCP tool; not built yet (see `tier`).",
     "excluded": "Intentionally NOT an MCP tool (see `note`)."
   },
+  "_profiles_comment": "The server mounts the SAME tools at two URLs with different tool profiles (src/tools/index.ts): /mcp serves `full` (every live tool) and /creator serves `creator` (creator campaigns only \u2014 a brand commissions creators, creators are paid for original content they publish themselves). `mcp` status above is about the FULL profile, which is what the parity check cares about; an entry carries an optional `profiles` array when it is NOT in every profile.",
+  "profiles": {
+    "full": "Served at /mcp \u2014 Claude, ChatGPT, the MCP registry. Every live tool.",
+    "creator": "Served at /creator \u2014 submitted to Meta's Muse connector directory. Excludes engagement-signal tools pending Meta approval."
+  },
   "endpoints": [
     { "method": "GET",  "path": "/agents/products/search",                 "mcp": "live",    "tool": "search_products" },
     { "method": "POST", "path": "/agents/products",                        "mcp": "live",    "tool": "create_product", "note": "List a token-free product (LIST_WITHOUT_TOKEN). URL-first: server auto-fills name/tagline/description/logo/X via extractFromUrl; explicit fields override; socials optional. Idempotent per owner. Free." },
-    { "method": "POST", "path": "/agents/campaigns/boost",                 "mcp": "live",    "tool": "boost_post" },
+    { "method": "POST", "path": "/agents/campaigns/boost",                 "mcp": "live",    "tool": "boost_post", "profiles": ["full"], "note": "LIVE on /mcp only. Deliberately absent from the /creator profile: it sells `likes` and `repost` \u2014 engagement signals, which Meta's Spam community standard bars from being paid for \u2014 and accepts Instagram post URLs. Add it back to the creator profile once Meta has approved the connector." },
     { "method": "GET",  "path": "/agents/campaigns/content/{id}",          "mcp": "live",    "tool": "get_content_campaign_results", "note": "Read what a content campaign produced: derived lifecycle state (processing|active|paused|ended|cancelled — NOT raw_status), submission counts by review state, live post URLs + author, and winners. Free, read-only, paginated; accepts uuid or campaign_number. Closes the loop on create_content_campaign; winner selection stays in the webapp." },
     { "method": "PATCH", "path": "/agents/campaigns/{id}/replies/{replyId}", "mcp": "live",    "tool": "edit_reply", "note": "Edit one reply draft's text before the community posts it; refuses claimed replies. Free." },
     { "method": "POST",  "path": "/agents/campaigns/{id}/publish",            "mcp": "live",    "tool": "publish_posts", "note": "Held-mode release: flips chosen CommuniplyPost.is_public=true. Private campaign → requires confirm:true (turns on per-reply billing). Free." },

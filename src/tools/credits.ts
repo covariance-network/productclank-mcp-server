@@ -3,17 +3,26 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolProfile } from "./index.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
 import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
-export function registerCreditTools(server: McpServer): void {
+// Descriptions are profile-aware where they name boost (an engagement-signal
+// tool the creator profile does not serve). See ./index.ts for why.
+export function registerCreditTools(
+  server: McpServer,
+  profile: ToolProfile = "full"
+): void {
+  const boostCosts =
+    profile === "creator" ? "" : "a reply or quote-post boost 200; likes/reposts 300; ";
+
   server.registerTool(
     "check_balance",
     {
       title: "Check credit balance",
       description:
-        "Return the connected user's ProductClank credit balance and plan. Use before launching a campaign to confirm they have enough credits (a content campaign costs 1000; a reply or quote-post boost 200; likes/reposts 300; a discovery campaign 10 to create + 12/post discovered).",
+        `Return the connected user's ProductClank credit balance and plan. Use before launching a campaign to confirm they have enough credits (a content campaign costs 1000; ${boostCosts}a discovery campaign 10 to create + 12/post discovered).`,
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },

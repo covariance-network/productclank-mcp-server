@@ -3,17 +3,25 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolProfile } from "./index.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
 import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
-export function registerProductTools(server: McpServer): void {
+// Descriptions are profile-aware where they name boost (an engagement-signal
+// tool the creator profile does not serve). See ./index.ts for why.
+export function registerProductTools(
+  server: McpServer,
+  profile: ToolProfile = "full"
+): void {
+  const campaignNoun = profile === "creator" ? "a campaign" : "a boost or campaign";
+
   server.registerTool(
     "search_products",
     {
       title: "Search ProductClank products",
       description:
-        "Search the user's ProductClank products by name and return their IDs. A product_id is required to create or boost a campaign — use this to resolve it, then confirm the match with the user.",
+        `Search the user's ProductClank products by name and return their IDs. A product_id is required to create ${profile === "creator" ? "a campaign" : "or boost a campaign"} — use this to resolve it, then confirm the match with the user.`,
       inputSchema: {
         query: z.string().describe("Product name or keyword to search for"),
         limit: z
@@ -43,7 +51,9 @@ export function registerProductTools(server: McpServer): void {
     {
       title: "List a product on ProductClank",
       description:
-        "List a new product on ProductClank as a token-free listing (no crypto/token, no wallet). At minimum pass a `url` — the server auto-fills the name, tagline, description, logo, and X handle from the site; any field you pass explicitly overrides what's extracted. Socials are optional. Use this when search_products finds no existing match and the user wants to run a boost or campaign for a product that isn't listed yet. Returns the new product's id (and reuses an existing listing if one already matches, rather than duplicating). FREE — no credits charged. Confirm the product details with the user before calling.",
+        "List a new product on ProductClank as a token-free listing (no crypto/token, no wallet). At minimum pass a `url` — the server auto-fills the name, tagline, description, logo, and X handle from the site; any field you pass explicitly overrides what's extracted. Socials are optional. Use this when search_products finds no existing match and the user wants to run " +
+        campaignNoun +
+        " for a product that isn't listed yet. Returns the new product's id (and reuses an existing listing if one already matches, rather than duplicating). FREE — no credits charged. Confirm the product details with the user before calling.",
       inputSchema: {
         url: z
           .string()
