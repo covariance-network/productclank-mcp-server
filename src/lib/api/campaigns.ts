@@ -36,6 +36,12 @@ export interface CreateCampaignParams {
   replyLength?: "very-short" | "short" | "medium" | "long" | "mixed";
   replyPostedBy?: "brand" | "community";
   replyGuidelines?: string;
+  /** X only. "mention" (default) = awareness: replies put the product in the
+   *  thread. "flag" = sales: replies tag the brand/founder at the post's author
+   *  as a lead. The API 400s either field on a non-X campaign. */
+  replyApproach?: ReplyApproach;
+  /** X only, for "flag": up to 2 handles to tag, brand first then founder. */
+  replyTagAccounts?: string[];
   minFollowerCount?: number;
   maxPostAgeDays?: number;
   /** private = drafts stay in the owner's workbench; public = community earn
@@ -58,6 +64,16 @@ export interface CreateCampaignParams {
  * work it cannot complete.
  */
 export type CampaignPlatform = "twitter" | "linkedin" | "reddit" | "youtube";
+
+/** What community X replies are for: awareness (mention) or sales (flag). */
+export type ReplyApproach = "mention" | "flag";
+
+/** Non-blocking API note — a setting that was saved but won't take effect as-is. */
+export interface ApiWarning {
+  code: string;
+  message: string;
+  fields?: string[];
+}
 
 export interface AnalyzeUrlParams {
   callerUserId: string;
@@ -106,6 +122,7 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
   credits: { credits_used: number; credits_remaining: number };
   platform_note?: string;
   targeting_notes?: string[];
+  warnings?: ApiWarning[];
   next_step?: unknown;
 }> {
   return request(params.callerUserId, "/agents/campaigns", {
@@ -120,6 +137,8 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
       ...(params.replyLength ? { reply_length: params.replyLength } : {}),
       ...(params.replyPostedBy ? { reply_posted_by: params.replyPostedBy } : {}),
       ...(params.replyGuidelines ? { reply_guidelines: params.replyGuidelines } : {}),
+      ...(params.replyApproach ? { reply_approach: params.replyApproach } : {}),
+      ...(params.replyTagAccounts ? { reply_tag_accounts: params.replyTagAccounts } : {}),
       ...(params.minFollowerCount != null ? { min_follower_count: params.minFollowerCount } : {}),
       ...(params.maxPostAgeDays != null ? { max_post_age_days: params.maxPostAgeDays } : {}),
       ...(params.visibility ? { visibility: params.visibility } : {}),
@@ -286,6 +305,10 @@ export interface UpdateCampaignParams {
   /** Replace-semantics; [] clears back to "search the whole platform". */
   targetSubreddits?: string[];
   targetYoutubeChannels?: string[];
+  /** X only — see CreateCampaignParams.replyApproach. */
+  replyApproach?: ReplyApproach;
+  /** X only, for "flag". null or [] clears (falls back to mention_accounts, then the product's X handle). */
+  replyTagAccounts?: string[] | null;
 }
 
 /**
@@ -300,6 +323,7 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
   posts_visibility_updated?: number;
   platform_note?: string;
   targeting_notes?: string[];
+  warnings?: ApiWarning[];
   next_step?: string;
 }> {
   return request(params.callerUserId, `/agents/campaigns/${params.campaignId}`, {
@@ -314,6 +338,7 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
         : {}),
       ...(params.isActive != null ? { is_active: params.isActive } : {}),
       ...(params.visibility ? { visibility: params.visibility } : {}),
+      ...(params.postVisibility ? { post_visibility: params.postVisibility } : {}),
       ...(params.confirm !== undefined ? { confirm: params.confirm } : {}),
       ...(params.platform ? { platform: params.platform } : {}),
       ...(params.targetSubreddits !== undefined
@@ -321,6 +346,10 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
         : {}),
       ...(params.targetYoutubeChannels !== undefined
         ? { target_youtube_channels: params.targetYoutubeChannels }
+        : {}),
+      ...(params.replyApproach ? { reply_approach: params.replyApproach } : {}),
+      ...(params.replyTagAccounts !== undefined
+        ? { reply_tag_accounts: params.replyTagAccounts }
         : {}),
     }),
   });

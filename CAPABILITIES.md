@@ -53,7 +53,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/{id}/review-posts` | ✅ | `review_posts` (2cr/post, dry_run billed too) |
 | `POST /agents/campaigns/{id}/regenerate-replies` | ✅ | `regenerate_replies` (5cr/reply) |
 | `POST /agents/campaigns/{id}/delegates` | ✅ | `add_delegate` |
-| `PATCH /agents/campaigns/{id}` | ✅ | `update_campaign` (free — keywords merge, discovery sources, relevance bar, pause/resume, visibility flip, platform + Reddit/YouTube targeting) |
+| `PATCH /agents/campaigns/{id}` | ✅ | `update_campaign` (free — keywords merge, discovery sources, relevance bar, pause/resume, visibility flip, platform + Reddit/YouTube targeting, reply approach + tag accounts on X) |
 | `GET /agents/campaigns/{id}/activity` | ✅ | `get_campaign_activity` (free — since-watermark delta with live posted links) |
 | `GET /agents/campaigns/{id}/results` | ✅ | `get_campaign_results` (free — funnel, approval + survival rates, cost per usable reply) |
 | `GET /agents/campaigns/{id}/schedule` | ✅ | `set_campaign_schedule` (free — the un-confirmed call is the read: changes nothing, returns the projection) |
