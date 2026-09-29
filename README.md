@@ -122,6 +122,8 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 |---|---|---|
 | `check_balance` | Your credit balance and plan | free |
 | `credit_history` | Your credit transactions (spend + rewards), newest first | free |
+| `report_issue` | Report a failing tool or a dead end to the ProductClank team (a human replies) | free |
+| `get_support_status` | Your reported issues and the team's replies | free |
 
 The server also exposes two MCP **prompts** — `grow_product`, a ready-made operating
 procedure for the growth loop, and `setup_content_space`, the Content Studio onboarding

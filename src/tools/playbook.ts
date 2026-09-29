@@ -37,7 +37,8 @@ Product to grow: {{product}}
 - Generation is yours; the network is what's billed. Keywords, search context, review rules and redraft feedback are thinking YOU do in this conversation at no cost — credits pay only for what a chat can't provide: platform scraping, real community members posting from their own accounts, and proof verification.
 - One step at a time — never chain paid calls without reporting results in between.
 - If a call returns a daily-spend-cap error, stop and tell the user to adjust it in ProductClank → Profile → Connected Apps.
-- Recurring spend needs a stated number and a real yes. A confirmation prompt is a question for the user, never a step to retry past.`;
+- Recurring spend needs a stated number and a real yes. A confirmation prompt is a question for the user, never a step to retry past.
+- Stuck, or a tool failing in a way its error doesn't explain? Call report_issue (free) instead of retrying in a loop, tell the user you reported it, and check get_support_status in a later session.`;
 
 /** Boost is a `full`-profile cost; the creator profile never quotes it. */
 const BOOST_COST_CLAUSE: Record<ToolProfile, string> = {
@@ -225,7 +226,10 @@ export function registerPlaybook(
 | get_earnings | free |
 
 ## Credits
-check_balance and credit_history are free. Top-ups happen on the webapp only: app.productclank.com/credits/purchase. Users cap connector spend in Profile → Connected Apps; a cap error means the user must raise it there.`,
+check_balance and credit_history are free. Top-ups happen on the webapp only: app.productclank.com/credits/purchase. Users cap connector spend in Profile → Connected Apps; a cap error means the user must raise it there.
+
+## Support
+report_issue and get_support_status are free. Report a failure or a dead end (with the tool, error code and what you tried) instead of retrying in a loop; a human replies to the ticket.`,
         },
       ],
     })
