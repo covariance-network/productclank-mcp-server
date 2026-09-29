@@ -23,7 +23,7 @@ export function registerParticipationTools(
   const screenshotActions =
     profile === "creator"
       ? ""
-      : " Likes and reposts are proved with a screenshot and stay in the web app (app.productclank.com/communiply/feed).";
+      : " Likes and reposts are proved with a screenshot and stay in the web app (app.productclank.com/feed).";
 
   server.registerTool(
     "find_opportunities",
@@ -65,7 +65,7 @@ export function registerParticipationTools(
           ...(result.posts.length === 0
             ? {
                 user_note:
-                  "No reply or quote-post opportunities are open right now. This is not an error — the open tasks at the moment may all be likes or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/communiply/feed). Worth checking back after new campaigns run discovery.",
+                  "No reply or quote-post opportunities are open right now. This is not an error — the open tasks at the moment may all be likes or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/feed). Worth checking back after new campaigns run discovery.",
               }
             : {}),
         });
