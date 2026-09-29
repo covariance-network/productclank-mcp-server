@@ -250,7 +250,7 @@ export function registerCampaignTools(
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies that mention the product. BEFORE calling: the keywords and search_context are YOURS to derive, and deriving them well is most of the campaign's quality — actually fetch and read the product's website (and any docs or pages the user pointed at), work out who the audience is and the phrases they use when they have the problem the product solves, and build keywords + search_context from that. Do it in this conversation, for free — it is not billed, and you can iterate with the user before anything is spent. If you cannot browse the web from this client, SAY SO to the user and build from what they tell you instead — never silently guess from the product's name alone. Credits pay only for what you cannot do here: scraping the platforms, real community members posting, and proof verification. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies for them. BEFORE calling: the keywords and search_context are YOURS to derive, and deriving them well is most of the campaign's quality — actually fetch and read the product's website (and any docs or pages the user pointed at), work out who the audience is and the phrases they use when they have the problem the product solves, and build keywords + search_context from that. Do it in this conversation, for free — it is not billed, and you can iterate with the user before anything is spent. If you cannot browse the web from this client, SAY SO to the user and build from what they tell you instead — never silently guess from the product's name alone. Credits pay only for what you cannot do here: scraping the platforms, real community members posting, and proof verification. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. On X, also ask what the replies are for (reply_approach): awareness (the product and its site in the thread) or sales (flag each post to the brand/founder as a lead, tagging the accounts they choose in reply_tag_accounts). Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -269,7 +269,7 @@ export function registerCampaignTools(
         mention_accounts: z
           .array(z.string())
           .optional()
-          .describe("X handles to mention naturally in replies (e.g. the product's account)"),
+          .describe("X handles to name-drop in 'mention'-approach replies (e.g. the product's account). Also a discovery input: posts that mention these accounts are surfaced too — so to choose who 'flag' replies tag, use reply_tag_accounts, not this."),
         reply_style_tags: z
           .array(z.string())
           .optional()
@@ -279,6 +279,19 @@ export function registerCampaignTools(
           .string()
           .optional()
           .describe("Custom guidelines for reply drafting (defaults are built from the campaign context)"),
+        reply_approach: z
+          .enum(["mention", "flag"])
+          .optional()
+          .describe(
+            "X campaigns only (the API rejects it elsewhere). What the replies are FOR \u2014 ask the user, it changes every reply: 'mention' (default) = AWARENESS: replies put the product and its site in the conversation so thread readers see it \u2014 right when the goal is visibility, traffic or brand presence. 'flag' = SALES: replies tag the brand and/or founder and point them at the post's author as a lead (e.g. '@brand @founder check out what Nick is struggling with, might be something you can help with'), so the founder can step in and convert \u2014 right when the goal is signups, demos or deals. Neither style pretends the replier has used the product. With 'flag', set reply_tag_accounts."
+          ),
+        reply_tag_accounts: z
+          .array(z.string())
+          .max(2)
+          .optional()
+          .describe(
+            "X only, used with reply_approach 'flag': up to 2 handles to tag, brand first then the founder (e.g. ['acme', 'jane_founder']) \u2014 so the user can choose brand, personal or both. Omit to fall back to mention_accounts, then the product's X handle. Ignored with 'mention' (the result warns)."
+          ),
         platform: z
           .enum(["twitter", "linkedin", "reddit", "youtube"])
           .optional()
@@ -328,6 +341,8 @@ export function registerCampaignTools(
           replyStyleTags: args.reply_style_tags,
           replyLength: args.reply_length,
           replyGuidelines: args.reply_guidelines,
+          replyApproach: args.reply_approach,
+          replyTagAccounts: args.reply_tag_accounts,
           visibility: args.visibility ?? "private",
           postVisibility: args.post_visibility,
           platform: args.platform,
@@ -343,6 +358,13 @@ export function registerCampaignTools(
           platform: args.platform ?? "twitter",
           ...(result.platform_note ? { platform_note: result.platform_note } : {}),
           ...(result.targeting_notes ? { targeting_notes: result.targeting_notes } : {}),
+          ...(result.warnings?.length ? { warnings: result.warnings } : {}),
+          ...(args.reply_approach === "flag"
+            ? {
+                reply_note:
+                  "Replies will FLAG each post to the tagged account(s) as a lead rather than pitch the author — tell the user to watch their X notifications, since the value comes from them (or the founder) jumping into those threads.",
+              }
+            : {}),
           next_step:
             "Topic research is computing in the background (~30s). Call get_research to read the expanded keywords and competitor angles before spending credits on generate_posts.",
           user_note: isPublic
@@ -390,7 +412,7 @@ export function registerCampaignTools(
     {
       title: "Get campaign details & stats",
       description:
-        "Get one campaign's configuration (keywords, search context, reply settings) plus live stats: posts discovered, replies by status. Free. Use to check progress after generate_posts or before adjusting the campaign.",
+        "Get one campaign's configuration (keywords, search context, reply settings incl. reply_approach — 'mention' awareness vs 'flag' leads to the founder — and reply_tag_accounts) plus live stats: posts discovered, replies by status. Free. Use to check progress after generate_posts or before adjusting the campaign.",
       inputSchema: {
         campaign_id: z.string().describe("Campaign UUID (from list_campaigns or create_campaign)"),
       },
@@ -693,7 +715,7 @@ export function registerCampaignTools(
     {
       title: "Tune a running campaign",
       description:
-        "Adjust a live campaign without recreating it. Free — nothing here spends credits, though the next generate_posts run bills as usual. Keywords MERGE (add_keywords never drops what is already there). `sources` is how research findings get applied: high-intent phrases, influencer accounts and lists that run_research found stay dormant until you enable their source. `relevance_threshold` moves the bar the relevance gate keeps posts above (new campaigns start lenient at 5; raise it when discovery is noisy). `is_active:false` pauses discovery so nothing more is found or billed. `visibility` decides who posts the drafts — flipping to 'public' also releases the already-discovered drafts to the community, so only do it when the user has said yes. `target_subreddits` / `target_youtube_channels` re-aim discovery within its platform (send an empty array to clear and search the whole platform). `platform` itself can only change while the campaign has discovered nothing — after that it is fixed, and a second campaign is the answer. Changes apply to the NEXT generate_posts run; existing posts are not re-scored.",
+        "Adjust a live campaign without recreating it. Free — nothing here spends credits, though the next generate_posts run bills as usual. Keywords MERGE (add_keywords never drops what is already there). `sources` is how research findings get applied: high-intent phrases, influencer accounts and lists that run_research found stay dormant until you enable their source. `relevance_threshold` moves the bar the relevance gate keeps posts above (new campaigns start lenient at 5; raise it when discovery is noisy). `is_active:false` pauses discovery so nothing more is found or billed. `visibility` decides who posts the drafts — flipping to 'public' also releases the already-discovered drafts to the community, so only do it when the user has said yes. `target_subreddits` / `target_youtube_channels` re-aim discovery within its platform (send an empty array to clear and search the whole platform). `platform` itself can only change while the campaign has discovered nothing — after that it is fixed, and a second campaign is the answer. On X, `reply_approach` switches what the replies do (awareness 'mention' vs sales 'flag', which tags reply_tag_accounts at the lead) — confirm with the user, it changes every future draft. Changes apply to the NEXT generate_posts run; existing posts are not re-scored.",
       inputSchema: {
         campaign_id: z.string(),
         add_keywords: z
@@ -753,6 +775,20 @@ export function registerCampaignTools(
           .max(25)
           .optional()
           .describe("YouTube only, enforced server-side — sending it on a non-YouTube campaign is REJECTED, not ignored. REPLACES the list rather than appending; [] clears it and runs keyword search alone. To add one, read the current list with get_campaign first and send the full merged list."),
+        reply_approach: z
+          .enum(["mention", "flag"])
+          .optional()
+          .describe(
+            "X campaigns only (REJECTED elsewhere). 'mention' = awareness: replies put the product and its site in the conversation. 'flag' = sales: replies tag the brand and/or founder at the post's author as a lead. Applies to drafts written from now on."
+          ),
+        reply_tag_accounts: z
+          .array(z.string())
+          .max(2)
+          .nullable()
+          .optional()
+          .describe(
+            "X only, for 'flag': up to 2 handles to tag, brand first then founder (brand, personal or both). REPLACES the list; null or [] clears it (falls back to mention_accounts, then the product's X handle)."
+          ),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
@@ -775,6 +811,8 @@ export function registerCampaignTools(
           platform: args.platform,
           targetSubreddits: args.target_subreddits,
           targetYoutubeChannels: args.target_youtube_channels,
+          replyApproach: args.reply_approach,
+          replyTagAccounts: args.reply_tag_accounts,
         });
 
         const notes: string[] = [];
