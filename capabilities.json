@@ -405,6 +405,20 @@
       "path": "/agents/telegram/lookup",
       "mcp": "excluded",
       "note": "Telegram-specific; not relevant to the Claude connector."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/support",
+      "mcp": "live",
+      "tool": "report_issue",
+      "note": "Free. The support desk for agents: files an agent_api SupportTicket (admin Support Center + Telegram alert) or appends to one via ticket_id (must be a ticket THIS agent opened). Returns `self_help` for known API error codes. Rate-limited 5/10min + 25/day per agent. The MCP always sends client:'mcp'. Every profile."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/support",
+      "mcp": "live",
+      "tool": "get_support_status",
+      "note": "Free, read-only. List mode (has_reply per ticket) or ?ticket_id= for the conversation: the agent's own messages + SENT admin replies only (never pending drafts or analysis). Every profile."
     }
   ]
 }

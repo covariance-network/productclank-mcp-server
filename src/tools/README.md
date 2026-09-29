@@ -16,6 +16,7 @@ src/
 │   ├── contentStudio.ts listContentSpaces, getContentWorkspace, setupContentWorkspace, list/add/update/remove/suggestContentTopics, writeContentCandidates, getContentQueue, actOnContentDraft, teachContentVoice
 │   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
+│   ├── support.ts      reportIssue, getSupportTickets
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
 │   └── index.ts        barrel — `import * as api from "../lib/api/index.js"`
 └── tools/
@@ -28,6 +29,7 @@ src/
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, submit_participation, get_earnings
+    ├── support.ts      registerSupportTools       → report_issue, get_support_status
     ├── playbook.ts     registerPlaybook           → grow_product + setup_content_space prompts + productclank://capabilities resource
     └── index.ts        registerTools() — composes the above
 ```
@@ -68,6 +70,8 @@ src/
 | `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free |
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
+| `report_issue` | support | `POST /agents/support` | free |
+| `get_support_status` | support | `GET /agents/support` | free |
 
 ## Adding a new tool
 

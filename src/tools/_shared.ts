@@ -162,6 +162,15 @@ export function errorResult(message: string, meta?: OutcomeMeta) {
  */
 export function toolError(error: unknown, fallback: string) {
   const message = error instanceof Error && error.message ? error.message : fallback;
-  return errorResult(message, classifyError(error));
+  const meta = classifyError(error);
+  // A genuine failure (5xx, timeout, unexpected throw) is ours to fix — point
+  // the assistant at the support desk instead of a retry loop.
+  return errorResult(
+    meta.outcome === "failed" ? `${message}\n\n${REPORT_HINT}` : message,
+    meta
+  );
 }
+
+export const REPORT_HINT =
+  "If this keeps failing, don't retry in a loop: call report_issue with the tool name and this error so the ProductClank team can fix it.";
 
