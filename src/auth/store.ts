@@ -88,6 +88,12 @@ export interface LoginState {
   codeChallengeMethod: string;
   scope: string;
   clientState: string | null;
+  /**
+   * sha256 of the nonce cookie set on the browser at /oauth/authorize. The
+   * callback requires the same browser to present it (oauth-endpoints.ts).
+   * Null only on rows written before binding existed.
+   */
+  browserNonceHash: string | null;
 }
 
 export async function createLoginState(state: LoginState): Promise<string> {
@@ -100,6 +106,7 @@ export async function createLoginState(state: LoginState): Promise<string> {
     code_challenge_method: state.codeChallengeMethod,
     scope: state.scope,
     client_state: state.clientState,
+    browser_nonce_hash: state.browserNonceHash,
     expires_at: isoIn(config.oauth.loginStateTtlSeconds),
   });
   if (error) throw new Error(`Failed to persist login state: ${error.message}`);
@@ -113,7 +120,7 @@ export async function consumeLoginState(
   const { data, error } = await db
     .from("mcp_login_states")
     .select(
-      "client_id, redirect_uri, code_challenge, code_challenge_method, scope, client_state, expires_at"
+      "client_id, redirect_uri, code_challenge, code_challenge_method, scope, client_state, browser_nonce_hash, expires_at"
     )
     .eq("state", id)
     .maybeSingle();
@@ -127,6 +134,7 @@ export async function consumeLoginState(
     code_challenge_method: string;
     scope: string;
     client_state: string | null;
+    browser_nonce_hash: string | null;
     expires_at: string;
   };
   if (new Date(row.expires_at).getTime() < Date.now()) return null;
@@ -137,6 +145,7 @@ export async function consumeLoginState(
     codeChallengeMethod: row.code_challenge_method,
     scope: row.scope,
     clientState: row.client_state,
+    browserNonceHash: row.browser_nonce_hash ?? null,
   };
 }
 

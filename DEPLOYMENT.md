@@ -18,9 +18,12 @@ Tools exposed: the full tool list (~29 tools, spend and earn) lives in the
 
 ## 0. Prerequisites (do these once)
 
-### a. Apply the database migration
+### a. Apply the database migrations
 Run `migrations/0001_mcp_oauth.sql` against the ProductClank **prod** database
-(creates `mcp_oauth_clients`, `mcp_login_states`, `mcp_auth_codes`, `mcp_tokens`).
+(creates `mcp_oauth_clients`, `mcp_login_states`, `mcp_auth_codes`, `mcp_tokens`),
+then `migrations/0002_login_state_browser_binding.sql` (adds
+`mcp_login_states.browser_nonce_hash`). Apply 0002 **before** deploying a build
+that includes it — `/oauth/authorize` writes the column on every login.
 
 ### b. Generate the provisioning secret
 Per-user agents are provisioned on demand by the webapp's
