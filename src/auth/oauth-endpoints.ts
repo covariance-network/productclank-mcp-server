@@ -45,6 +45,41 @@ function redirectUriAllowed(registered: string[], requested: string): boolean {
   }
 }
 
+// ─── Browser binding for the authorize → webapp → callback round-trip ──────
+// See /oauth/authorize. The cookie is scoped to the callback path only.
+const LOGIN_COOKIE = "pc_mcp_login";
+const LOGIN_COOKIE_PATH = "/oauth/callback";
+
+function hashNonce(nonce: string): string {
+  return crypto.createHash("sha256").update(nonce).digest("hex");
+}
+
+function loginCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: config.oauth.issuer.startsWith("https://"),
+    sameSite: "lax" as const,
+    path: LOGIN_COOKIE_PATH,
+    maxAge: config.oauth.loginStateTtlSeconds * 1000,
+  };
+}
+
+function readCookie(req: Request, name: string): string | null {
+  const header = req.headers.cookie;
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const [key, ...rest] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(rest.join("="));
+  }
+  return null;
+}
+
+function hexEqual(a: string, b: string): boolean {
+  const left = Buffer.from(a, "hex");
+  const right = Buffer.from(b, "hex");
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
 function redirectError(
   res: Response,
   redirectUri: string,
@@ -157,6 +192,12 @@ export function createOAuthEndpoints(): Router {
         return;
       }
 
+      // Bind this login to the browser that started it: a random nonce goes
+      // into a cookie scoped to /oauth/callback and its hash into the login
+      // state. The callback accepts the state only when that cookie comes back
+      // with it, so a `state` copied out of this redirect is useless in any
+      // other browser — the person who approves is the person who initiated.
+      const browserNonce = crypto.randomBytes(24).toString("hex");
       const loginState = await store.createLoginState({
         clientId,
         redirectUri,
@@ -164,7 +205,9 @@ export function createOAuthEndpoints(): Router {
         codeChallengeMethod,
         scope,
         clientState,
+        browserNonceHash: hashNonce(browserNonce),
       });
+      res.cookie(LOGIN_COOKIE, browserNonce, loginCookieOptions());
 
       const url = new URL("/connect/mcp", config.webappUrl);
       url.searchParams.set("state", loginState);
@@ -195,6 +238,26 @@ export function createOAuthEndpoints(): Router {
       const login = await store.consumeLoginState(state);
       if (!login) {
         res.status(400).send("Login session expired. Please reconnect.");
+        return;
+      }
+      // Same browser that started this login? (Cookie set by /oauth/authorize.)
+      // Checked before anything else so a state replayed from elsewhere can
+      // neither approve nor deny on the initiating user's behalf.
+      const browserNonce = readCookie(req, LOGIN_COOKIE);
+      res.clearCookie(LOGIN_COOKIE, { path: LOGIN_COOKIE_PATH });
+      if (
+        !login.browserNonceHash ||
+        !browserNonce ||
+        !hexEqual(hashNonce(browserNonce), login.browserNonceHash)
+      ) {
+        console.warn("[oauth/callback] login state used from a different browser", {
+          client_id: login.clientId,
+        });
+        res
+          .status(400)
+          .send(
+            "This connection has to finish in the browser where it started. Please reconnect from your AI assistant."
+          );
         return;
       }
       if (denied) {
