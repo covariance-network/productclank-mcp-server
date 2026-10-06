@@ -51,8 +51,8 @@ export function createOAuthRoutes(): Router {
     authorization_servers: [issuer],
     bearer_methods_supported: ["header"],
     scopes_supported: [...config.oauth.scopesSupported],
-    resource_documentation:
-      "https://github.com/covariance-network/productclank-mcp-server",
+    // The public setup guide — the GitHub repo is not publicly reachable.
+    resource_documentation: "https://www.productclank.com/mcp",
   });
 
   const authorizationServerDoc = {

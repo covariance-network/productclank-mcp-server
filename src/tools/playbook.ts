@@ -9,6 +9,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolProfile } from "./index.js";
+import { CAPABILITIES_RESOURCE_URI } from "../auth/public-methods.js";
 
 // The prompt and the capabilities resource both advertise boost_post. The
 // creator profile does not register that tool (Meta review — see
@@ -165,7 +166,7 @@ export function registerPlaybook(
 
   server.registerResource(
     "capabilities",
-    "productclank://capabilities",
+    CAPABILITIES_RESOURCE_URI,
     {
       title: "ProductClank connector capabilities & costs",
       description:
