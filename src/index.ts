@@ -19,6 +19,7 @@ import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middlew
 import { registerTools, type ToolProfile } from "./tools/index.js";
 import { createOAuthRoutes } from "./auth/oauth-metadata.js";
 import { createOAuthEndpoints } from "./auth/oauth-endpoints.js";
+import { isPublicMcpRequest } from "./auth/public-methods.js";
 import { tokenVerifier } from "./auth/verifier.js";
 import { config, assertRuntimeConfig, SERVER_VERSION } from "./config.js";
 import { shutdownAnalytics } from "./lib/analytics.js";
@@ -150,44 +151,14 @@ function createBearerAuth(path: string): express.RequestHandler {
   });
 }
 
-// Discovery / handshake methods that carry no user identity and do nothing on
-// the user's behalf. Allowing these unauthenticated lets any client — including
-// automated directory health checks (e.g. glama.ai) — introspect the tool list
-// without completing the OAuth flow. Every method that acts on a user's data
-// (tools/call, …) still requires a valid access token, and each tool also
-// defends itself via getUserId(...) → NOT_AUTHED, so this only exposes the
-// public tool catalog, never any account or credit action.
-//
-// It is also exactly why the creator profile is a separate URL rather than a
-// per-OAuth-client filter: a reviewer can reach tools/list before any client
-// identity exists, so only the URL can decide what they see.
-const PUBLIC_MCP_METHODS = new Set([
-  "initialize",
-  "ping",
-  "tools/list",
-  "prompts/list",
-  "resources/list",
-  "resources/templates/list",
-]);
-
-function isPublicMcpMessage(msg: unknown): boolean {
-  if (!msg || typeof msg !== "object") return false;
-  const method = (msg as { method?: unknown }).method;
-  if (typeof method !== "string") return false;
-  return method.startsWith("notifications/") || PUBLIC_MCP_METHODS.has(method);
-}
-
-// Runs bearer auth on every MCP POST EXCEPT pure discovery requests. Fails
-// closed: a request skips auth only when it is non-empty and *every* JSON-RPC
-// message in it (single or batch) is a public method — so a batch that smuggles
-// a tools/call alongside an initialize is still gated.
+// Runs bearer auth on every MCP POST EXCEPT pure discovery requests and reads
+// of public static resources — see ./auth/public-methods.ts for the rule and
+// why it is safe.
 function createBearerAuthUnlessDiscovery(
   bearerAuth: express.RequestHandler
 ): express.RequestHandler {
   return (req, res, next) => {
-    const messages = Array.isArray(req.body) ? req.body : [req.body];
-    const allPublic = messages.length > 0 && messages.every(isPublicMcpMessage);
-    if (allPublic) return next();
+    if (isPublicMcpRequest(req.body)) return next();
     return bearerAuth(req, res, next);
   };
 }
