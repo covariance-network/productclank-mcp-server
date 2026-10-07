@@ -244,7 +244,7 @@ export function registerContentStudioTools(server: McpServer): void {
           topics_created: r.topics_created ?? 0,
           ...summarizeWorkspace(r),
           user_note: r.created_workspace
-            ? `Content is on for ${r.workspace?.brand_name || r.space_name}. The user can see and edit everything at ${r.review_url}. Offer to draft the first posts now with write_content_candidates — in this voice, on these topics.`
+            ? `Content is on for ${r.workspace?.brand_name || r.space_name}. The user can see and edit everything at ${r.review_url}. Offer to draft the first posts now with write_content_candidates — in this voice, on these topics.${r.created_space ? ` Any discovery campaign for this brand: pass space_id "${r.space_id}" to create_campaign so it shows under this space.` : ""}`
             : "Settings updated; future drafts and reviews use them.",
         });
       } catch (error) {

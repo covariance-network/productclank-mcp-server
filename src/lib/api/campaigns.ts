@@ -55,6 +55,8 @@ export interface CreateCampaignParams {
   targetSubreddits?: string[];
   /** YouTube only. Handles, ids or URLs; omit for keyword search alone. */
   targetYoutubeChannels?: string[];
+  /** Amplify space to file the campaign under (`owner_space_id`). Omit = the user's oldest space. */
+  ownerSpaceId?: string;
 }
 
 /**
@@ -148,6 +150,7 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
       ...(params.targetYoutubeChannels
         ? { target_youtube_channels: params.targetYoutubeChannels }
         : {}),
+      ...(params.ownerSpaceId ? { owner_space_id: params.ownerSpaceId } : {}),
     }),
   });
 }
