@@ -16,3 +16,4 @@ export * from "./contentStudio.js";
 export * from "./campaigns.js";
 export * from "./participation.js";
 export * from "./support.js";
+export * from "./scout.js";
