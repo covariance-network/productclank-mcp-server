@@ -419,6 +419,48 @@
       "mcp": "live",
       "tool": "get_support_status",
       "note": "Free, read-only. List mode (has_reply per ticket) or ?ticket_id= for the conversation: the agent's own messages + SENT admin replies only (never pending drafts or analysis). Every profile."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/scout/deals",
+      "mcp": "live",
+      "tool": "get_scout_deals",
+      "note": "Approved scouts only (403 not_a_scout / scout_not_approved). Free. Full profile only. Deal cards + claimRule (12h matched-scout exclusivity, then open)."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/scout/deals/{dealId}/claim",
+      "mcp": "live",
+      "tool": "claim_deal",
+      "note": "Approved scouts only (403 not_a_scout / scout_not_approved). Free. Full profile only. Holds the deal 72h; re-claim refreshes; 409 claimed_by_another_scout."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/scout/deals/{dealId}/release",
+      "mcp": "live",
+      "tool": "release_deal",
+      "note": "Approved scouts only (403 not_a_scout / scout_not_approved). Free. Full profile only. Returns the deal to the shared pool."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/scout/deals/{dealId}/progress",
+      "mcp": "live",
+      "tool": "report_deal_progress",
+      "note": "Approved scouts only (403 not_a_scout / scout_not_approved). Free. Full profile only. 'sent' needs replyUrl (submits the reply proof, awards Stars); replied/call_booked/closed_won/lost are pipeline steps."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/scout/deals/{dealId}/rating",
+      "mcp": "live",
+      "tool": "rate_deal",
+      "note": "Approved scouts only (403 not_a_scout / scout_not_approved). Free. Full profile only. would_send / would_not tunes the matcher."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/scout/earnings",
+      "mcp": "live",
+      "tool": "get_scout_earnings",
+      "note": "Approved scouts only (403 not_a_scout / scout_not_approved). Free. Full profile only. Pipeline, commissions, monthly pool rank."
     }
   ]
 }

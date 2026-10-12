@@ -19,6 +19,7 @@ import { registerContentStudioTools } from "./contentStudio.js";
 import { registerCampaignTools } from "./campaigns.js";
 import { registerParticipationTools } from "./participation.js";
 import { registerSupportTools } from "./support.js";
+import { registerScoutTools } from "./scout.js";
 import { registerPlaybook } from "./playbook.js";
 import { instrumentTools } from "./instrument.js";
 
@@ -59,6 +60,8 @@ export function registerTools(
   registerContentStudioTools(server); // list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
   registerCampaignTools(server, profile); // create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity/results, update_campaign, set_campaign_schedule, add_delegate
   registerParticipationTools(server, profile); // find_opportunities, submit_participation, get_earnings, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
+  // Scout BD outreach — not commissioned content, so not in the creator profile.
+  if (profile !== "creator") registerScoutTools(server); // get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings
   registerSupportTools(server); // report_issue, get_support_status (every profile)
   registerPlaybook(rawServer, profile); // grow_product + setup_content_space prompts + productclank://capabilities resource
 }

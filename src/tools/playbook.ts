@@ -61,6 +61,26 @@ const MOMENT_PLAY: Record<ToolProfile, string> = {
 };
 
 /**
+ * The Scout section of the capabilities resource — full profile only (scouting
+ * is BD outreach, not commissioned content; the creator profile never
+ * registers these tools).
+ */
+const SCOUT_SECTION: Record<ToolProfile, string> = {
+  full: `
+
+## Scout (approved ProductClank scouts)
+| Tool | Cost |
+|---|---|
+| get_scout_deals (founder posts picked for the scout + a drafted opener) | free |
+| claim_deal (hold a deal 72h before posting) / release_deal | free |
+| report_deal_progress (sent + reply URL → Stars; then replied / call_booked / closed_won / lost) | free |
+| rate_deal / get_scout_earnings | free |
+
+A matched deal waits 12h for its scout, then opens to every scout. The user posts the reply from their own X account; you never post. Not a scout yet? They apply at https://www.productclank.com/scouts.`,
+  creator: "",
+};
+
+/**
  * The boost row of the capabilities resource's Grow table — a whole table row
  * (leading newline included) on the full profile, nothing at all on creator.
  */
@@ -224,7 +244,7 @@ export function registerPlaybook(
 | get_campaign_brief | free |
 | submit_campaign_work | free — EARNS Stars/points on owner approval |
 | get_my_submissions | free |
-| get_earnings | free |
+| get_earnings | free |${SCOUT_SECTION[profile]}
 
 ## Credits
 check_balance and credit_history are free. Top-ups happen on the webapp only: app.productclank.com/credits/purchase. Users cap connector spend in Profile → Connected Apps; a cap error means the user must raise it there.

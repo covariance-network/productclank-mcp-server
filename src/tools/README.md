@@ -16,6 +16,7 @@ src/
 │   ├── contentStudio.ts listContentSpaces, getContentWorkspace, setupContentWorkspace, list/add/update/remove/suggestContentTopics, writeContentCandidates, getContentQueue, actOnContentDraft, teachContentVoice
 │   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
+│   ├── scout.ts        getScoutDeals, claimScoutDeal, releaseScoutDeal, reportScoutDealProgress, rateScoutDeal, getScoutEarnings
 │   ├── support.ts      reportIssue, getSupportTickets
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
 │   └── index.ts        barrel — `import * as api from "../lib/api/index.js"`
@@ -29,6 +30,7 @@ src/
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, submit_participation, get_earnings
+    ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings (full profile only)
     ├── support.ts      registerSupportTools       → report_issue, get_support_status
     ├── playbook.ts     registerPlaybook           → grow_product + setup_content_space prompts + productclank://capabilities resource
     └── index.ts        registerTools() — composes the above
@@ -70,6 +72,12 @@ src/
 | `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free |
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
+| `get_scout_deals` | scout | `GET /agents/scout/deals` | free |
+| `claim_deal` | scout | `POST /agents/scout/deals/{dealId}/claim` | free |
+| `release_deal` | scout | `POST /agents/scout/deals/{dealId}/release` | free |
+| `report_deal_progress` | scout | `POST /agents/scout/deals/{dealId}/progress` | free |
+| `rate_deal` | scout | `POST /agents/scout/deals/{dealId}/rating` | free |
+| `get_scout_earnings` | scout | `GET /agents/scout/earnings` | free |
 | `report_issue` | support | `POST /agents/support` | free |
 | `get_support_status` | support | `GET /agents/support` | free |
 
