@@ -55,7 +55,7 @@ const BOOST_COST_CLAUSE: Record<ToolProfile, string> = {
  */
 const MOMENT_PLAY: Record<ToolProfile, string> = {
   full:
-    "   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote — a quote post is a repost with the member's own text, X only, the highest-reach option).",
+    "   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote/bookmarks — a quote post is a repost with the member's own text, X only, the highest-reach option; bookmarks are X only).",
   creator:
     "   - **Moment play** — a conversation is happening right now and the user wants creators in it: run the conversations play above with a narrow brief — create_campaign on the 3–5 keywords of that specific moment, then generate_posts → get_posts → review_posts so creators write their own replies to it from their own accounts. If the moment deserves standalone pieces rather than replies, commission them with suggest_content_campaign (FREE dry-run) → create_content_campaign.",
 };
@@ -85,7 +85,7 @@ A matched deal waits 12h for its scout, then opens to every scout. The user post
  * (leading newline included) on the full profile, nothing at all on creator.
  */
 const BOOST_CAPABILITY_ROW: Record<ToolProfile, string> = {
-  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, repost) |",
+  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |",
   creator: "",
 };
 

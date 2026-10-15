@@ -65,7 +65,7 @@ export function registerParticipationTools(
           ...(result.posts.length === 0
             ? {
                 user_note:
-                  "No reply or quote-post opportunities are open right now. This is not an error — the open tasks at the moment may all be likes or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/feed). Worth checking back after new campaigns run discovery.",
+                  "No reply or quote-post opportunities are open right now. This is not an error — the open tasks at the moment may all be likes, bookmarks or reposts, which are proved with a screenshot and can only be done in the web app (app.productclank.com/feed). Worth checking back after new campaigns run discovery.",
               }
             : {}),
         });

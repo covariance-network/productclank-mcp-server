@@ -42,7 +42,7 @@
       "profiles": [
         "full"
       ],
-      "note": "LIVE on /mcp only. Deliberately absent from the /creator profile: it sells `likes` and `repost` — engagement signals, which Meta's Spam community standard bars from being paid for — and accepts Instagram post URLs. Add it back to the creator profile once Meta has approved the connector."
+      "note": "LIVE on /mcp only. Deliberately absent from the /creator profile: it sells `likes`, `bookmarks` and `repost` — engagement signals, which Meta's Spam community standard bars from being paid for — and accepts Instagram post URLs. Add it back to the creator profile once Meta has approved the connector."
     },
     {
       "method": "GET",
