@@ -100,6 +100,33 @@ interface SourceStatus {
   analysis?: Record<string, unknown>;
 }
 
+/**
+ * Feature hint carried in tool RESULTS, not only in tool definitions. Clients
+ * load tool definitions once per conversation, so a long-lived session can miss
+ * a new parameter; results always come from the live server. So each new
+ * capability is also announced here, with a web fallback that works on any
+ * schema. Shown only while the digest is off.
+ */
+function digestTip(adminUrl: string): { digest_tip: string } {
+  return {
+    digest_tip: `The user can get these posts by email: a daily digest (06:00 UTC, only on days with new posts) sends the owner and every delegate the new posts with their draft replies, so they can reply without opening the app. Offer it. Turn it on with update_campaign digest_enabled:true, or with the "Daily digest email" toggle in the campaign's Settings: ${adminUrl}/settings`,
+  };
+}
+
+/** digestTip unless the campaign already has the digest on (or can't be read). */
+async function digestTipIfOff(
+  userId: string,
+  campaignId: string,
+  adminUrl: string
+): Promise<{ digest_tip?: string }> {
+  try {
+    const { campaign } = await api.getCampaign({ callerUserId: userId, campaignId });
+    return campaign.digest_enabled === true ? {} : digestTip(adminUrl);
+  } catch {
+    return {};
+  }
+}
+
 function dormantFindings(result: SourceStatus): { source: string; count: number }[] {
   const analysis = result.analysis ?? {};
   return (result.dormant_until_enabled ?? [])
@@ -382,6 +409,8 @@ export function registerCampaignTools(
             result.campaign.admin_url,
             evidence
           ),
+          // New campaigns start with the digest off.
+          ...(isPublic ? {} : digestTip(result.campaign.admin_url)),
         });
       } catch (error) {
         return toolError(error, "Campaign creation failed");
@@ -525,6 +554,7 @@ export function registerCampaignTools(
           next_step:
             "get_posts (free) to read what was found, then review_posts with dry_run:true to see which are worth keeping.",
           ...offer,
+          ...(visibility === "private" ? await digestTipIfOff(userId, campaign_id, adminUrl) : {}),
         });
       } catch (error) {
         return toolError(error, "Post generation failed");
@@ -943,6 +973,12 @@ export function registerCampaignTools(
             "Tell the user how to stop it: ask you to turn it off, or toggle it in the workbench.",
             ...blockers,
           ].join(" "),
+          // A schedule finds posts while nobody is looking; the digest is how they hear about them.
+          ...(await digestTipIfOff(
+            userId,
+            args.campaign_id,
+            `${config.webappUrl}/amplify/workbench/${args.campaign_id}`
+          )),
         });
       } catch (error) {
         // The confirmation gate is a DECISION, not a failure. The backend

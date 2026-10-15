@@ -140,6 +140,18 @@ post. Confirm the campaign appears in the user's **My Campaigns** on the webapp.
   and record it in `capabilities.json`.
 - If the release depends on new app-repo behavior, **deploy the app repo first**;
   tools must degrade gracefully against the older API.
+- **Additive changes only.** Clients load tool definitions once per
+  conversation, so a live session keeps the OLD schema after a deploy (verified
+  2026-10-15: /health said 0.9.10 while a connected Claude Code session still
+  had the 0.9.9 `update_campaign`). Add new tools and new OPTIONAL parameters;
+  never rename or remove a parameter, make one required, or change what an
+  existing value means — a stale session would send calls the new server
+  rejects. Retire a parameter by ignoring it, not by removing it.
+- **Announce each new capability in a tool RESULT too** (a `*_tip` /
+  `user_note` field on the result where the user would want it), with a web UI
+  fallback. Results always come from the live server, so this reaches sessions
+  whose tool definitions predate the release. Example: `digestTip` in
+  `src/tools/campaigns.ts`.
 
 ---
 

@@ -51,6 +51,10 @@ protected resource (`/.well-known/oauth-protected-resource/mcp` and
    > "Preview a content campaign for my product."
    > "What's my ProductClank credit balance?"
 
+**Getting new tools:** Claude loads the tool list when a conversation starts.
+After we ship a new tool or option, start a new conversation to see it. In
+Claude Code, run `/mcp` and reconnect ProductClank (or start a new session).
+
 ## Connect from ChatGPT
 
 ChatGPT reaches custom MCP connectors through **Developer mode**.
