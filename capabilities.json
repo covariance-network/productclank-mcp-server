@@ -422,6 +422,20 @@
     },
     {
       "method": "GET",
+      "path": "/agents/growth-assistant",
+      "mcp": "live",
+      "tool": "get_growth_suggestions",
+      "note": "Free, read-only. The user's growth assistant(s) + posts from the last 3 days with draft replies. Full profile only."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/growth-assistant",
+      "mcp": "live",
+      "tool": "setup_growth_assistant",
+      "note": "Free setup, no credits. One network (twitter, linkedin, reddit or youtube); the free first run + $5/month subscription happen in the app (app_url). One private discovery campaign per network; idempotent per network. Full profile only."
+    },
+    {
+      "method": "GET",
       "path": "/agents/scout/deals",
       "mcp": "live",
       "tool": "get_scout_deals",
