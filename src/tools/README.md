@@ -44,7 +44,7 @@ src/
 | `create_product` | products | `POST /agents/products` | free |
 | `check_balance` | credits | reads `UserCredits` (service role) | free |
 | `credit_history` | credits | `GET /agents/credits/history` | free |
-| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / 300 cr (likes, repost) |
+| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / 300 cr (likes, bookmarks, repost) |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |
 | `create_content_campaign` | content | `POST /agents/campaigns/content` | 1000 cr |
 | `list_content_spaces` | contentStudio | `GET /agents/content/spaces` | free |

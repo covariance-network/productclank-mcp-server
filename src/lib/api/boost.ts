@@ -1,6 +1,6 @@
 /**
  * Boost — rally the community to engage with a specific social post.
- * Wraps POST /agents/campaigns/boost (20 credits per reply/quote draft; 300 for likes/reposts).
+ * Wraps POST /agents/campaigns/boost (20 credits per reply/quote draft; 300 for likes/bookmarks/reposts).
  */
 
 import { request } from "./client.js";
@@ -10,7 +10,7 @@ export interface BoostParams {
   postUrl: string;
   /** Optional — link a product. Omit for a tweet-first boost. */
   productId?: string;
-  actionType: "replies" | "likes" | "repost" | "quote";
+  actionType: "replies" | "likes" | "repost" | "quote" | "bookmarks";
   replyGuidelines?: string;
   /** replies / quote only: number of drafts, 1–10, billed 20 credits each. */
   count?: number;

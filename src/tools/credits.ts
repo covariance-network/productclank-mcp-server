@@ -15,7 +15,7 @@ export function registerCreditTools(
   profile: ToolProfile = "full"
 ): void {
   const boostCosts =
-    profile === "creator" ? "" : "a reply or quote-post boost 200; likes/reposts 300; ";
+    profile === "creator" ? "" : "a reply or quote-post boost 200; likes/bookmarks/reposts 300; ";
 
   server.registerTool(
     "check_balance",

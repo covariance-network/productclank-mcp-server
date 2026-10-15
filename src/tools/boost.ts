@@ -7,13 +7,26 @@ import { z } from "zod";
 import * as api from "../lib/api/index.js";
 import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
+/**
+ * Announce the `bookmarks` action (v0.9.13) in the RESULT of an X likes/repost
+ * boost: sessions whose tool definitions predate the release never see the new
+ * enum value in the schema, but results always come from the live server.
+ */
+function bookmarksTip(platform: string, actionType: string): { bookmarks_tip?: string } {
+  if (platform !== "twitter" || (actionType !== "likes" && actionType !== "repost")) return {};
+  return {
+    bookmarks_tip:
+      "New on X: boost_post with action_type 'bookmarks' — 30 community bookmarks for 300 credits. Bookmarks lift a post's visibility on X. Also available in the web app's boost form.",
+  };
+}
+
 export function registerBoostTools(server: McpServer): void {
   server.registerTool(
     "boost_post",
     {
       title: "Boost a social post",
       description:
-        "Rally the ProductClank community to engage with a specific social post. Creates a boost campaign and spends the user's credits: 'replies' generates AI reply drafts and 'quote' generates AI-drafted QUOTE POSTS (a repost WITH each member's own text, shown above the quoted post in their followers' feeds, the highest-reach action) — both cost 20 credits per draft, 10 drafts (200 credits) by default; set `count` (1–10) for a smaller boost, e.g. 3 replies = 60 credits. 'likes' (30 likes) and 'repost' (10 reposts) cost 300 and ignore `count`. Supports Twitter/X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, and YouTube (replies + likes on YouTube; reposts only on X and Farcaster; quote posts only on X) — the platform is auto-detected from the URL. product_id is OPTIONAL: link a product (from search_products or create_product) to tailor replies with the product name, or omit it for a tweet-first boost that uses generic amplification language. A TikTok video under ~1 minute old has no caption yet: the boost is still created, drafts are generated once TikTok publishes the caption (usually within a few minutes), and credits are charged only then — the result says waiting_for_post_text. Pass post_text if you already know the caption to skip the wait. Delivery is immediate by default; to pace it (e.g. 'reply 3 times over the next 6 hours'), set spread_over_hours — one slot goes out now and the rest drip out 1–2 an hour so the last lands within that window, at the same price. Confirm the action and its credit cost with the user before calling.",
+        "Rally the ProductClank community to engage with a specific social post. Creates a boost campaign and spends the user's credits: 'replies' generates AI reply drafts and 'quote' generates AI-drafted QUOTE POSTS (a repost WITH each member's own text, shown above the quoted post in their followers' feeds, the highest-reach action) — both cost 20 credits per draft, 10 drafts (200 credits) by default; set `count` (1–10) for a smaller boost, e.g. 3 replies = 60 credits. 'likes' (30 likes), 'bookmarks' (30 bookmarks — saving a post on X lifts its visibility) and 'repost' (10 reposts) cost 300 and ignore `count`. Supports Twitter/X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, and YouTube (replies + likes on YouTube; reposts only on X and Farcaster; quote posts and bookmarks only on X) — the platform is auto-detected from the URL. product_id is OPTIONAL: link a product (from search_products or create_product) to tailor replies with the product name, or omit it for a tweet-first boost that uses generic amplification language. A TikTok video under ~1 minute old has no caption yet: the boost is still created, drafts are generated once TikTok publishes the caption (usually within a few minutes), and credits are charged only then — the result says waiting_for_post_text. Pass post_text if you already know the caption to skip the wait. Delivery is immediate by default; to pace it (e.g. 'reply 3 times over the next 6 hours'), set spread_over_hours — one slot goes out now and the rest drip out 1–2 an hour so the last lands within that window, at the same price. Confirm the action and its credit cost with the user before calling.",
       inputSchema: {
         post_url: z
           .string()
@@ -26,10 +39,10 @@ export function registerBoostTools(server: McpServer): void {
             "Optional product UUID (from search_products or create_product). Omit for a tweet-first boost."
           ),
         action_type: z
-          .enum(["replies", "likes", "repost", "quote"])
+          .enum(["replies", "likes", "repost", "quote", "bookmarks"])
           .optional()
           .describe(
-            "How the community engages. Default: replies. Reposts are Twitter/Farcaster only; quote posts (repost with the member's own drafted text) are X only."
+            "How the community engages. Default: replies. Reposts are Twitter/Farcaster only; quote posts (repost with the member's own drafted text) and bookmarks (members save the post) are X only."
           ),
         reply_guidelines: z
           .string()
@@ -96,6 +109,7 @@ export function registerBoostTools(server: McpServer): void {
           credits_remaining: result.credits.credits_remaining,
           is_reboost: result.campaign.is_reboost,
           ...(result.delivery?.mode === "paced" && { delivery: result.delivery }),
+          ...bookmarksTip(result.campaign.platform, result.campaign.action_type),
           ...(result.waiting_for_post_text && {
             waiting_for_post_text: true,
             credits_pending: result.credits.credits_pending,
