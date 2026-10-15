@@ -1,6 +1,6 @@
 /**
  * Boost — rally the community to engage with a specific social post.
- * Wraps POST /agents/campaigns/boost (200–300 credits).
+ * Wraps POST /agents/campaigns/boost (20 credits per reply/quote draft; 300 for likes/reposts).
  */
 
 import { request } from "./client.js";
@@ -12,6 +12,12 @@ export interface BoostParams {
   productId?: string;
   actionType: "replies" | "likes" | "repost" | "quote";
   replyGuidelines?: string;
+  /** replies / quote only: number of drafts, 1–10, billed 20 credits each. */
+  count?: number;
+  /** The post's text/caption, when the caller already has it — skips the server fetch. */
+  postText?: string;
+  /** Pace delivery over this many hours (1 now, the rest dripped hourly). Omit = all at once. */
+  spreadOverHours?: number;
 }
 
 export interface BoostResult {
@@ -27,7 +33,15 @@ export interface BoostResult {
   };
   post: { url: string; author: string; platform: string; text: string };
   items_generated: number;
-  credits: { credits_used: number; credits_remaining: number };
+  items_expected?: number;
+  generation?: "complete" | "processing";
+  /** A brand-new TikTok whose caption isn't published yet — drafts (and the charge) follow. */
+  waiting_for_post_text?: boolean;
+  delivery?:
+    | { mode: "immediate" }
+    | { mode: "paced"; spread_over_hours: number; released_first: number; scheduled_later: number };
+  message?: string;
+  credits: { credits_used: number; credits_remaining: number; credits_pending?: number };
 }
 
 export function boostPost(params: BoostParams): Promise<BoostResult> {
@@ -39,6 +53,11 @@ export function boostPost(params: BoostParams): Promise<BoostResult> {
       action_type: params.actionType,
       ...(params.replyGuidelines
         ? { reply_guidelines: params.replyGuidelines }
+        : {}),
+      ...(params.count !== undefined ? { count: params.count } : {}),
+      ...(params.postText ? { post_text: params.postText } : {}),
+      ...(params.spreadOverHours !== undefined
+        ? { spread_over_hours: params.spreadOverHours }
         : {}),
     }),
   });

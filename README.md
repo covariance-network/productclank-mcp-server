@@ -91,7 +91,7 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `update_campaign` | Merge keywords, enable the discovery sources research found, move the relevance bar, pause/resume, re-aim the platform targeting, change who posts the drafts | free |
 | `set_campaign_schedule` | Put discovery on a schedule so it keeps finding conversations between sessions. Shows the projected daily cost and requires an explicit yes before enabling | free to set · 12cr per post found |
 | `add_delegate` | Hand a campaign to a human to manage in the web app | free |
-| `boost_post` <br>_(`/mcp` only — see [Endpoints](#endpoints))_ | Rally the community to engage a specific post — 10 AI-drafted replies (200 cr), 10 AI-drafted quote posts (200 cr, X only — a repost with each member's own text, landing in their followers' feeds), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 200–300 cr |
+| `boost_post` <br>_(`/mcp` only — see [Endpoints](#endpoints))_ | Rally the community to engage a specific post — AI-drafted replies or quote posts at 20 cr per draft (`count` 1–10, default 10 = 200 cr; quote posts X only — a repost with each member's own text, landing in their followers' feeds), 30 likes or 10 reposts (300 cr). Auto-detects platform from the URL: **X, Instagram, TikTok, LinkedIn, Reddit, Farcaster, YouTube** | 20 cr/draft or 300 cr |
 
 ### Earn — participate in campaigns for the connected user
 
