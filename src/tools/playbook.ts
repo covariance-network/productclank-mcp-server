@@ -43,7 +43,7 @@ Product to grow: {{product}}
 
 /** Boost is a `full`-profile cost; the creator profile never quotes it. */
 const BOOST_COST_CLAUSE: Record<ToolProfile, string> = {
-  full: "boost 200–300; ",
+  full: "boost 20/draft (replies, quote) or 300; ",
   creator: "",
 };
 
@@ -85,7 +85,7 @@ A matched deal waits 12h for its scout, then opens to every scout. The user post
  * (leading newline included) on the full profile, nothing at all on creator.
  */
 const BOOST_CAPABILITY_ROW: Record<ToolProfile, string> = {
-  full: "\n| boost_post | 200 (replies, quote) / 300 (likes, repost) |",
+  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, repost) |",
   creator: "",
 };
 
