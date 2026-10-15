@@ -722,7 +722,7 @@ export function registerCampaignTools(
     {
       title: "Tune a running campaign",
       description:
-        "Adjust a live campaign without recreating it. Free — nothing here spends credits, though the next generate_posts run bills as usual. Keywords MERGE (add_keywords never drops what is already there). `sources` is how research findings get applied: high-intent phrases, influencer accounts and lists that run_research found stay dormant until you enable their source. `relevance_threshold` moves the bar the relevance gate keeps posts above (new campaigns start lenient at 5; raise it when discovery is noisy). `is_active:false` pauses discovery so nothing more is found or billed. `visibility` decides who posts the drafts — flipping to 'public' also releases the already-discovered drafts to the community, so only do it when the user has said yes. `target_subreddits` / `target_youtube_channels` re-aim discovery within its platform (send an empty array to clear and search the whole platform). `platform` itself can only change while the campaign has discovered nothing — after that it is fixed, and a second campaign is the answer. On X, `reply_approach` switches what the replies do (awareness 'mention' vs sales 'flag', which tags reply_tag_accounts at the lead) — confirm with the user, it changes every future draft. Changes apply to the NEXT generate_posts run; existing posts are not re-scored.",
+        "Adjust a live campaign without recreating it. Free — nothing here spends credits, though the next generate_posts run bills as usual. Keywords MERGE (add_keywords never drops what is already there). `sources` is how research findings get applied: high-intent phrases, influencer accounts and lists that run_research found stay dormant until you enable their source. `relevance_threshold` moves the bar the relevance gate keeps posts above (new campaigns start lenient at 5; raise it when discovery is noisy). `is_active:false` pauses discovery so nothing more is found or billed. `digest_enabled:true` emails the owner and the campaign's delegates once a day with the new posts and their draft replies, so they can reply without opening the app; offer it when the user will post the replies themselves (a private campaign). `visibility` decides who posts the drafts — flipping to 'public' also releases the already-discovered drafts to the community, so only do it when the user has said yes. `target_subreddits` / `target_youtube_channels` re-aim discovery within its platform (send an empty array to clear and search the whole platform). `platform` itself can only change while the campaign has discovered nothing — after that it is fixed, and a second campaign is the answer. On X, `reply_approach` switches what the replies do (awareness 'mention' vs sales 'flag', which tags reply_tag_accounts at the lead) — confirm with the user, it changes every future draft. Changes apply to the NEXT generate_posts run; existing posts are not re-scored.",
       inputSchema: {
         campaign_id: z.string(),
         add_keywords: z
@@ -748,6 +748,12 @@ export function registerCampaignTools(
           .optional()
           .describe("Keep only posts scoring at or above this on semantic relevance (new campaigns start at 5)"),
         is_active: z.boolean().optional().describe("false pauses discovery, true resumes it"),
+        digest_enabled: z
+          .boolean()
+          .optional()
+          .describe(
+            "true = once a day, email the owner and every delegate (add_delegate) the posts found since the last digest, each with its draft reply and a link to reply. Only sent on days with new posts; each recipient can unsubscribe from the email. false turns it off. Free."
+          ),
         visibility: z
           .enum(["public", "private"])
           .optional()
@@ -812,6 +818,7 @@ export function registerCampaignTools(
           monitorAccounts: args.monitor_accounts,
           relevanceThreshold: args.relevance_threshold,
           isActive: args.is_active,
+          digestEnabled: args.digest_enabled,
           visibility: args.visibility,
           postVisibility: args.post_visibility,
           confirm: args.confirm,
@@ -831,6 +838,13 @@ export function registerCampaignTools(
           notes.push(
             `The campaign is now private: ${result.posts_visibility_updated ?? 0} draft(s) were pulled from the community feed. Replies already claimed stay claimed — this only stops new ones.`
           );
+        }
+        if (args.digest_enabled === true) {
+          notes.push(
+            "Daily digest is on: the owner and delegates get one email a day (06:00 UTC) with the new posts and their drafts, only on days with new posts. To keep posts coming, discovery must run — set_campaign_schedule turns that on."
+          );
+        } else if (args.digest_enabled === false) {
+          notes.push("Daily digest is off.");
         }
         if (args.is_active === false) {
           notes.push("Discovery is paused — nothing new will be found or billed until it is resumed.");
