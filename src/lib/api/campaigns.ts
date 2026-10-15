@@ -297,6 +297,8 @@ export interface UpdateCampaignParams {
   monitorAccounts?: string[];
   relevanceThreshold?: number;
   isActive?: boolean;
+  /** Daily digest email of new posts + drafts to the owner and delegates. */
+  digestEnabled?: boolean;
   visibility?: "public" | "private";
   postVisibility?: "public" | "private";
   /** Required (true) when flipping private → public — the backend 400s
@@ -340,6 +342,7 @@ export function updateCampaign(params: UpdateCampaignParams): Promise<{
         ? { relevance_threshold: params.relevanceThreshold }
         : {}),
       ...(params.isActive != null ? { is_active: params.isActive } : {}),
+      ...(params.digestEnabled != null ? { digest_enabled: params.digestEnabled } : {}),
       ...(params.visibility ? { visibility: params.visibility } : {}),
       ...(params.postVisibility ? { post_visibility: params.postVisibility } : {}),
       ...(params.confirm !== undefined ? { confirm: params.confirm } : {}),
