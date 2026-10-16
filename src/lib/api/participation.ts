@@ -140,6 +140,7 @@ export interface OpenCampaign {
     one_try: boolean;
     points_per_correct_answer: number | null;
     pro_per_correct_answer: number | null;
+    pro_first_correct_answers_only: number | null;
     how_to_participate: string;
   };
 }
