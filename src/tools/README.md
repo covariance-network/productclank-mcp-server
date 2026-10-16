@@ -75,7 +75,7 @@ src/
 | `submit_participation` | participation | `POST /agents/participate/submit` | earns |
 | `get_earnings` | participation | `GET /agents/participate/earnings` | free |
 | `find_open_campaigns` | participation | `GET /agents/participate/campaigns` | free |
-| `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free |
+| `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free (watch quizzes: `participation: "human_only"` → send the user to the page) |
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
 | `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($5/month subscription in the app) |
