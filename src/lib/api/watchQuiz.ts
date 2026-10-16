@@ -63,9 +63,10 @@ export interface WatchQuizResults {
     correct: number;
     wrong: number;
     in_progress: number;
+    second_tries: number;
     correct_rate: number | null;
   };
-  questions: { question: string; answer: number; answers: number; correct: number }[];
+  questions: { question: string; answer: number; tries: number; correct: number }[];
   credits: { credits_billed: number; bills_per_answer: boolean };
 }
 
