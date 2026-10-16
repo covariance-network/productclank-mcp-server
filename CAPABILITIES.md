@@ -34,6 +34,9 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/products/search` | ✅ | `search_products` |
 | `POST /agents/products` | ✅ | `create_product` (URL-first token-free listing, free) |
 | `POST /agents/campaigns/boost` | ✅ | `boost_post` |
+| `POST /agents/campaigns/watch-quiz` | ✅ | `create_watch_quiz` (100cr per graded answer, cap `max_answers`; full profile only) |
+| `POST /agents/campaigns/watch-quiz/suggest-questions` | ✅ | `suggest_quiz_questions` (40cr on success) |
+| `GET /agents/campaigns/watch-quiz/{id}` | ✅ | `get_watch_quiz_results` (free) |
 | `POST /agents/campaigns/content` | ✅ | `suggest_content_campaign` (free preview) + `create_content_campaign` (1000cr) |
 | `GET /agents/content/spaces` | ✅ | `list_content_spaces` (Content Studio) |
 | `POST /agents/content/candidates` | ✅ | `write_content_candidates` (Content Studio — free, auto-scored, human-staged drafts) |
