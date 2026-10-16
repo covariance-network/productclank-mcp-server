@@ -55,7 +55,7 @@ const BOOST_COST_CLAUSE: Record<ToolProfile, string> = {
  */
 const MOMENT_PLAY: Record<ToolProfile, string> = {
   full:
-    "   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote/bookmarks — a quote post is a repost with the member's own text, X only, the highest-reach option; bookmarks are X only).",
+    "   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote/bookmarks — a quote post is a repost with the member's own text, X only, the highest-reach option; bookmarks are X only). For a VIDEO the user wants watched to the end, a watch quiz: create_watch_quiz (or boost_post's watch_quiz on the same video) — viewers watch, then answer one counting question; billed per answer after the chat, so confirm max_answers and the maximum spend.",
   creator:
     "   - **Moment play** — a conversation is happening right now and the user wants creators in it: run the conversations play above with a narrow brief — create_campaign on the 3–5 keywords of that specific moment, then generate_posts → get_posts → review_posts so creators write their own replies to it from their own accounts. If the moment deserves standalone pieces rather than replies, commission them with suggest_content_campaign (FREE dry-run) → create_content_campaign.",
 };
@@ -85,7 +85,7 @@ A matched deal waits 12h for its scout, then opens to every scout. The user post
  * (leading newline included) on the full profile, nothing at all on creator.
  */
 const BOOST_CAPABILITY_ROW: Record<ToolProfile, string> = {
-  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |",
+  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |\n| create_watch_quiz (watch a video to the end + answer one question; or boost_post watch_quiz) | 100 per correct answer for 24h, cap max_answers (default 20); 0 at create |\n| suggest_quiz_questions / get_watch_quiz_results | 40 (on success) / free |",
   creator: "",
 };
 

@@ -12,6 +12,7 @@ src/
 │   ├── client.ts       base transport (per-user agent key resolved at request time)
 │   ├── products.ts     searchProducts, createProduct
 │   ├── boost.ts        boostPost
+│   ├── watchQuiz.ts    createWatchQuiz, suggestQuizQuestions, getWatchQuizResults
 │   ├── content.ts      composeContentCampaign, createContentCampaign
 │   ├── contentStudio.ts listContentSpaces, getContentWorkspace, setupContentWorkspace, list/add/update/remove/suggestContentTopics, writeContentCandidates, getContentQueue, actOnContentDraft, teachContentVoice
 │   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
@@ -26,6 +27,7 @@ src/
     ├── products.ts     registerProductTools       → search_products, create_product
     ├── credits.ts      registerCreditTools        → check_balance, credit_history
     ├── boost.ts        registerBoostTools         → boost_post
+    ├── watchQuiz.ts    registerWatchQuizTools     → create_watch_quiz, suggest_quiz_questions, get_watch_quiz_results (full profile only)
     ├── content.ts      registerContentTools       → suggest_content_campaign, create_content_campaign
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
@@ -45,7 +47,10 @@ src/
 | `create_product` | products | `POST /agents/products` | free |
 | `check_balance` | credits | reads `UserCredits` (service role) | free |
 | `credit_history` | credits | `GET /agents/credits/history` | free |
-| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / 300 cr (likes, bookmarks, repost) |
+| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / 300 cr (likes, bookmarks, repost); `watch_quiz` +100 cr per graded answer |
+| `create_watch_quiz` | watchQuiz | `POST /agents/campaigns/watch-quiz` | 100 cr per correct answer over 24h (wrong free) (cap `max_answers`, default 20); 0 at create |
+| `suggest_quiz_questions` | watchQuiz | `POST /agents/campaigns/watch-quiz/suggest-questions` | 40 cr (only on success) |
+| `get_watch_quiz_results` | watchQuiz | `GET /agents/campaigns/watch-quiz/{id}` | free |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |
 | `create_content_campaign` | content | `POST /agents/campaigns/content` | 1000 cr |
 | `list_content_spaces` | contentStudio | `GET /agents/content/spaces` | free |
@@ -70,7 +75,7 @@ src/
 | `submit_participation` | participation | `POST /agents/participate/submit` | earns |
 | `get_earnings` | participation | `GET /agents/participate/earnings` | free |
 | `find_open_campaigns` | participation | `GET /agents/participate/campaigns` | free |
-| `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free |
+| `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free (watch quizzes: `participation: "human_only"` → send the user to the page) |
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
 | `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($5/month subscription in the app) |

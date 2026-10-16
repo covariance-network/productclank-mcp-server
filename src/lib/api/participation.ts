@@ -130,6 +130,19 @@ export interface OpenCampaign {
   action_message: string | null;
   description: string | null;
   url: string;
+  /** "human_only" = a watch quiz: the person does it on the page; never submit it. */
+  participation?: "agent" | "human_only";
+  watch_quiz?: {
+    human_only: true;
+    quiz_url: string;
+    video_url: string;
+    duration_sec: number;
+    one_try: boolean;
+    points_per_correct_answer: number | null;
+    pro_per_correct_answer: number | null;
+    pro_first_correct_answers_only: number | null;
+    how_to_participate: string;
+  };
 }
 
 export function listOpenCampaigns(params: {

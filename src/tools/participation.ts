@@ -113,7 +113,7 @@ export function registerParticipationTools(
     {
       title: "Find campaigns to participate in",
       description:
-        "Discover content and take-action campaigns the connected user can join and earn from: every active public campaign plus campaigns from communities the user belongs to. Each item has a kind — 'content' (create a post/thread/video about the product) or 'take_action' (do a concrete action like voting or starring, with URL/description proof). Free, read-only. Follow with get_campaign_brief before doing any work.",
+        "Discover content and take-action campaigns the connected user can join and earn from: every active public campaign plus campaigns from communities the user belongs to. Each item has a kind — 'content' (create a post/thread/video about the product) or 'take_action' (do a concrete action like voting or starring, with URL/description proof). Items with participation 'human_only' are WATCH QUIZZES: the user watches a video to the end and answers one question on the quiz page (points, sometimes $PRO, for a right answer). Offer them to the user with watch_quiz.quiz_url and watch_quiz.how_to_participate — the user does them, you never submit them. Free, read-only. Follow with get_campaign_brief before doing any work.",
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
         kind: z.enum(["content", "take_action"]).optional().describe("Filter by campaign kind"),
@@ -137,7 +137,7 @@ export function registerParticipationTools(
     {
       title: "Read a campaign's participation brief",
       description:
-        "The full brief for one campaign: what to create or do (action message, brief sections, content types), how submissions are judged (eligibility + selection criteria), rewards, deadline, and how many submissions the user has left. Free, read-only. If the brief links external instructions (e.g. a skill file), fetch and follow them. Then: create the content or take the action WITH the user, and call submit_campaign_work with the proof.",
+        "The full brief for one campaign: what to create or do (action message, brief sections, content types), how submissions are judged (eligibility + selection criteria), rewards, deadline, and how many submissions the user has left. Free, read-only. If the brief links external instructions (e.g. a skill file), fetch and follow them. Then: create the content or take the action WITH the user, and call submit_campaign_work with the proof. Exception — participation 'human_only' (a watch quiz): give the user watch_quiz.quiz_url and the steps; they watch and answer on that page, and there is nothing to submit. watch_quiz.my_status says if they already started or answered.",
       inputSchema: {
         campaign_id: z.string().describe("Campaign id from find_open_campaigns"),
       },

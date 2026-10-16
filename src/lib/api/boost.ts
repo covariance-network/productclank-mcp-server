@@ -4,6 +4,7 @@
  */
 
 import { request } from "./client.js";
+import type { WatchQuizInput, WatchQuizSummary } from "./watchQuiz.js";
 
 export interface BoostParams {
   callerUserId: string;
@@ -18,6 +19,8 @@ export interface BoostParams {
   postText?: string;
   /** Pace delivery over this many hours (1 now, the rest dripped hourly). Omit = all at once. */
   spreadOverHours?: number;
+  /** "Watch & answer" on a TikTok / YouTube / Instagram Reel: a linked 24h watch quiz. */
+  watchQuiz?: WatchQuizInput;
 }
 
 export interface BoostResult {
@@ -41,6 +44,8 @@ export interface BoostResult {
     | { mode: "immediate" }
     | { mode: "paced"; spread_over_hours: number; released_first: number; scheduled_later: number };
   message?: string;
+  /** Present when watch_quiz was sent. `error` = the boost exists but the quiz does not. */
+  watch_quiz?: Partial<WatchQuizSummary> & { campaign_id?: string; public_url?: string; error?: string };
   credits: { credits_used: number; credits_remaining: number; credits_pending?: number };
 }
 
@@ -59,6 +64,7 @@ export function boostPost(params: BoostParams): Promise<BoostResult> {
       ...(params.spreadOverHours !== undefined
         ? { spread_over_hours: params.spreadOverHours }
         : {}),
+      ...(params.watchQuiz ? { watch_quiz: params.watchQuiz } : {}),
     }),
   });
 }

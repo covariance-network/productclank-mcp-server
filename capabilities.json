@@ -67,6 +67,27 @@
     },
     {
       "method": "POST",
+      "path": "/agents/campaigns/watch-quiz",
+      "mcp": "live",
+      "tool": "create_watch_quiz",
+      "note": "Standalone 24h public watch quiz on any video link. Nothing at create; 100cr per correct answer (wrong free), at most max_answers people (default 20), worst case checked against the daily agent cap. Questions come from the user. Full profile only."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/watch-quiz/suggest-questions",
+      "mcp": "live",
+      "tool": "suggest_quiz_questions",
+      "note": "AI questions + answers + evidence from a TikTok, 40cr only on success; creates nothing. Full profile only."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/watch-quiz/{campaignId}",
+      "mcp": "live",
+      "tool": "get_watch_quiz_results",
+      "note": "Free, read-only. State, answers, right/wrong, per-question accuracy, credits billed. Web-made quizzes the user owns too. Full profile only."
+    },
+    {
+      "method": "POST",
       "path": "/agents/campaigns/content",
       "mcp": "live",
       "tool": "create_content_campaign",

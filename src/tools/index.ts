@@ -21,6 +21,7 @@ import { registerParticipationTools } from "./participation.js";
 import { registerSupportTools } from "./support.js";
 import { registerScoutTools } from "./scout.js";
 import { registerGrowthAssistantTools } from "./growthAssistant.js";
+import { registerWatchQuizTools } from "./watchQuiz.js";
 import { registerPlaybook } from "./playbook.js";
 import { instrumentTools } from "./instrument.js";
 
@@ -57,6 +58,8 @@ export function registerTools(
   registerCreditTools(server, profile); // check_balance, credit_history
   // Engagement-signal tool — excluded from the creator profile (see above).
   if (profile !== "creator") registerBoostTools(server); // boost_post
+  // Paid watch time on TikTok / Reels is an engagement signal too — same rule.
+  if (profile !== "creator") registerWatchQuizTools(server); // create_watch_quiz, suggest_quiz_questions, get_watch_quiz_results
   registerContentTools(server); // suggest_content_campaign, create_content_campaign
   registerContentStudioTools(server); // list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
   registerCampaignTools(server, profile); // create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity/results, update_campaign, set_campaign_schedule, add_delegate
