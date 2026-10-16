@@ -70,7 +70,7 @@
       "path": "/agents/campaigns/watch-quiz",
       "mcp": "live",
       "tool": "create_watch_quiz",
-      "note": "Standalone 24h public watch quiz on any video link. Nothing at create; 100cr per graded answer up to max_answers (default 20), worst case checked against the daily agent cap. Questions come from the user. Full profile only."
+      "note": "Standalone 24h public watch quiz on any video link. Nothing at create; 100cr per correct answer (wrong free), at most max_answers people (default 20), worst case checked against the daily agent cap. Questions come from the user. Full profile only."
     },
     {
       "method": "POST",

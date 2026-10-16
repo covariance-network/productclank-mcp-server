@@ -38,7 +38,7 @@ export const quizMaxAnswersSchema = z
   .min(1)
   .max(1000)
   .optional()
-  .describe("Answers the user pays for before the quiz stops taking new viewers (default 20 = at most 2,000 credits).");
+  .describe("People who may answer before the quiz closes to new viewers (default 20). Worst case = all of them right = 2,000 credits.");
 
 export function registerWatchQuizTools(server: McpServer): void {
   server.registerTool(
@@ -46,7 +46,7 @@ export function registerWatchQuizTools(server: McpServer): void {
     {
       title: "Create a watch quiz for a video",
       description:
-        "Get people to watch a video ALL the way through: viewers open it, wait its full length, then answer ONE counting question about it ('how many times does she say X?') that only a viewer can answer. One try each; a right answer earns ProductClank points. Public, runs exactly 24 hours. Works on any video link (TikTok, YouTube, Instagram Reels, …). COST: nothing now — the user pays 100 credits per graded answer, right or wrong, for 24 hours after this chat, up to max_answers (default 20 = 2,000 credits max). Needs 100 credits on hand. Before calling: get the questions AND answers from the user (or run suggest_quiz_questions and have them confirm), and confirm max_answers and the maximum spend. Note for the user: paid watch time may count as artificial engagement under the platform's rules. To add a quiz to a boost of the same video, use boost_post's watch_quiz instead.",
+        "Get people to watch a video ALL the way through: viewers open it, wait its full length, then answer ONE counting question about it ('how many times does she say X?') that only a viewer can answer. A right answer earns ProductClank points; a wrong first answer gets one more try (watch again). Public, runs exactly 24 hours. Works on any video link (TikTok, YouTube, Instagram Reels, …). COST: nothing now — the user pays 100 credits per CORRECT answer (wrong answers are free) for 24 hours after this chat, for at most max_answers people (default 20 = 2,000 credits max). Needs 100 credits on hand. Before calling: get the questions AND answers from the user (or run suggest_quiz_questions and have them confirm), and confirm max_answers and the maximum spend. Note for the user: paid watch time may count as artificial engagement under the platform's rules. To add a quiz to a boost of the same video, use boost_post's watch_quiz instead.",
       inputSchema: {
         video_url: z.string().url().describe("The video viewers must watch."),
         questions: quizQuestionsSchema,
@@ -116,7 +116,7 @@ export function registerWatchQuizTools(server: McpServer): void {
     {
       title: "Get watch-quiz results",
       description:
-        "Results of one of the user's watch quizzes (made here, in the web app, or on a boost): state (live / paused / ended), how many viewers started, answered, got it right or wrong, how each question did, and the credits billed so far. Free, read-only. A question most viewers miss is usually ambiguous — say so. 'paused' with credits left means the user paused it; otherwise the balance ran out.",
+        "Results of one of the user's watch quizzes (made here, in the web app, or on a boost): state (live / paused / ended), how many people started, answered, got it right, ran out of tries, or used their second try, how each question did, and the credits billed so far. Free, read-only. A question most viewers miss is usually ambiguous — say so. 'paused' with credits left means the user paused it; otherwise the balance ran out.",
       inputSchema: {
         quiz_id: z.string().uuid().describe("The quiz id from create_watch_quiz (or boost_post's watch_quiz.campaign_id)."),
       },

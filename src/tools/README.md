@@ -48,7 +48,7 @@ src/
 | `check_balance` | credits | reads `UserCredits` (service role) | free |
 | `credit_history` | credits | `GET /agents/credits/history` | free |
 | `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / 300 cr (likes, bookmarks, repost); `watch_quiz` +100 cr per graded answer |
-| `create_watch_quiz` | watchQuiz | `POST /agents/campaigns/watch-quiz` | 100 cr per graded answer over 24h (cap `max_answers`, default 20); 0 at create |
+| `create_watch_quiz` | watchQuiz | `POST /agents/campaigns/watch-quiz` | 100 cr per correct answer over 24h (wrong free) (cap `max_answers`, default 20); 0 at create |
 | `suggest_quiz_questions` | watchQuiz | `POST /agents/campaigns/watch-quiz/suggest-questions` | 40 cr (only on success) |
 | `get_watch_quiz_results` | watchQuiz | `GET /agents/campaigns/watch-quiz/{id}` | free |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |

@@ -85,7 +85,7 @@ A matched deal waits 12h for its scout, then opens to every scout. The user post
  * (leading newline included) on the full profile, nothing at all on creator.
  */
 const BOOST_CAPABILITY_ROW: Record<ToolProfile, string> = {
-  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |\n| create_watch_quiz (watch a video to the end + answer one question; or boost_post watch_quiz) | 100 per graded answer for 24h, cap max_answers (default 20); 0 at create |\n| suggest_quiz_questions / get_watch_quiz_results | 40 (on success) / free |",
+  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |\n| create_watch_quiz (watch a video to the end + answer one question; or boost_post watch_quiz) | 100 per correct answer for 24h, cap max_answers (default 20); 0 at create |\n| suggest_quiz_questions / get_watch_quiz_results | 40 (on success) / free |",
   creator: "",
 };
 

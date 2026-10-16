@@ -1,7 +1,7 @@
 /**
  * Watch quiz — viewers watch a video to the end, then answer one counting
  * question only a viewer knows. Wraps /agents/campaigns/watch-quiz.
- * Billed per graded answer (100 credits) over the quiz's 24 hours, nothing at create.
+ * Billed per correct answer (100 credits; wrong answers free) over the quiz's 24 hours, nothing at create.
  */
 
 import { request } from "./client.js";
@@ -16,7 +16,7 @@ export interface WatchQuizInput {
   questions: QuizQuestion[];
   /** Seconds or "m:ss". Omit to read it from the TikTok / YouTube page. */
   duration_sec?: number | string;
-  /** Answers the owner pays for (default 20, max 1000). */
+  /** People who may answer before the quiz closes (default 20, max 1000). */
   max_answers?: number;
 }
 
