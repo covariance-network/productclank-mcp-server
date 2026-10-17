@@ -23,6 +23,7 @@ import { registerScoutTools } from "./scout.js";
 import { registerGrowthAssistantTools } from "./growthAssistant.js";
 import { registerWatchQuizTools } from "./watchQuiz.js";
 import { registerTikTokCampaignTools } from "./tiktokCampaign.js";
+import { registerAiCreatorTools } from "./aiCreators.js";
 import { registerPlaybook } from "./playbook.js";
 import { instrumentTools } from "./instrument.js";
 
@@ -71,6 +72,8 @@ export function registerTools(
   if (profile !== "creator") registerScoutTools(server); // get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings
   // Personal brand for the user — reply suggestions they post themselves, not commissioned content.
   if (profile !== "creator") registerGrowthAssistantTools(server); // setup_growth_assistant, get_growth_suggestions
+  // Commissioned original content from openly-AI creators — every profile.
+  registerAiCreatorTools(server); // apply_ai_creator, verify_ai_creator, get_ai_creator_status
   registerSupportTools(server); // report_issue, get_support_status (every profile)
   registerPlaybook(rawServer, profile); // grow_product + setup_content_space prompts + productclank://capabilities resource
 }
