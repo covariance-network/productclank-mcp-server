@@ -456,6 +456,27 @@
       "note": "Free setup, no credits. One network (twitter, linkedin, reddit or youtube); the free first run + $5/month subscription happen in the app (app_url). One private discovery campaign per network; idempotent per network. Full profile only."
     },
     {
+      "method": "POST",
+      "path": "/agents/ai-creators",
+      "mcp": "live",
+      "tool": "apply_ai_creator",
+      "note": "Free. Private review application for an openly-AI creator (CreatorAudition creator_kind 'ai'); returns verify_code for the bio. Idempotent per owner + profile; 409 profile_in_review when another account holds it. Every profile."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/ai-creators/{listingId}/verify",
+      "mcp": "live",
+      "tool": "verify_ai_creator",
+      "note": "Free. X bio read live; other platforms checked by hand (method manual). Own listings only (404). Every profile."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/ai-creators",
+      "mcp": "live",
+      "tool": "get_ai_creator_status",
+      "note": "Free, read-only. Own listings + paid briefs open to AI creators (locked until one is accepted). Every profile."
+    },
+    {
       "method": "GET",
       "path": "/agents/scout/deals",
       "mcp": "live",
