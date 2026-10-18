@@ -48,9 +48,9 @@ src/
 | `create_product` | products | `POST /agents/products` | free |
 | `check_balance` | credits | reads `UserCredits` (service role) | free |
 | `credit_history` | credits | `GET /agents/credits/history` | free |
-| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / 300 cr (likes, bookmarks, repost); `watch_quiz` +100 cr per graded answer |
+| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / likes 300 cr per 30 (`count` 1–300 at 10 cr each) / 300 cr (bookmarks, repost); `watch_quiz` +100 cr per graded answer |
 | `create_watch_quiz` | watchQuiz | `POST /agents/campaigns/watch-quiz` | 100 cr per correct answer over 24h (wrong free) (cap `max_answers`, default 20); 0 at create |
-| `launch_tiktok_campaign` | tiktokCampaign | `boost` ×2 + `watch-quiz` (via boost `watch_quiz`) | likes 300 cr + replies 20 cr each up front; quiz 100 cr per correct answer (cap `quiz_answers`, default 10); +40 cr if questions are suggested. Plan call free, `confirmed: true` creates |
+| `launch_tiktok_campaign` | tiktokCampaign | `boost` ×2 + `watch-quiz` (via boost `watch_quiz`) | likes 10 cr each (`likes_count` 1–300, default 30 = 300 cr) + replies 20 cr each up front; quiz 100 cr per correct answer (cap `quiz_answers` 0–1000, default 10); +40 cr if questions are suggested. Plan call free, `confirmed: true` creates |
 | `suggest_quiz_questions` | watchQuiz | `POST /agents/campaigns/watch-quiz/suggest-questions` | 40 cr (only on success) |
 | `get_watch_quiz_results` | watchQuiz | `GET /agents/campaigns/watch-quiz/{id}` | free |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |

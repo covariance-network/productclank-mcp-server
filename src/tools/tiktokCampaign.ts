@@ -1,6 +1,6 @@
 /**
  * TikTok combo — one ask ("run a full TikTok campaign on <video>") instead of three:
- * a likes boost + a replies boost + a watch quiz on the same video. Wraps the existing
+ * a likes boost + a replies boost + a watch quiz on the same video, each sized by the caller. Wraps the existing
  * boost and watch-quiz routes in sequence; there is no new app endpoint.
  *
  * Two-call flow, so nothing is spent before the user says yes:
@@ -16,8 +16,10 @@ import * as api from "../lib/api/index.js";
 import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 import { quizDurationSchema, quizQuestionsSchema } from "./watchQuiz.js";
 
-const LIKES_CREDITS = 300;
-const LIKES_COUNT = 30;
+const LIKES_PACK_CREDITS = 300;
+const LIKES_PACK_COUNT = 30;
+const LIKE_CREDITS = 10;
+const LIKES_MAX = 300;
 const REPLY_CREDITS = 20;
 const QUIZ_ANSWER_CREDITS = 100;
 const SUGGEST_CREDITS = 40;
@@ -46,10 +48,17 @@ export function registerTikTokCampaignTools(server: McpServer): void {
     {
       title: "Launch a full TikTok campaign",
       description:
-        "One call for a full TikTok push on ONE video: 30 community likes + up to 10 community replies (AI-drafted comments) + a 24h 'Watch & answer' quiz (viewers watch to the end and answer a counting question). Use it when the user asks for a 'full', 'full blown', 'complete' or 'combo' TikTok campaign, or for likes + replies + quiz together, instead of calling boost_post and create_watch_quiz one by one. Defaults: likes on, 10 replies, quiz for 10 correct answers. Price: likes 300 credits, replies 20 credits each (10 = 200), billed up front; the quiz bills 100 credits per CORRECT answer over 24h, up to quiz_answers (10 = up to 1,000). FLOW: (1) call WITHOUT confirmed to get the free plan and show the user the steps and credit totals; (2) after the user says yes, call again with confirmed: true. If quiz_questions are missing on the confirmed call, the tool suggests questions from the video (40 credits) and creates nothing yet: show the user each question with its evidence, let them fix the answers, then call a third time with quiz_questions and confirmed: true. Each campaign bills separately; on a partial failure the result lists what was created — never call again blindly, it would create duplicates.",
+        "One call for a full TikTok push on ONE video: community likes + up to 10 community replies (AI-drafted comments) + a 24h 'Watch & answer' quiz (viewers watch to the end and answer a counting question). Use it when the user asks for a 'full', 'full blown', 'complete' or 'combo' TikTok campaign, or for likes + replies + quiz together, instead of calling boost_post and create_watch_quiz one by one. Every size is adjustable: likes_count (1–300, default 30), replies (0–10, default 10), quiz_answers (how many people may answer, 0–1000, default 10). When the user asks for more likes or a bigger quiz, set those — do not cap them at the defaults. Price: likes 10 credits each (30 = 300, 100 = 1,000), replies 20 credits each (10 = 200), billed up front; the quiz bills 100 credits per CORRECT answer over 24h, up to quiz_answers (10 = up to 1,000, 50 = up to 5,000). FLOW: (1) call WITHOUT confirmed to get the free plan and show the user the steps and credit totals; (2) after the user says yes, call again with confirmed: true. If quiz_questions are missing on the confirmed call, the tool suggests questions from the video (40 credits) and creates nothing yet: show the user each question with its evidence, let them fix the answers, then call a third time with quiz_questions and confirmed: true. Each campaign bills separately; on a partial failure the result lists what was created — never call again blindly, it would create duplicates.",
       inputSchema: {
         video_url: z.string().url().describe("The TikTok video URL (tiktok.com or vm.tiktok.com short link)."),
-        likes: z.boolean().optional().describe(`Include the likes boost (${LIKES_COUNT} likes, ${LIKES_CREDITS} credits). Default true.`),
+        likes: z.boolean().optional().describe("Include the likes boost. Default true. Size it with likes_count."),
+        likes_count: z
+          .number()
+          .int()
+          .min(1)
+          .max(LIKES_MAX)
+          .optional()
+          .describe(`How many likes, 1–${LIKES_MAX}. ${LIKE_CREDITS} credits each. Default ${LIKES_PACK_COUNT} (${LIKES_PACK_CREDITS} credits).`),
         replies: z
           .number()
           .int()
@@ -63,7 +72,7 @@ export function registerTikTokCampaignTools(server: McpServer): void {
           .min(0)
           .max(1000)
           .optional()
-          .describe(`Watch quiz cap: how many people may answer. Billed ${QUIZ_ANSWER_CREDITS} credits per CORRECT answer only. Default 10. 0 = no quiz.`),
+          .describe(`Watch quiz size: how many people may answer, 0–1000. Billed ${QUIZ_ANSWER_CREDITS} credits per CORRECT answer only. Default 10. 0 = no quiz.`),
         quiz_questions: quizQuestionsSchema
           .optional()
           .describe("Counting questions with whole-number answers, confirmed by the user. Omit and the confirmed call suggests them first (40 credits)."),
@@ -82,16 +91,18 @@ export function registerTikTokCampaignTools(server: McpServer): void {
       if (!TIKTOK_URL.test(args.video_url)) return errorResult("launch_tiktok_campaign takes a TikTok video URL. For other platforms use boost_post.");
 
       const likes = args.likes ?? true;
+      const likesCount = args.likes_count ?? LIKES_PACK_COUNT;
+      const likesCredits = likesCount === LIKES_PACK_COUNT ? LIKES_PACK_CREDITS : likesCount * LIKE_CREDITS;
       const replies = args.replies ?? 10;
       const quizAnswers = args.quiz_answers ?? 10;
       if (!likes && replies === 0 && quizAnswers === 0) return errorResult("Nothing to launch: likes, replies and the quiz are all off.");
 
-      const upFront = (likes ? LIKES_CREDITS : 0) + replies * REPLY_CREDITS;
+      const upFront = (likes ? likesCredits : 0) + replies * REPLY_CREDITS;
       const quizMax = quizAnswers * QUIZ_ANSWER_CREDITS;
       const needsQuestions = quizAnswers > 0 && !args.quiz_questions?.length;
       const steps = [
         ...(replies > 0 ? [`${replies} community replies — ${replies * REPLY_CREDITS} credits up front`] : []),
-        ...(likes ? [`${LIKES_COUNT} community likes — ${LIKES_CREDITS} credits up front`] : []),
+        ...(likes ? [`${likesCount} community likes — ${likesCredits} credits up front`] : []),
         ...(quizAnswers > 0
           ? [
               `Watch & answer quiz for 24h, up to ${quizAnswers} answers — ${QUIZ_ANSWER_CREDITS} credits per correct answer, up to ${quizMax}` +
@@ -117,7 +128,7 @@ export function registerTikTokCampaignTools(server: McpServer): void {
             next_step:
               balance >= neededNow
                 ? "Show the user these steps and totals. When they say yes, call launch_tiktok_campaign again with the same arguments and confirmed: true."
-                : `Not enough credits: ${neededNow} needed now, ${balance} available. Ask the user to top up, or lower replies / turn likes off.`,
+                : `Not enough credits: ${neededNow} needed now, ${balance} available. Ask the user to top up, or lower replies / likes_count, or turn likes off.`,
           });
         }
 
@@ -150,7 +161,10 @@ export function registerTikTokCampaignTools(server: McpServer): void {
         // The quiz rides on the first boost (one linked 'Watch & answer'). No retries.
         const plan: { step: StepResult["step"]; actionType: "replies" | "likes"; count?: number }[] = [
           ...(replies > 0 ? [{ step: "replies" as const, actionType: "replies" as const, count: replies }] : []),
-          ...(likes ? [{ step: "likes" as const, actionType: "likes" as const }] : []),
+          // Only send count off the 30-pack, so a default call matches the pre-count API exactly.
+          ...(likes
+            ? [{ step: "likes" as const, actionType: "likes" as const, ...(likesCount !== LIKES_PACK_COUNT ? { count: likesCount } : {}) }]
+            : []),
         ];
         const results: StepResult[] = [];
         let quizAttached = false;
