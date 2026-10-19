@@ -80,7 +80,7 @@ src/
 | `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free (watch quizzes: `participation: "human_only"` → send the user to the page) |
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
-| `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($5/month subscription in the app) |
+| `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($9/month or $99/year subscription in the app) |
 | `get_growth_suggestions` | growthAssistant | `GET /agents/growth-assistant` | free |
 | `get_scout_deals` | scout | `GET /agents/scout/deals` | free |
 | `claim_deal` | scout | `POST /agents/scout/deals/{dealId}/claim` | free |
