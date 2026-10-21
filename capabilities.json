@@ -98,7 +98,7 @@
       "path": "/agents/credits/balance",
       "mcp": "live",
       "tool": "check_balance",
-      "note": "Free. Per-user agent key → the endpoint reports the connected user's own balance (direct-Supabase workaround removed in v0.8.0)."
+      "note": "Free. Per-user agent key → the endpoint reports the connected user's own balance (direct-Supabase workaround removed in v0.8.0). Since v0.9.20 also returns live `pricing` (per-action credits + USD range, top-ups, plans) and `topup_balance`; the creator profile drops boost/quiz rows."
     },
     {
       "method": "GET",

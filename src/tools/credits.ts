@@ -6,7 +6,19 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ToolProfile } from "./index.js";
 import { z } from "zod";
 import * as api from "../lib/api/index.js";
+import type { CreditPricing } from "../lib/api/credits.js";
 import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
+
+// Engagement-signal actions the creator profile never quotes (see ./index.ts).
+const CREATOR_HIDDEN_ACTION = /^(boost_|watch_quiz_)/;
+
+function pricingForProfile(pricing: CreditPricing, profile: ToolProfile): CreditPricing {
+  if (profile !== "creator") return pricing;
+  return {
+    ...pricing,
+    action_costs: pricing.action_costs.filter((a) => !CREATOR_HIDDEN_ACTION.test(a.action)),
+  };
+}
 
 // Descriptions are profile-aware where they name boost (an engagement-signal
 // tool the creator profile does not serve). See ./index.ts for why.
@@ -22,7 +34,7 @@ export function registerCreditTools(
     {
       title: "Check credit balance",
       description:
-        `Return the connected user's ProductClank credit balance and plan. Use before launching a campaign to confirm they have enough credits (a content campaign costs 1000; ${boostCosts}a discovery campaign 10 to create + 12/post discovered).`,
+        `Free. The connected user's credit balance and plan, PLUS live pricing: every action's cost in credits with a dollar range, top-up packs and plans. Call it before planning or recommending any spend, and quote these prices — never guess or look them up. Pricing is pay-per-action: every tool works on any account whose balance covers the action; plans are only a cheaper rate for steady monthly spend. Typical costs: a content campaign 1000; ${boostCosts}a discovery campaign 10 to create + 12/post discovered.`,
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -30,8 +42,13 @@ export function registerCreditTools(
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        const { balance, plan } = await api.getCreditBalance(userId);
-        return textResult({ balance, plan });
+        const { balance, plan, topup_balance, pricing } = await api.getCreditBalance(userId);
+        return textResult({
+          balance,
+          plan,
+          ...(topup_balance !== undefined ? { topup_balance } : {}),
+          ...(pricing ? { pricing: pricingForProfile(pricing, profile) } : {}),
+        });
       } catch (error) {
         return toolError(error, "Balance lookup failed");
       }

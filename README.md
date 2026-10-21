@@ -124,7 +124,7 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 
 | Tool | What it does | Cost |
 |---|---|---|
-| `check_balance` | Your credit balance and plan | free |
+| `check_balance` | Your credit balance and plan, plus live per-action prices in credits and USD | free |
 | `credit_history` | Your credit transactions (spend + rewards), newest first | free |
 | `report_issue` | Report a failing tool or a dead end to the ProductClank team (a human replies) | free |
 | `get_support_status` | Your reported issues and the team's replies | free |

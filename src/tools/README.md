@@ -46,7 +46,7 @@ src/
 |---|---|---|---|
 | `search_products` | products | `GET /agents/products/search` | free |
 | `create_product` | products | `POST /agents/products` | free |
-| `check_balance` | credits | reads `UserCredits` (service role) | free |
+| `check_balance` | credits | `GET /agents/credits/balance` (balance + live `pricing`) | free |
 | `credit_history` | credits | `GET /agents/credits/history` | free |
 | `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / likes 300 cr per 30 (`count` 1–300 at 10 cr each) / bookmarks, repost 300 cr per 10 (`count` 1–100 at 30 cr each); `watch_quiz` +100 cr per graded answer |
 | `create_watch_quiz` | watchQuiz | `POST /agents/campaigns/watch-quiz` | 100 cr per correct answer over 24h (wrong free) (cap `max_answers`, default 20); 0 at create |

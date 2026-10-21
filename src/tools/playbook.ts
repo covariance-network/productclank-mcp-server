@@ -23,7 +23,7 @@ Product to grow: {{product}}
 ## Operating procedure
 
 1. **Resolve the product.** Call search_products with the product name. If it isn't listed, call create_product with its website URL (free — the server auto-fills the listing).
-2. **Check the budget.** Call check_balance. Rough costs: discovery campaign 10 to create + 12/post discovered; post review 2/post; reply redraft 5/reply; {{boost_cost}}content campaign 1000. Never start a paid step the balance can't cover, and confirm each spend with the user first.
+2. **Check the budget.** Call check_balance — it returns the balance AND live prices (pricing.action_costs: credits plus a usd_min–usd_max range per action). Rough costs: discovery campaign 10 to create + 12/post discovered; post review 2/post; reply redraft 5/reply; {{boost_cost}}content campaign 1000. Pricing is pay-per-action: any tool works if the balance covers it, so never present a plan as the way in. If the balance is short, the cheapest path is a top-up for what the plan needs (they never expire); a plan only pays off above its worth_it_above_credits_per_month. Given a dollar budget, spend a first test, keep a reserve for what works. Never start a paid step the balance can't cover, and confirm each spend with the user first.
 3. **Pick the play (combine when budget allows):**
    - **Conversations play** — first READ THE PRODUCT'S SITE: fetch its website (and anything else the user pointed at) and derive the keywords and search_context from who the audience actually is and the phrases they use when they have the problem — not from the product's name. That derivation is your work, done here, free; if you cannot browse from this client, say so and build it from what the user tells you instead of guessing. Then create_campaign with 3–8 focused keywords and the platform the audience is actually on — twitter (default), linkedin, reddit or youtube; for reddit/youtube also pass target_subreddits / target_youtube_channels (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply; the create result carries live network numbers and real posted-reply links so that choice is made on evidence). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone. Manage anytime in the workbench via the campaign's admin_url.
 {{moment_play}}
@@ -247,7 +247,10 @@ export function registerPlaybook(
 | get_earnings | free |${SCOUT_SECTION[profile]}
 
 ## Credits
-check_balance and credit_history are free. Top-ups happen on the webapp only: app.productclank.com/credits/purchase. Users cap connector spend in Profile → Connected Apps; a cap error means the user must raise it there.
+Pay per action: every tool is open on every account; an action runs if the balance covers it. No plan is needed to try anything.
+check_balance (free) returns the balance plus live pricing — per-action costs in credits and USD, top-up packs, plans. Quote those; never guess. credit_history is free.
+Top-ups never expire and happen on the webapp only: app.productclank.com/credits/purchase. Plans are optional — a lower per-credit rate for steady monthly spend; plan credits reset monthly and do not roll over.
+Users cap connector spend in Profile → Connected Apps; a cap error means the user must raise it there.
 
 ## Support
 report_issue and get_support_status are free. Report a failure or a dead end (with the tool, error code and what you tried) instead of retrying in a loop; a human replies to the ticket.`,
