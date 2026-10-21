@@ -46,7 +46,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/content/queue` | ✅ | `get_content_queue` (Content Studio — drafts + scores; free) |
 | `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit free; revise presets / fix / humanize / review 2cr) |
 | `POST /agents/content/feedback` | ✅ | `teach_content_voice` (Content Studio — reaction → KB rule, 1cr) |
-| `GET /agents/credits/balance` | ✅ | `check_balance` (reads `UserCredits` directly) |
+| `GET /agents/credits/balance` | ✅ | `check_balance` (balance + live `pricing`) |
 | `POST /agents/campaigns` | ✅ | `create_campaign` (10cr) |
 | `GET /agents/campaigns` | ✅ | `list_campaigns` (caller-scoped for trusted agents) |
 | `GET /agents/campaigns/{id}` | ✅ | `get_campaign` |
