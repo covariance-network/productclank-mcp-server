@@ -52,14 +52,14 @@ const BUDGET = `Turning a budget into a plan:
 const PLAYS: Record<ToolProfile, string> = {
   full: `Pick the play from the user's goal:
 - A launch or announcement post needs reach → boost_post on 1–2 anchor posts. Any count works: one reply, three quote posts, ten reposts.
-- Be in the conversations where buyers already talk → create_campaign (discovery). Turn on set_campaign_schedule only once drafts are actually being posted.
+- Be in the conversations where buyers already talk → create_campaign (discovery). On LinkedIn and Reddit, run it private and have the user (or their team) post the drafts — that gets the best results there. Turn on set_campaign_schedule only once drafts are actually being posted.
 - A video needs to be watched to the end → create_watch_quiz. A TikTok needing replies, likes and a quiz in one ask → launch_tiktok_campaign.
 - Creators making original content about the product → suggest_content_campaign (free dry-run) → create_content_campaign.
 - The founder's own personal brand → setup_growth_assistant (a small dollar subscription with a free first run; price in pricing.subscriptions). The cheapest standing play for a solo founder.
 - The brand's own posts → the setup_content_space prompt.
 Combine plays when the budget allows. Before every paid call, tell the user what it costs in credits and dollars and get a yes.`,
   creator: `Pick the play from the user's goal:
-- Be in the conversations where buyers already talk → create_campaign (discovery); creators write their own replies from their own accounts.
+- Be in the conversations where buyers already talk → create_campaign (discovery); creators write their own replies from their own accounts. On LinkedIn and Reddit, run it private and have the user (or their team) post the drafts — that gets the best results there.
 - Creators making original content about the product → suggest_content_campaign (free dry-run) → create_content_campaign.
 - The brand's own posts → the setup_content_space prompt.
 Before every paid call, tell the user what it costs in credits and dollars and get a yes.`,

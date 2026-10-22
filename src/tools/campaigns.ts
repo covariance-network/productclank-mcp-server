@@ -40,6 +40,7 @@ function distributionOffer(
         what_happens:
           "Drafts stay in the workbench; the user reviews and posts the ones they like from their own accounts. Nothing goes out on its own.",
         cost: "No extra credits beyond discovery (12 credits per post found).",
+        best_for: "LinkedIn and Reddit: replies from the user's own account get the best results there — recommend this option on those platforms.",
       },
       {
         choice: "The community posts them for you (public)",
@@ -48,13 +49,11 @@ function distributionOffer(
         cost: "Credits per network-posted reply, on top of discovery.",
         ...(evidence
           ? {
+              // Public links only. Platform volumes (replies posted, active
+              // members) are internal and never leave the server.
               evidence: {
-                replies_posted_by_members_last_30_days:
-                  evidence.replies_posted_last_30_days,
-                distinct_members_posting_last_7_days:
-                  evidence.distinct_posters_last_7_days,
                 recent_live_examples: evidence.live_examples,
-                note: "Live network numbers, computed just now — share them (and an example link or two) with the user so the choice is made on evidence, not on a promise.",
+                note: "Real replies community members posted recently — share an example link or two so the user sees what the community's posts look like.",
               },
             }
           : {}),
@@ -549,7 +548,7 @@ export function registerCampaignTools(
             visibility === "public"
               ? "This campaign is public, so these drafts are now in the community earn feed — network members can claim and post them, billing per posted reply. Read them with get_posts and prune with review_posts before the network gets to the weak ones."
               : visibility === "private"
-                ? "Nothing has been posted. These drafts sit in the workbench until the user posts them. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies — and since the drafts now exist, this is the moment to relay the decision below: the user can post them themselves, or the community can. That half of the platform is live and measurable; the offer carries today's numbers and real links."
+                ? "Nothing has been posted. These drafts sit in the workbench until the user posts them. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies — and since the drafts now exist, this is the moment to relay the decision below: the user can post them themselves, or the community can. The offer carries real example links."
                 : "Nothing has been posted. On a private campaign (the default here) these drafts sit in the workbench until the user posts them; on a public one they enter the community earn feed. Read them with get_posts, prune with review_posts, and redraft with regenerate_replies before anything goes out.",
           next_step:
             "get_posts (free) to read what was found, then review_posts with dry_run:true to see which are worth keeping.",
