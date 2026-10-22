@@ -177,6 +177,8 @@ export function registerContentTools(server: McpServer): void {
           credits_used: result.credits.credits_used,
           credits_remaining: result.credits.credits_remaining,
           note: "Campaign is generating its brief (usually ready in 2–5 minutes) and will auto-activate. Share public_url with the community; review submissions and pick winners at admin_url.",
+          next_step:
+            "Creators are paid from a cash bounty the user deposits — that is what brings submissions in. Ask the user for a pool size, then set_content_bounty (preview first) and give them its fund_url.",
         });
       } catch (error) {
         // Surface actionable API errors (e.g. insufficient credits) verbatim.
@@ -184,6 +186,64 @@ export function registerContentTools(server: McpServer): void {
       }
     }
   );
+  // ─── set_content_bounty (free; the USER deposits at fund_url) ─────────────
+  server.registerTool(
+    "set_content_bounty",
+    {
+      title: "Set the cash bounty for a content campaign",
+      description:
+        "A content campaign pays its creators from a cash prize pool the user deposits (the bounty); the best submissions, ranked by the owner, win it. Free — this sets the pool, it moves no money. TWO STEPS ON PURPOSE: (1) call WITHOUT confirmed: nothing is saved; you get the exact numbers — pool, the platform fee on top, total_due, and what each rank wins. Show them to the user. (2) Only after the user says yes, call again with confirmed:true: the pool is saved and you get fund_url — give that link to the user: it opens the campaign page at the deposit step, where they pay by card or USDC (signed in as the owner). The bounty is live once they deposit; check with get_content_campaign_results. Default token USDC; default split 1st 30% · ranks 2–5 20% · ranks 6–20 50% — for a small pool, suggest fewer winners so each prize is worth winning. A funded pool cannot be changed.",
+      inputSchema: {
+        campaign_id: z.string().describe("Campaign UUID from create_content_campaign"),
+        pool_amount: z
+          .number()
+          .positive()
+          .describe("Prize pool paid to winners, in whole tokens (USDC ≈ dollars). The platform fee is added on top."),
+        token: z.string().optional().describe("Token ticker, default USDC"),
+        tiers: z
+          .array(
+            z.object({
+              rank_start: z.number().int().min(1),
+              rank_end: z.number().int().min(1),
+              percent: z.number().positive().describe("Share of the pool for this band, split evenly across its ranks"),
+            })
+          )
+          .optional()
+          .describe("Prize bands from rank 1, no gaps, summing to 100. Omit for the default split."),
+        confirmed: z
+          .boolean()
+          .optional()
+          .describe("Leave unset to preview. Set true ONLY after the user agreed to the numbers from the preview."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const dryRun = args.confirmed !== true;
+        const r = await api.setContentBounty({
+          callerUserId: userId,
+          campaignId: args.campaign_id,
+          poolAmount: args.pool_amount,
+          token: args.token,
+          tiers: args.tiers,
+          dryRun,
+        });
+        return textResult({
+          saved: !dryRun,
+          bounty: r.bounty,
+          ...(dryRun ? {} : { fund_url: r.fund_url }),
+          next_step: dryRun
+            ? "Preview only — nothing saved. Show the user the pool, the fee, total_due and what each rank wins. On a yes, call again with confirmed:true."
+            : `Saved. Give the user fund_url: they deposit ${r.bounty?.total_due ?? ""} ${r.bounty?.token ?? ""} there${r.bounty?.card_payment ? " by card or USDC" : " on-chain"}, signed in as the campaign owner. You cannot pay for them.`,
+        });
+      } catch (error) {
+        return toolError(error, "Could not set the bounty");
+      }
+    }
+  );
+
   // ─── get_content_campaign_results (free / read-only) ──────────────────────
   server.registerTool(
     "get_content_campaign_results",
@@ -223,6 +283,9 @@ export function registerContentTools(server: McpServer): void {
         });
 
         const { counts, campaign } = result;
+        // The bounty (cash pool) is what creators compete for — a campaign
+        // with no funded pool explains its own silence. Best effort.
+        const bounty = await api.getContentBounty(userId, campaign.id).catch(() => null);
         // Steer the agent away from reporting raw totals as success: a pile of
         // pending submissions is unreviewed work, not delivered content.
         const note =
@@ -236,6 +299,17 @@ export function registerContentTools(server: McpServer): void {
 
         return textResult({
           ...result,
+          ...(bounty
+            ? {
+                bounty: bounty.bounty,
+                ...(bounty.bounty?.funded ? {} : { fund_url: bounty.fund_url }),
+                bounty_note: !bounty.bounty
+                  ? "No bounty yet — creators have no cash prize to compete for. Offer set_content_bounty."
+                  : bounty.bounty.funded
+                    ? "Bounty funded."
+                    : "Bounty set but NOT funded — the user deposits it at fund_url.",
+              }
+            : {}),
           user_note: note,
           reading_guide:
             "Use `state`, not `raw_status` — a campaign past its end date reads 'ended' even while raw_status still says 'active'. `post_url` is the live content a participant published; open it to judge quality. Winner selection happens in the web app.",

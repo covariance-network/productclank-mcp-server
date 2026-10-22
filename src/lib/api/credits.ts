@@ -42,6 +42,27 @@ export interface PlaySize {
   usd_max: number;
 }
 
+/** What to expect from a play — medians/ranges from recent public campaigns. */
+export interface PlayExpectation {
+  summary: string;
+  boosts?: {
+    action: string;
+    platform: "x" | "tiktok";
+    fill_rate_pct: number;
+    half_done_minutes: number;
+    usually_complete_hours: number;
+    slow_cases_up_to_hours: number;
+  }[];
+  discovery?: {
+    scope: string;
+    posts_found_first_week: { low: number; high: number };
+    share_posted_by_community_pct: number;
+    community_replies_first_week: { low: number; typical: number; high: number };
+  };
+  note: string;
+  as_of: string;
+}
+
 export interface Play {
   play: string;
   tool: string;
@@ -49,6 +70,8 @@ export interface Play {
   fits: string;
   results_tool: string;
   sizes: PlaySize[];
+  /** Absent where there is not enough public data. */
+  expect?: PlayExpectation;
 }
 
 export interface PlaySubscription {
@@ -71,6 +94,8 @@ export interface CreditPricing {
   plays?: Play[];
   /** Dollar-priced plays (the growth assistant). Absent on older app builds. */
   subscriptions?: PlaySubscription[];
+  /** How content campaigns pay creators: a cash pool the user deposits. */
+  bounty?: { applies_to: string; what: string; platform_fee_rate: number; payout_within_hours: number; how: string };
   topups: { price_usd: number; credits: number; usd_per_credit: number }[];
   custom_topup?: string;
   plans: {
