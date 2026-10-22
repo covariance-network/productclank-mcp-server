@@ -23,13 +23,39 @@ const PRICING = `How ProductClank pricing works — get this right before you re
 - Top-ups are one-off and never expire (pricing.topups; bought at pricing.purchase_url). Plans are optional: a lower price per credit for steady monthly spend. Plan credits reset monthly and do not roll over. Suggest a plan only when the user's planned monthly spend is above that plan's worth_it_above_credits_per_month — otherwise top-ups are cheaper.
 - Start small, then scale: run the cheapest test of a play, read its results (free), and put more budget behind what worked. When the user gives you a budget, split it into a first test plus a reserve for what works — do not spend it all up front.`;
 
+// An open question ("how should I grow my startup?") names no goal, so the
+// play table below has nothing to match. Ask first, then plan from the live
+// recipes in check_balance — never from remembered prices.
+const DIAGNOSE: Record<ToolProfile, string> = {
+  full: `When the goal is unclear (e.g. "how should I grow my startup?"), do not pick a tool yet. Ask, one short message, only what you cannot infer from the site or the chat:
+1. What is the product and who buys it? (read the site if you can browse)
+2. What is happening now — pre-launch, a launch this week, or growing an existing product?
+3. Is there something to amplify already — a launch post, a video, a TikTok?
+4. Who should be the voice — the founder personally, the brand account, or the community?
+5. Budget for the first month, in dollars.
+Then call check_balance and build the plan from pricing.plays: each play has a goal, a "fits" line and test / standard / scale sizes in credits and dollars.`,
+  creator: `When the goal is unclear (e.g. "how should I grow my startup?"), do not pick a tool yet. Ask, one short message, only what you cannot infer from the site or the chat:
+1. What is the product and who buys it? (read the site if you can browse)
+2. Where does the audience talk about the problem — X, LinkedIn, Reddit or YouTube?
+3. Who should be the voice — creators in the community, or the brand account?
+4. Budget for the first month, in dollars.
+Then call check_balance and build the plan from pricing.plays: each play has a goal, a "fits" line and test / standard / scale sizes in credits and dollars.`,
+};
+
+const BUDGET = `Turning a budget into a plan:
+- Start with the TEST size of the one or two plays that fit best. Keep the rest as a reserve. A test is the smallest run that shows whether a play works.
+- A play whose test size is above the budget is out for now. Say so, and name the cheaper play that fits instead.
+- "up_to" prices are caps billed as people act; "per_month" prices recur. Say which is which.
+- After a test, read its results tool (free; named in the play) and tell the user what happened before you suggest the next spend. Scale the play that produced results; drop or adjust the one that did not.
+- Show the plan as a short list: play, size, what it does, credits and dollars, then the reserve.`;
+
 const PLAYS: Record<ToolProfile, string> = {
   full: `Pick the play from the user's goal:
 - A launch or announcement post needs reach → boost_post on 1–2 anchor posts. Any count works: one reply, three quote posts, ten reposts.
 - Be in the conversations where buyers already talk → create_campaign (discovery). Turn on set_campaign_schedule only once drafts are actually being posted.
 - A video needs to be watched to the end → create_watch_quiz. A TikTok needing replies, likes and a quiz in one ask → launch_tiktok_campaign.
 - Creators making original content about the product → suggest_content_campaign (free dry-run) → create_content_campaign.
-- The user's own personal brand → setup_growth_assistant.
+- The founder's own personal brand → setup_growth_assistant (a small dollar subscription with a free first run; price in pricing.subscriptions). The cheapest standing play for a solo founder.
 - The brand's own posts → the setup_content_space prompt.
 Combine plays when the budget allows. Before every paid call, tell the user what it costs in credits and dollars and get a yes.`,
   creator: `Pick the play from the user's goal:
@@ -44,7 +70,11 @@ export function serverInstructions(profile: ToolProfile): string {
 
 ${PRICING}
 
+${DIAGNOSE[profile]}
+
 ${PLAYS[profile]}
+
+${BUDGET}
 
 Stuck or a tool fails without a clear reason? Call report_issue (free) instead of retrying.`;
 }

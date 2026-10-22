@@ -11,12 +11,17 @@ import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExt
 
 // Engagement-signal actions the creator profile never quotes (see ./index.ts).
 const CREATOR_HIDDEN_ACTION = /^(boost_|watch_quiz_)/;
+// Plays that run on tools the creator profile does not register.
+const CREATOR_HIDDEN_PLAYS = new Set(["launch_boost", "watch_quiz", "tiktok_combo"]);
 
 function pricingForProfile(pricing: CreditPricing, profile: ToolProfile): CreditPricing {
   if (profile !== "creator") return pricing;
   return {
     ...pricing,
     action_costs: pricing.action_costs.filter((a) => !CREATOR_HIDDEN_ACTION.test(a.action)),
+    ...(pricing.plays ? { plays: pricing.plays.filter((p) => !CREATOR_HIDDEN_PLAYS.has(p.play)) } : {}),
+    // The only subscription is the growth assistant — not registered on creator.
+    ...(pricing.subscriptions ? { subscriptions: [] } : {}),
   };
 }
 
@@ -34,7 +39,7 @@ export function registerCreditTools(
     {
       title: "Check credit balance",
       description:
-        `Free. The connected user's credit balance and plan, PLUS live pricing: every action's cost in credits with a dollar range, top-up packs and plans. Call it before planning or recommending any spend, and quote these prices — never guess or look them up. Pricing is pay-per-action: every tool works on any account whose balance covers the action; plans are only a cheaper rate for steady monthly spend. Typical costs: a content campaign 1000; ${boostCosts}a discovery campaign 10 to create + 12/post discovered.`,
+        `Free. The connected user's credit balance and plan, PLUS live pricing: every action's cost in credits with a dollar range, every growth play priced at test / standard / scale (pricing.plays), top-up packs and plans. Call it before planning or recommending any spend, and quote these prices — never guess or look them up. Pricing is pay-per-action: every tool works on any account whose balance covers the action; plans are only a cheaper rate for steady monthly spend. Typical costs: a content campaign 1000; ${boostCosts}a discovery campaign 10 to create + 12/post discovered.`,
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },

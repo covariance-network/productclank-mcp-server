@@ -31,10 +31,46 @@ export interface ActionCost {
   usd_max: number;
 }
 
+export interface PlaySize {
+  size: "test" | "standard" | "scale";
+  what: string;
+  /** up_front = charged at launch; up_to = a cap billed as people act; per_month = recurring. */
+  billing: "up_front" | "up_to" | "per_month";
+  items: { label: string; credits: number }[];
+  credits: number;
+  usd_min: number;
+  usd_max: number;
+}
+
+export interface Play {
+  play: string;
+  tool: string;
+  goal: string;
+  fits: string;
+  results_tool: string;
+  sizes: PlaySize[];
+}
+
+export interface PlaySubscription {
+  play: string;
+  tool: string;
+  goal: string;
+  fits: string;
+  price_usd_per_month: number;
+  price_usd_per_year: number | null;
+  credits_included_per_month: number;
+  first_run: string;
+  note: string;
+}
+
 export interface CreditPricing {
   model: string;
   summary: string;
   action_costs: ActionCost[];
+  /** Each play at test / standard / scale. Absent on app builds before the play-recipes release. */
+  plays?: Play[];
+  /** Dollar-priced plays (the growth assistant). Absent on older app builds. */
+  subscriptions?: PlaySubscription[];
   topups: { price_usd: number; credits: number; usd_per_credit: number }[];
   custom_topup?: string;
   plans: {

@@ -24,10 +24,11 @@ Product to grow: {{product}}
 
 1. **Resolve the product.** Call search_products with the product name. If it isn't listed, call create_product with its website URL (free — the server auto-fills the listing).
 2. **Check the budget.** Call check_balance — it returns the balance AND live prices (pricing.action_costs: credits plus a usd_min–usd_max range per action). Rough costs: discovery campaign 10 to create + 12/post discovered; post review 2/post; reply redraft 5/reply; {{boost_cost}}content campaign 1000. Pricing is pay-per-action: any tool works if the balance covers it, so never present a plan as the way in. If the balance is short, the cheapest path is a top-up for what the plan needs (they never expire); a plan only pays off above its worth_it_above_credits_per_month. Given a dollar budget, spend a first test, keep a reserve for what works. Never start a paid step the balance can't cover, and confirm each spend with the user first.
-3. **Pick the play (combine when budget allows):**
-   - **Conversations play** — first READ THE PRODUCT'S SITE: fetch its website (and anything else the user pointed at) and derive the keywords and search_context from who the audience actually is and the phrases they use when they have the problem — not from the product's name. That derivation is your work, done here, free; if you cannot browse from this client, say so and build it from what the user tells you instead of guessing. Then create_campaign with 3–8 focused keywords and the platform the audience is actually on — twitter (default), linkedin, reddit or youtube; for reddit/youtube also pass target_subreddits / target_youtube_channels (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply; the create result carries live network numbers and real posted-reply links so that choice is made on evidence). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone. Manage anytime in the workbench via the campaign's admin_url.
+3. **Diagnose, then pick the play.** Unless the user already named a goal, ask in one short message what you cannot infer: what is happening now (pre-launch, launching this week, growing), whether there is a post or video to amplify, who should be the voice (founder, brand or community), and the first month's budget in dollars. Then match the answers to pricing.plays from check_balance — each play has a goal, a "fits" line and test / standard / scale sizes. Propose the TEST size of the one or two plays that fit, keep the rest of the budget as a reserve, and skip a play whose test is above the budget. The plays (combine when budget allows):
+   - **Conversations play** — first READ THE PRODUCT'S SITE: fetch its website (and anything else the user pointed at) and derive the keywords and search_context from who the audience actually is and the phrases they use when they have the problem — not from the product's name. That derivation is your work, done here, free; if you cannot browse from this client, say so and either build it from what the user tells you or call analyze_url (3 credits, charged only when a brief comes back). Then create_campaign with 3–8 focused keywords and the platform the audience is actually on — twitter (default), linkedin, reddit or youtube; for reddit/youtube also pass target_subreddits / target_youtube_channels (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply; the create result carries live network numbers and real posted-reply links so that choice is made on evidence). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone, edit_reply (free) for one draft's wording. On a private campaign, publish_posts releases the drafts the user approved to the community — it turns on per-posted-reply billing, so only with their yes. Manage anytime in the workbench via the campaign's admin_url.
 {{moment_play}}
    - **Content play** — the user wants the community creating content: suggest_content_campaign (FREE dry-run) → create_content_campaign once they approve the 1000-credit spend → get_content_campaign_results (FREE) to see what was actually published. Straight after launch it reads state 'processing' with zero submissions — that is the brief still generating, not a failure.
+{{assistant_play}}
    - **Own-content play** — the user wants to publish their OWN posts: that is the Content Studio, not a campaign. Use the setup_content_space prompt (free interview → calibrated space → first drafts → approve / tweak / teach loop).
 4. **Close the loop.** After each paid step: get_campaign_results for conversations/moment campaigns and get_content_campaign_results for content campaigns (submissions, live links to what was published, approved vs pending), credit_history for the ledger, and report both to the user with what you'd do next. Hand long-running campaigns to the human with add_delegate so they can manage them at app.productclank.com/my-campaigns.
 5. **Keep it running across sessions.** A campaign is a standing operation, not a one-shot. At the start of a session call get_campaign_activity with the checked_at value from last time — new posts, new claims, live links to what went out. Then adjust with update_campaign (all free): add keywords that are working, enable the phrases/influencers sources research found (they stay dormant until enabled), raise relevance_threshold if discovery is noisy, pause with is_active:false if the user wants to stop spending. If drafts are piling up unposted, that is the moment to offer public visibility — the community posts them instead of the user.
@@ -55,9 +56,20 @@ const BOOST_COST_CLAUSE: Record<ToolProfile, string> = {
  */
 const MOMENT_PLAY: Record<ToolProfile, string> = {
   full:
-    "   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote/bookmarks — a quote post is a repost with the member's own text, X only, the highest-reach option; bookmarks are X only). For a VIDEO the user wants watched to the end, a watch quiz: create_watch_quiz (or boost_post's watch_quiz on the same video) — viewers watch, then answer one counting question; billed per answer after the chat, so confirm max_answers and the maximum spend.",
+    "   - **Moment play** — the user has a specific post that deserves reach: boost_post (replies/likes/repost/quote/bookmarks — a quote post is a repost with the member's own text, X only, the highest-reach option; bookmarks are X only). For a VIDEO the user wants watched to the end, a watch quiz: create_watch_quiz (or boost_post's watch_quiz on the same video) — viewers watch, then answer one counting question; billed per answer after the chat, so confirm max_answers and the maximum spend. One TikTok that needs likes, comments and a quiz together → launch_tiktok_campaign (one ask, plan first, then confirmed:true).",
   creator:
     "   - **Moment play** — a conversation is happening right now and the user wants creators in it: run the conversations play above with a narrow brief — create_campaign on the 3–5 keywords of that specific moment, then generate_posts → get_posts → review_posts so creators write their own replies to it from their own accounts. If the moment deserves standalone pieces rather than replies, commission them with suggest_content_campaign (FREE dry-run) → create_content_campaign.",
+};
+
+/**
+ * The growth-assistant bullet of step 3 — full profile only (the creator
+ * profile does not register setup_growth_assistant). Ends in a newline so the
+ * creator copy collapses to nothing.
+ */
+const ASSISTANT_PLAY: Record<ToolProfile, string> = {
+  full:
+    "   - **Founder play** — the founder wants to be known personally on their topics: setup_growth_assistant. Every morning it finds posts on one network with a draft reply in their voice; they post it themselves. Free setup and a free first run, then a small monthly subscription (pricing.subscriptions). The cheapest standing play for a solo founder, and it pairs with any play above.\n",
+  creator: "",
 };
 
 /**
@@ -85,7 +97,7 @@ A matched deal waits 12h for its scout, then opens to every scout. The user post
  * (leading newline included) on the full profile, nothing at all on creator.
  */
 const BOOST_CAPABILITY_ROW: Record<ToolProfile, string> = {
-  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |\n| create_watch_quiz (watch a video to the end + answer one question; or boost_post watch_quiz) | 100 per correct answer for 24h, cap max_answers (default 20); 0 at create |\n| suggest_quiz_questions / get_watch_quiz_results | 40 (on success) / free |",
+  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |\n| create_watch_quiz (watch a video to the end + answer one question; or boost_post watch_quiz) | 100 per correct answer for 24h, cap max_answers (default 20); 0 at create |\n| suggest_quiz_questions / get_watch_quiz_results | 40 (on success) / free |\n| launch_tiktok_campaign (likes + comments + watch quiz on one TikTok) | the sum of its parts: likes 10 each, comments 20 each, quiz 100 per correct answer |\n| setup_growth_assistant / get_growth_suggestions (the founder's personal brand: daily posts + draft replies) | free setup + free first run, then a monthly subscription — see check_balance pricing.subscriptions / free |",
   creator: "",
 };
 
@@ -98,7 +110,8 @@ const PROMPT_PLAYS: Record<ToolProfile, string> = {
 function playbookFor(profile: ToolProfile, product: string): string {
   return PLAYBOOK.replace("{{product}}", product)
     .replace("{{boost_cost}}", BOOST_COST_CLAUSE[profile])
-    .replace("{{moment_play}}", MOMENT_PLAY[profile]);
+    .replace("{{moment_play}}", MOMENT_PLAY[profile])
+    .replace("{{assistant_play}}\n", ASSISTANT_PLAY[profile]);
 }
 
 
@@ -204,6 +217,7 @@ export function registerPlaybook(
 | Tool | Cost |
 |---|---|
 | search_products / create_product | free |
+| analyze_url (derive keywords + search context from a site — only when you cannot browse) | 3 |
 | create_campaign | 10 |
 | run_research / get_research | free |
 | generate_posts | 12 per post discovered |
@@ -214,6 +228,8 @@ export function registerPlaybook(
 | set_campaign_schedule | free to set — then 12 per post found, on its own, until stopped |
 | review_posts | 2 per post (dry_run billed too) |
 | regenerate_replies | 5 per reply |
+| edit_reply (rewrite one draft) | free |
+| publish_posts (release approved drafts of a private campaign to the community) | free — then 20 per reply the community posts |
 | add_delegate | free |${BOOST_CAPABILITY_ROW[profile]}
 
 ## Content
@@ -248,7 +264,7 @@ export function registerPlaybook(
 
 ## Credits
 Pay per action: every tool is open on every account; an action runs if the balance covers it. No plan is needed to try anything.
-check_balance (free) returns the balance plus live pricing — per-action costs in credits and USD, top-up packs, plans. Quote those; never guess. credit_history is free.
+check_balance (free) returns the balance plus live pricing — per-action costs in credits and USD, each play at test / standard / scale (pricing.plays), top-up packs, plans. Quote those; never guess. credit_history is free.
 Top-ups never expire and happen on the webapp only: app.productclank.com/credits/purchase. Plans are optional — a lower per-credit rate for steady monthly spend; plan credits reset monthly and do not roll over.
 Users cap connector spend in Profile → Connected Apps; a cap error means the user must raise it there.
 
