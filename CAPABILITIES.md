@@ -38,6 +38,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/watch-quiz/suggest-questions` | ✅ | `suggest_quiz_questions` (40cr on success) |
 | `GET /agents/campaigns/watch-quiz/{id}` | ✅ | `get_watch_quiz_results` (free) |
 | `POST /agents/campaigns/content` | ✅ | `suggest_content_campaign` (free preview) + `create_content_campaign` (1000cr) |
+| `POST /agents/campaigns/content/{id}/bounty` | ✅ | `set_content_bounty` (free; preview → confirmed:true → `fund_url`, the user deposits) · GET folded into `get_content_campaign_results` |
 | `GET /agents/content/spaces` | ✅ | `list_content_spaces` (Content Studio) |
 | `POST /agents/content/candidates` | ✅ | `write_content_candidates` (Content Studio — free, auto-scored, human-staged drafts) |
 | `GET /agents/content/workspace` | ✅ | `get_content_workspace` (Content Studio — the brand's voice + topics; free) |

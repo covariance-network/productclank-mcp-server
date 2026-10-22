@@ -37,6 +37,8 @@ export interface DecisionOption {
   what_happens: string;
   /** Credit cost of choosing this, in plain language. */
   cost: string;
+  /** When this option is the better one, if that depends on the situation. */
+  best_for?: string;
   /**
    * Proof the claim in `what_happens` is real, when it needs proving — live
    * numbers and links, computed at call time, for the assistant to relay.

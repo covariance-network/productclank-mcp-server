@@ -49,7 +49,21 @@
       "path": "/agents/campaigns/content/{id}",
       "mcp": "live",
       "tool": "get_content_campaign_results",
-      "note": "Read what a content campaign produced: derived lifecycle state (processing|active|paused|ended|cancelled — NOT raw_status), submission counts by review state, live post URLs + author, and winners. Free, read-only, paginated; accepts uuid or campaign_number. Closes the loop on create_content_campaign; winner selection stays in the webapp."
+      "note": "Read what a content campaign produced: derived lifecycle state (processing|active|paused|ended|cancelled — NOT raw_status), submission counts by review state, live post URLs + author, and winners. Free, read-only, paginated; accepts uuid or campaign_number. Closes the loop on create_content_campaign; winner selection stays in the webapp. Since v0.9.21 also carries the bounty (via GET …/bounty) and fund_url while unfunded."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/content/{id}/bounty",
+      "mcp": "live",
+      "tool": "set_content_bounty",
+      "note": "Attach the cash bounty (prize pool) creators compete for. Two-step in the tool: no `confirmed` = dry_run preview (pool, fee, total_due, per-rank amounts); confirmed:true saves and returns fund_url, where the USER deposits (card or USDC). Free; agents never move money. Since v0.9.21."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/content/{id}/bounty",
+      "mcp": "live",
+      "tool": "get_content_campaign_results",
+      "note": "Bounty state + funded + fund_url, folded into get_content_campaign_results. Free. Since v0.9.21."
     },
     {
       "method": "PATCH",
@@ -98,7 +112,7 @@
       "path": "/agents/credits/balance",
       "mcp": "live",
       "tool": "check_balance",
-      "note": "Free. Per-user agent key → the endpoint reports the connected user's own balance (direct-Supabase workaround removed in v0.8.0). Since v0.9.20 also returns live `pricing` (per-action credits + USD range, top-ups, plans) and `topup_balance`; the creator profile drops boost/quiz rows."
+      "note": "Free. Per-user agent key → the endpoint reports the connected user's own balance (direct-Supabase workaround removed in v0.8.0). Since v0.9.20 also returns live `pricing` (per-action credits + USD range, top-ups, plans) and `topup_balance`; the creator profile drops boost/quiz rows. Since v0.9.21 also `pricing.plays` (each play at test / standard / scale, credits + USD) and `pricing.subscriptions` (growth assistant); the creator profile drops the boost/quiz/TikTok plays and the subscription."
     },
     {
       "method": "GET",

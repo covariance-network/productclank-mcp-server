@@ -55,6 +55,7 @@ src/
 | `get_watch_quiz_results` | watchQuiz | `GET /agents/campaigns/watch-quiz/{id}` | free |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |
 | `create_content_campaign` | content | `POST /agents/campaigns/content` | 1000 cr |
+| `set_content_bounty` | content | `POST /agents/campaigns/content/{id}/bounty` (`dry_run` until `confirmed`) | free — the user deposits the pool at `fund_url` |
 | `list_content_spaces` | contentStudio | `GET /agents/content/spaces` | free |
 | `get_content_workspace` | contentStudio | `GET /agents/content/workspace` | free |
 | `setup_content_space` | contentStudio | `POST /agents/content/workspace` | free (5 cr with brand_doc) |

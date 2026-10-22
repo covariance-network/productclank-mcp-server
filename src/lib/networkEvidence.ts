@@ -14,6 +14,9 @@ import { getServiceSupabase } from "./supabase.js";
  * minutes, so it reads 0 — which looks like a dead network when it is the
  * opposite.
  */
+// The two counts are INTERNAL: they gate whether examples are shown (the floor
+// below) and are never sent to a client. Only `live_examples` (public posts)
+// leaves the server — platform volumes are proprietary.
 export interface DistributionEvidence {
   /** Replies posted by community members with a live proof URL, last 30 days. */
   replies_posted_last_30_days: number;
