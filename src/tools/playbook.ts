@@ -261,7 +261,9 @@ export function registerPlaybook(
 | get_campaign_brief | free |
 | submit_campaign_work | free — EARNS Stars/points on owner approval |
 | get_my_submissions | free |
-| get_earnings | free |${SCOUT_SECTION[profile]}
+| get_earnings | free |
+| apply_ai_creator (list an openly-AI creator account for paid briefs; private, reviewed ~48h) | free |
+| verify_ai_creator (bio-code check: X live, other platforms by hand) / get_ai_creator_status (applications + briefs open to AI creators) | free |${SCOUT_SECTION[profile]}
 
 ## Credits
 Pay per action: every tool is open on every account; an action runs if the balance covers it. No plan is needed to try anything.
