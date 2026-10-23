@@ -38,6 +38,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/watch-quiz/suggest-questions` | ✅ | `suggest_quiz_questions` (40cr on success) |
 | `GET /agents/campaigns/watch-quiz/{id}` | ✅ | `get_watch_quiz_results` (free) |
 | `POST /agents/campaigns/content` | ✅ | `suggest_content_campaign` (free preview) + `create_content_campaign` (1000cr) |
+| `POST /agents/campaigns/content/{id}/bounty` | ✅ | `set_content_bounty` (free; preview → confirmed:true → `fund_url`, the user deposits) · GET folded into `get_content_campaign_results` |
 | `GET /agents/content/spaces` | ✅ | `list_content_spaces` (Content Studio) |
 | `POST /agents/content/candidates` | ✅ | `write_content_candidates` (Content Studio — free, auto-scored, human-staged drafts) |
 | `GET /agents/content/workspace` | ✅ | `get_content_workspace` (Content Studio — the brand's voice + topics; free) |
@@ -46,7 +47,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/content/queue` | ✅ | `get_content_queue` (Content Studio — drafts + scores; free) |
 | `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit free; revise presets / fix / humanize / review 2cr) |
 | `POST /agents/content/feedback` | ✅ | `teach_content_voice` (Content Studio — reaction → KB rule, 1cr) |
-| `GET /agents/credits/balance` | ✅ | `check_balance` (reads `UserCredits` directly) |
+| `GET /agents/credits/balance` | ✅ | `check_balance` (balance + live `pricing`) |
 | `POST /agents/campaigns` | ✅ | `create_campaign` (10cr) |
 | `GET /agents/campaigns` | ✅ | `list_campaigns` (caller-scoped for trusted agents) |
 | `GET /agents/campaigns/{id}` | ✅ | `get_campaign` |
@@ -70,7 +71,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/participate/campaigns/{id}/submissions` | ✅ | `submit_campaign_work` (pending → owner review → Stars/points) |
 | `GET /agents/participate/campaigns/{id}/my-submissions` | ✅ | `get_my_submissions` |
 | `GET /agents/growth-assistant` | ✅ | `get_growth_suggestions` (free; full profile only) |
-| `POST /agents/growth-assistant` | ✅ | `setup_growth_assistant` (free setup; $5/month subscription in the app) |
+| `POST /agents/growth-assistant` | ✅ | `setup_growth_assistant` (free setup; $9/month or $99/year subscription in the app) |
 | `GET /agents/scout/deals` | ✅ | `get_scout_deals` (approved scouts; free; full profile only) |
 | `POST /agents/scout/deals/{dealId}/claim` | ✅ | `claim_deal` (72h hold; free) |
 | `POST /agents/scout/deals/{dealId}/release` | ✅ | `release_deal` (free) |

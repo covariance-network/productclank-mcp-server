@@ -206,3 +206,59 @@ export function getContentCampaignResults(
     { method: "GET" }
   );
 }
+
+// ─── Bounty (cash prize pool the user deposits) ─────────────────────────────
+
+export interface ContentBounty {
+  pool_amount: number;
+  fee_amount: number;
+  fee_rate: number;
+  total_due: number;
+  token: string;
+  winners: number;
+  tiers: { rank_start: number; rank_end: number; amount_per_winner: number }[];
+  payout_within_hours: number;
+  card_payment?: boolean;
+  funded: boolean;
+}
+
+export interface SetContentBountyParams {
+  callerUserId: string;
+  campaignId: string;
+  poolAmount: number;
+  token?: string;
+  tiers?: { rank_start: number; rank_end: number; percent: number }[];
+  dryRun: boolean;
+}
+
+export interface ContentBountyResult {
+  success: boolean;
+  dry_run?: boolean;
+  bounty: ContentBounty | null;
+  /** Campaign page opened at the deposit step — the user pays there. */
+  fund_url: string;
+  next_step: string;
+}
+
+/**
+ * Attach (or preview, with dryRun) the cash bounty on a content campaign.
+ * Free. Wraps POST /api/v1/agents/campaigns/content/[campaignId]/bounty.
+ */
+export function setContentBounty(params: SetContentBountyParams): Promise<ContentBountyResult> {
+  return request(params.callerUserId, `/agents/campaigns/content/${encodeURIComponent(params.campaignId)}/bounty`, {
+    method: "POST",
+    body: JSON.stringify({
+      pool_amount: params.poolAmount,
+      ...(params.token ? { token: params.token } : {}),
+      ...(params.tiers ? { tiers: params.tiers } : {}),
+      dry_run: params.dryRun,
+    }),
+  });
+}
+
+/** The bounty and whether it is funded. Free. GET …/content/[campaignId]/bounty. */
+export function getContentBounty(callerUserId: string, campaignId: string): Promise<ContentBountyResult> {
+  return request(callerUserId, `/agents/campaigns/content/${encodeURIComponent(campaignId)}/bounty`, {
+    method: "GET",
+  });
+}

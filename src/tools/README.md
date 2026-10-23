@@ -48,15 +48,16 @@ src/
 |---|---|---|---|
 | `search_products` | products | `GET /agents/products/search` | free |
 | `create_product` | products | `POST /agents/products` | free |
-| `check_balance` | credits | reads `UserCredits` (service role) | free |
+| `check_balance` | credits | `GET /agents/credits/balance` (balance + live `pricing`) | free |
 | `credit_history` | credits | `GET /agents/credits/history` | free |
-| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / 300 cr (likes, bookmarks, repost); `watch_quiz` +100 cr per graded answer |
+| `boost_post` | boost | `POST /agents/campaigns/boost` | 20 cr/draft (replies, quote; `count` 1–10) / likes 300 cr per 30 (`count` 1–300 at 10 cr each) / bookmarks, repost 300 cr per 10 (`count` 1–100 at 30 cr each); `watch_quiz` +100 cr per graded answer |
 | `create_watch_quiz` | watchQuiz | `POST /agents/campaigns/watch-quiz` | 100 cr per correct answer over 24h (wrong free) (cap `max_answers`, default 20); 0 at create |
-| `launch_tiktok_campaign` | tiktokCampaign | `boost` ×2 + `watch-quiz` (via boost `watch_quiz`) | likes 300 cr + replies 20 cr each up front; quiz 100 cr per correct answer (cap `quiz_answers`, default 10); +40 cr if questions are suggested. Plan call free, `confirmed: true` creates |
+| `launch_tiktok_campaign` | tiktokCampaign | `boost` ×2 + `watch-quiz` (via boost `watch_quiz`) | likes 10 cr each (`likes_count` 1–300, default 30 = 300 cr) + replies 20 cr each up front; quiz 100 cr per correct answer (cap `quiz_answers` 0–1000, default 10); +40 cr if questions are suggested. Plan call free, `confirmed: true` creates |
 | `suggest_quiz_questions` | watchQuiz | `POST /agents/campaigns/watch-quiz/suggest-questions` | 40 cr (only on success) |
 | `get_watch_quiz_results` | watchQuiz | `GET /agents/campaigns/watch-quiz/{id}` | free |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |
 | `create_content_campaign` | content | `POST /agents/campaigns/content` | 1000 cr |
+| `set_content_bounty` | content | `POST /agents/campaigns/content/{id}/bounty` (`dry_run` until `confirmed`) | free — the user deposits the pool at `fund_url` |
 | `list_content_spaces` | contentStudio | `GET /agents/content/spaces` | free |
 | `get_content_workspace` | contentStudio | `GET /agents/content/workspace` | free |
 | `setup_content_space` | contentStudio | `POST /agents/content/workspace` | free (5 cr with brand_doc) |
@@ -82,7 +83,7 @@ src/
 | `get_campaign_brief` | participation | `GET /agents/participate/campaigns/{id}` | free (watch quizzes: `participation: "human_only"` → send the user to the page) |
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
-| `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($5/month subscription in the app) |
+| `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($9/month or $99/year subscription in the app) |
 | `get_growth_suggestions` | growthAssistant | `GET /agents/growth-assistant` | free |
 | `apply_ai_creator` | aiCreators | `POST /agents/ai-creators` | free |
 | `verify_ai_creator` | aiCreators | `POST /agents/ai-creators/{listingId}/verify` | free |

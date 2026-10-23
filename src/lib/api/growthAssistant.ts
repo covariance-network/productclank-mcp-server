@@ -7,6 +7,8 @@
 import { request } from "./client.js";
 
 export type GrowthNetwork = "twitter" | "linkedin" | "reddit" | "youtube";
+/** Which posts the daily picks favour; "relevance" (default) = the top-scored posts. */
+export type GrowthMix = "relevance" | "balanced" | "busy" | "early";
 
 export interface GrowthTopic {
   label: string;
@@ -17,7 +19,13 @@ export interface GrowthAssistantResult {
   success: boolean;
   assistants: Record<string, unknown>[];
   suggestions: Record<string, unknown>[];
-  subscription: { subscribed: boolean; status: string; free_first_run_used: boolean; price_usd_per_month: number };
+  subscription: {
+    subscribed: boolean;
+    status: string;
+    free_first_run_used: boolean;
+    price_usd_per_month: number;
+    price_usd_per_year?: number;
+  };
   app_url: string;
   campaign_ids?: string[];
   next_step?: string;
@@ -29,7 +37,7 @@ export function getGrowthAssistant(callerUserId: string): Promise<GrowthAssistan
 
 export function setupGrowthAssistant(
   callerUserId: string,
-  body: { network: GrowthNetwork; topics: GrowthTopic[]; about?: string; voice?: string; per_day?: 3 | 5 }
+  body: { network: GrowthNetwork; topics: GrowthTopic[]; about?: string; voice?: string; per_day?: 3 | 5; mix?: GrowthMix }
 ): Promise<GrowthAssistantResult> {
   return request(callerUserId, "/agents/growth-assistant", { method: "POST", body: JSON.stringify(body) });
 }

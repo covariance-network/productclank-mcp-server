@@ -22,6 +22,7 @@ import { createOAuthEndpoints } from "./auth/oauth-endpoints.js";
 import { isPublicMcpRequest } from "./auth/public-methods.js";
 import { tokenVerifier } from "./auth/verifier.js";
 import { config, assertRuntimeConfig, SERVER_VERSION } from "./config.js";
+import { serverInstructions } from "./instructions.js";
 import { shutdownAnalytics } from "./lib/analytics.js";
 
 assertRuntimeConfig();
@@ -134,7 +135,10 @@ function sweepIdleSessions(endpoints: readonly McpEndpoint[]): void {
 }
 
 function createMcpServer(profile: ToolProfile): McpServer {
-  const server = new McpServer({ name: "ProductClank", version: SERVER_VERSION });
+  const server = new McpServer(
+    { name: "ProductClank", version: SERVER_VERSION },
+    { instructions: serverInstructions(profile) }
+  );
   registerTools(server, profile);
   return server;
 }
