@@ -1,4 +1,4 @@
-FROM node:22-slim AS builder
+FROM node:22.23.4-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -6,7 +6,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:22-slim
+FROM node:22.23.4-slim
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
