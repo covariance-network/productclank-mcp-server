@@ -19,3 +19,4 @@ export * from "./support.js";
 export * from "./scout.js";
 export * from "./growthAssistant.js";
 export * from "./watchQuiz.js";
+export * from "./aiCreators.js";
