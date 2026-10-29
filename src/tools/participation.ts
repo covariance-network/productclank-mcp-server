@@ -1,8 +1,8 @@
 /**
  * Participation domain — the connected user EARNS by doing campaign work.
  *
- * find_opportunities (free) → the user posts a drafted reply from their own X
- * account → submit_participation (attributes + verifies + awards) →
+ * find_opportunities (free) → hold_opportunity (10-min hold, one at a time) →
+ * the user posts a drafted reply from their own X account → submit_participation (attributes + verifies + awards) →
  * get_earnings (free). The submitted reply must be posted by the user's linked
  * X handle — the backend author-matches it before awarding anything.
  */
@@ -30,7 +30,7 @@ export function registerParticipationTools(
     {
       title: "Find earning opportunities",
       description:
-        "Browse unclaimed drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: pick an opportunity → the user posts it (verbatim or personalized) from their own account → call submit_participation with the URL of what they posted. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable." +
+        "Browse unclaimed drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: the user picks an opportunity → call hold_opportunity on it (a 10-minute hold so no one else posts the same draft; one hold at a time) → the user edits and approves the text and posts it from their own account → call submit_participation with the URL of what they posted. Drafts other members are holding are not listed; the user's own live hold carries `heldUntil`. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable." +
         screenshotActions,
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
@@ -76,11 +76,65 @@ export function registerParticipationTools(
   );
 
   server.registerTool(
+    "hold_opportunity",
+    {
+      title: "Hold a draft while the user posts it",
+      description:
+        "Hold one draft from find_opportunities for the connected user for 10 minutes, so no other member posts the same reply. Call it when the user has PICKED a draft and is about to post — not to reserve work for later. Returns the draft text and `held_until`. One hold at a time: if the user already holds another draft, this fails with too_many_holds — submit that one (submit_participation) or release it (release_opportunity) first. Calling it again on the same draft restarts the 10 minutes. already_reserved means another member holds it or it was just claimed: offer another draft. Free. Never post for the user: they edit, approve and post it from their own account.",
+      inputSchema: {
+        reply_id: z.string().describe("The draft's id from find_opportunities"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ reply_id }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.holdOpportunity({ callerUserId: userId, replyId: reply_id });
+        return textResult({
+          reply_id: result.replyId,
+          draft_text: result.replyText,
+          action_type: result.actionType,
+          held_until: result.heldUntil,
+          hold_seconds: result.holdSeconds,
+          next_step:
+            "Show the draft to the user. They edit it if they want, approve it, and post it from their own account before held_until. Then call submit_participation with the URL. If they skip it, call release_opportunity.",
+        });
+      } catch (error) {
+        return toolError(error, "Hold failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "release_opportunity",
+    {
+      title: "Release a held draft",
+      description:
+        "Release the connected user's hold on a draft they decided not to post, so other members can take it and the user can hold another. Only ever frees the user's own hold; `released: false` means there was no live hold of theirs on it (it lapsed or was claimed). Free.",
+      inputSchema: {
+        reply_id: z.string().describe("The held draft's id"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ reply_id }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.releaseOpportunity({ callerUserId: userId, replyId: reply_id });
+        return textResult({ reply_id: result.replyId, released: result.released });
+      } catch (error) {
+        return toolError(error, "Release failed");
+      }
+    }
+  );
+
+  server.registerTool(
     "submit_participation",
     {
       title: "Submit a posted reply or quote post to earn",
       description:
-        "Submit the URL of what the connected user posted for a claimed opportunity (reply_id from find_opportunities). Works for X, Reddit, YouTube and LinkedIn replies, and X quote posts (actionType `quote`: pass the URL of the user's own quote post, NOT the original — the backend checks it was posted by their linked X handle and that it actually quotes the target post; a plain tweet or a quote of something else is rejected). Every claim is attributed to the user's linked handle for that platform, so they must have it connected on their ProductClank profile — X replies are additionally author-verified against the live post at submit time, and the others are verified afterwards by the same checks that cover web submissions. If the platform handle is missing the call fails saying which one to add. Awards points, and credits when the campaign grants them. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
+        "Submit the URL of what the connected user posted for an opportunity (reply_id from find_opportunities; hold it first with hold_opportunity). Submitting ends the hold. Works for X, Reddit, YouTube and LinkedIn replies, and X quote posts (actionType `quote`: pass the URL of the user's own quote post, NOT the original — the backend checks it was posted by their linked X handle and that it actually quotes the target post; a plain tweet or a quote of something else is rejected). Every claim is attributed to the user's linked handle for that platform, so they must have it connected on their ProductClank profile — X replies are additionally author-verified against the live post at submit time, and the others are verified afterwards by the same checks that cover web submissions. If the platform handle is missing the call fails saying which one to add. Awards points, and credits when the campaign grants them. Rejected submissions add strikes (3 strikes = blocked), so only submit replies the user actually posted.",
       inputSchema: {
         reply_id: z.string().describe("The reply draft's id from find_opportunities"),
         reply_url: z.string().url().describe("URL of the reply (or, for a quote opportunity, the quote post) the user posted"),

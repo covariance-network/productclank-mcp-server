@@ -323,6 +323,20 @@
     },
     {
       "method": "POST",
+      "path": "/agents/participate/hold",
+      "mcp": "live",
+      "tool": "hold_opportunity",
+      "note": "Free. 10-minute soft-lock on one feed draft for the acting user (same columns as the web claim dialog), capped at 10 min on every campaign and ONE live hold per user (429 too_many_holds). Returns the draft text. Held drafts drop out of other users' feeds."
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/participate/hold",
+      "mcp": "live",
+      "tool": "release_opportunity",
+      "note": "Free. Frees the acting user's own hold only; released:false when there was none."
+    },
+    {
+      "method": "POST",
       "path": "/agents/participate/submit",
       "mcp": "live",
       "tool": "submit_participation",

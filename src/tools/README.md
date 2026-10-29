@@ -32,7 +32,7 @@ src/
     ├── content.ts      registerContentTools       → suggest_content_campaign, create_content_campaign
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
-    ├── participation.ts registerParticipationTools → find_opportunities, submit_participation, get_earnings
+    ├── participation.ts registerParticipationTools → find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings
     ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, get_growth_suggestions (full profile only)
     ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings (full profile only)
     ├── support.ts      registerSupportTools       → report_issue, get_support_status
@@ -75,6 +75,8 @@ src/
 | `get_campaign_results` | campaigns | `GET /agents/campaigns/{id}/results` | free |
 | `add_delegate` | campaigns | `POST /agents/campaigns/{id}/delegates` | free |
 | `find_opportunities` | participation | `GET /agents/participate/feed` | free |
+| `hold_opportunity` | participation | `POST /agents/participate/hold` | free (10-min hold, one per user) |
+| `release_opportunity` | participation | `DELETE /agents/participate/hold` | free |
 | `submit_participation` | participation | `POST /agents/participate/submit` | earns |
 | `get_earnings` | participation | `GET /agents/participate/earnings` | free |
 | `find_open_campaigns` | participation | `GET /agents/participate/campaigns` | free |
