@@ -256,6 +256,7 @@ export function registerPlaybook(
 | Tool | Cost |
 |---|---|
 | find_opportunities (reply drafts to post) | free |
+| hold_opportunity / release_opportunity (10-min hold, one at a time) | free |
 | submit_participation | free — EARNS points/credits for the user |
 | find_open_campaigns (content + take-action campaigns) | free |
 | get_campaign_brief | free |
