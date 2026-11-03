@@ -485,6 +485,47 @@
     },
     {
       "method": "GET",
+      "path": "/agents/content/authority",
+      "mcp": "live",
+      "tool": "get_quote_authority",
+      "note": "Free, read-only. Quote authority on one content space: pinned handles, the latest search's moments, the user's plan. Full profile only. Since v0.9.22."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/authority",
+      "mcp": "live",
+      "tool": "find_quote_moments",
+      "note": "One live X search (Grok) over the pinned people's posts and clips. First search free (first 5 people), then 50cr, charged before the call. `handles` replaces the pinned list. Full profile only. Since v0.9.22."
+    },
+    {
+      "method": "PUT",
+      "path": "/agents/content/authority",
+      "mcp": "none",
+      "note": "Save pinned handles without searching. Not wrapped: find_quote_moments `handles` saves the list as it searches."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/authority/suggest",
+      "mcp": "live",
+      "tool": "suggest_quote_people",
+      "note": "People the brand's audience trusts, checked against the X account lookup. First free, then 50cr. Saves nothing. Full profile only. Since v0.9.22."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/authority/drafts",
+      "mcp": "live",
+      "tool": "draft_quote_post",
+      "note": "Free. Drafts quote posts for one moment url from the latest search; the tool polls GET …/drafts until done (≤90s). The user posts. Full profile only. Since v0.9.22."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/content/authority/drafts",
+      "mcp": "live",
+      "tool": "draft_quote_post",
+      "note": "Drafting run status + drafts; polled inside draft_quote_post. Since v0.9.22."
+    },
+    {
+      "method": "GET",
       "path": "/agents/scout/deals",
       "mcp": "live",
       "tool": "get_scout_deals",

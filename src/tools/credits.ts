@@ -10,7 +10,7 @@ import type { CreditPricing } from "../lib/api/credits.js";
 import { getUserId, textResult, errorResult, toolError, NOT_AUTHED, type ToolExtra } from "./_shared.js";
 
 // Engagement-signal actions the creator profile never quotes (see ./index.ts).
-const CREATOR_HIDDEN_ACTION = /^(boost_|watch_quiz_)/;
+const CREATOR_HIDDEN_ACTION = /^(boost_|watch_quiz_|quote_authority_)/;
 // Plays that run on tools the creator profile does not register.
 const CREATOR_HIDDEN_PLAYS = new Set(["launch_boost", "watch_quiz", "tiktok_combo"]);
 
@@ -20,7 +20,7 @@ function pricingForProfile(pricing: CreditPricing, profile: ToolProfile): Credit
     ...pricing,
     action_costs: pricing.action_costs.filter((a) => !CREATOR_HIDDEN_ACTION.test(a.action)),
     ...(pricing.plays ? { plays: pricing.plays.filter((p) => !CREATOR_HIDDEN_PLAYS.has(p.play)) } : {}),
-    // The only subscription is the growth assistant — not registered on creator.
+    // Subscriptions (growth assistant, Quote authority) run on tools creator does not register.
     ...(pricing.subscriptions ? { subscriptions: [] } : {}),
   };
 }

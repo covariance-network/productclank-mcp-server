@@ -74,6 +74,11 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/participate/campaigns/{id}/my-submissions` | ✅ | `get_my_submissions` |
 | `GET /agents/growth-assistant` | ✅ | `get_growth_suggestions` (free; full profile only) |
 | `POST /agents/growth-assistant` | ✅ | `setup_growth_assistant` (free setup; $9/month or $99/year subscription in the app) |
+| `GET /agents/content/authority` | ✅ | `get_quote_authority` (free; full profile only) |
+| `POST /agents/content/authority` | ✅ | `find_quote_moments` (first search free, then 50cr) |
+| `PUT /agents/content/authority` | — | not wrapped (`find_quote_moments` `handles` saves the list) |
+| `POST /agents/content/authority/suggest` | ✅ | `suggest_quote_people` (first free, then 50cr; saves nothing) |
+| `POST`/`GET /agents/content/authority/drafts` | ✅ | `draft_quote_post` (free; starts the run and polls it) |
 | `GET /agents/scout/deals` | ✅ | `get_scout_deals` (approved scouts; free; full profile only) |
 | `POST /agents/scout/deals/{dealId}/claim` | ✅ | `claim_deal` (72h hold; free) |
 | `POST /agents/scout/deals/{dealId}/release` | ✅ | `release_deal` (free) |
