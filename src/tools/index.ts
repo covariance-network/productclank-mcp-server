@@ -21,6 +21,7 @@ import { registerParticipationTools } from "./participation.js";
 import { registerSupportTools } from "./support.js";
 import { registerScoutTools } from "./scout.js";
 import { registerGrowthAssistantTools } from "./growthAssistant.js";
+import { registerQuoteAuthorityTools } from "./quoteAuthority.js";
 import { registerWatchQuizTools } from "./watchQuiz.js";
 import { registerTikTokCampaignTools } from "./tiktokCampaign.js";
 import { registerPlaybook } from "./playbook.js";
@@ -71,6 +72,8 @@ export function registerTools(
   if (profile !== "creator") registerScoutTools(server); // get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings
   // Personal brand for the user — reply suggestions they post themselves, not commissioned content.
   if (profile !== "creator") registerGrowthAssistantTools(server); // setup_growth_assistant, get_growth_suggestions
+  // The user's own quote posts on X (borrowed authority) — not commissioned content.
+  if (profile !== "creator") registerQuoteAuthorityTools(server); // get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post
   registerSupportTools(server); // report_issue, get_support_status (every profile)
   registerPlaybook(rawServer, profile); // grow_product + setup_content_space prompts + productclank://capabilities resource
 }

@@ -121,6 +121,10 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `get_content_queue` | The queue as the user sees it: each draft with its score, verdict, and the reviewer's one-line fix | free |
 | `revise_content_draft` | Approve (`stage`), drop (`discard`), edit, or nudge a draft with a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — or a typed note; `fix` / `humanize` / `review` | stage · discard · edit free; rewrites & review 2 cr |
 | `teach_content_voice` | Turn a reaction into a standing rule in the brand's voice KB so every future draft honors it | 1 cr |
+| `get_quote_authority` <br>_(`/mcp` only)_ | Quote authority on a space: the people pinned to quote, the latest moments, the plan | free |
+| `suggest_quote_people` <br>_(`/mcp` only)_ | People on X the brand's audience already trusts, each checked against the X account lookup | first free, then 50 cr |
+| `find_quote_moments` <br>_(`/mcp` only)_ | One live X search for the pinned people's clearest claims (posts and clips) | first free, then 50 cr |
+| `draft_quote_post` <br>_(`/mcp` only)_ | Draft quote posts for one moment, with the user's take on top. The user quotes and posts it themselves | free |
 
 ### Credits
 

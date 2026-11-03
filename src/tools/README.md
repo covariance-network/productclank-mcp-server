@@ -19,6 +19,7 @@ src/
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
 │   ├── scout.ts        getScoutDeals, claimScoutDeal, releaseScoutDeal, reportScoutDealProgress, rateScoutDeal, getScoutEarnings
 │   ├── support.ts      reportIssue, getSupportTickets
+│   ├── quoteAuthority.ts getQuoteAuthority, suggestQuotePeople, findQuoteMoments, startQuoteDrafts, getQuoteDrafts
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
 │   └── index.ts        barrel — `import * as api from "../lib/api/index.js"`
 └── tools/
@@ -34,6 +35,7 @@ src/
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings
     ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, get_growth_suggestions (full profile only)
+    ├── quoteAuthority.ts registerQuoteAuthorityTools → get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post (full profile only)
     ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings (full profile only)
     ├── support.ts      registerSupportTools       → report_issue, get_support_status
     ├── playbook.ts     registerPlaybook           → grow_product + setup_content_space prompts + productclank://capabilities resource
@@ -85,6 +87,10 @@ src/
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
 | `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($9/month or $99/year subscription in the app) |
 | `get_growth_suggestions` | growthAssistant | `GET /agents/growth-assistant` | free |
+| `get_quote_authority` | quoteAuthority | `GET /agents/content/authority` | free |
+| `suggest_quote_people` | quoteAuthority | `POST /agents/content/authority/suggest` | first free, then 50 cr |
+| `find_quote_moments` | quoteAuthority | `POST /agents/content/authority` | first free (5 people), then 50 cr |
+| `draft_quote_post` | quoteAuthority | `POST` + `GET /agents/content/authority/drafts` | free |
 | `get_scout_deals` | scout | `GET /agents/scout/deals` | free |
 | `claim_deal` | scout | `POST /agents/scout/deals/{dealId}/claim` | free |
 | `release_deal` | scout | `POST /agents/scout/deals/{dealId}/release` | free |
