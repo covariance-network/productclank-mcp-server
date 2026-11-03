@@ -347,7 +347,7 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
 }
 
 app.listen(config.port, () => {
-  console.log(`ProductClank MCP server listening on :${config.port}`);
+  console.log(`ProductClank MCP server listening on :${config.port} (Node ${process.version})`);
   for (const ep of endpoints) {
     console.log(
       `  MCP endpoint:   ${config.mcpServerUrl}${ep.path}  (profile: ${ep.profile})`

@@ -68,7 +68,8 @@ const MOMENT_PLAY: Record<ToolProfile, string> = {
  */
 const ASSISTANT_PLAY: Record<ToolProfile, string> = {
   full:
-    "   - **Founder play** — the founder wants to be known personally on their topics: setup_growth_assistant. Every morning it finds posts on one network with a draft reply in their voice; they post it themselves. Free setup and a free first run, then a small monthly subscription (pricing.subscriptions). The cheapest standing play for a solo founder, and it pairs with any play above.\n",
+    "   - **Founder play** — the founder wants to be known personally on their topics: setup_growth_assistant. Every morning it finds posts on one network with a draft reply in their voice; they post it themselves. Free setup and a free first run, then a small monthly subscription (pricing.subscriptions). The cheapest standing play for a solo founder, and it pairs with any play above.\n" +
+    "   - **Borrowed authority play** — the user (or the brand account) is growing on X from zero: Quote authority. suggest_quote_people (who the audience trusts) → find_quote_moments (their clearest claims) → draft_quote_post (a quote post with the user's take). The user quotes and posts it themselves. First suggest and first search free, then 50 credits each; a monthly plan adds a weekly search by email (pricing.subscriptions). Needs a content space.\n",
   creator: "",
 };
 
@@ -97,7 +98,7 @@ A matched deal waits 12h for its scout, then opens to every scout. The user post
  * (leading newline included) on the full profile, nothing at all on creator.
  */
 const BOOST_CAPABILITY_ROW: Record<ToolProfile, string> = {
-  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |\n| create_watch_quiz (watch a video to the end + answer one question; or boost_post watch_quiz) | 100 per correct answer for 24h, cap max_answers (default 20); 0 at create |\n| suggest_quiz_questions / get_watch_quiz_results | 40 (on success) / free |\n| launch_tiktok_campaign (likes + comments + watch quiz on one TikTok) | the sum of its parts: likes 10 each, comments 20 each, quiz 100 per correct answer |\n| setup_growth_assistant / get_growth_suggestions (the founder's personal brand: daily posts + draft replies) | free setup + free first run, then a monthly subscription — see check_balance pricing.subscriptions / free |",
+  full: "\n| boost_post | 20 per draft (replies, quote; count 1–10, default 10 = 200) / 300 (likes, bookmarks, repost) |\n| create_watch_quiz (watch a video to the end + answer one question; or boost_post watch_quiz) | 100 per correct answer for 24h, cap max_answers (default 20); 0 at create |\n| suggest_quiz_questions / get_watch_quiz_results | 40 (on success) / free |\n| launch_tiktok_campaign (likes + comments + watch quiz on one TikTok) | the sum of its parts: likes 10 each, comments 20 each, quiz 100 per correct answer |\n| setup_growth_assistant / get_growth_suggestions (the founder's personal brand: daily posts + draft replies) | free setup + free first run, then a monthly subscription — see check_balance pricing.subscriptions / free |\n| get_quote_authority / suggest_quote_people / find_quote_moments / draft_quote_post (borrowed authority on X: quote the people the audience trusts, with the user's take) | free / first free then 50 / first free then 50 / free |",
   creator: "",
 };
 
@@ -256,6 +257,7 @@ export function registerPlaybook(
 | Tool | Cost |
 |---|---|
 | find_opportunities (reply drafts to post) | free |
+| hold_opportunity / release_opportunity (10-min hold, one at a time) | free |
 | submit_participation | free — EARNS points/credits for the user |
 | find_open_campaigns (content + take-action campaigns) | free |
 | get_campaign_brief | free |

@@ -14,6 +14,8 @@ export interface FeedReply {
   id: string;
   replyText: string;
   actionType: string;
+  /** Only on the user's own live hold (ISO). */
+  heldUntil?: string;
 }
 
 export interface FeedPost {
@@ -56,6 +58,32 @@ export function getParticipationFeed(params: {
   const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
   return request(params.callerUserId, `/agents/participate/feed${suffix}`, {
     method: "GET",
+  });
+}
+
+/** 10-minute hold on one draft for the acting user (one live hold per user). */
+export function holdOpportunity(params: { callerUserId: string; replyId: string }): Promise<{
+  success: boolean;
+  replyId: string;
+  replyText: string;
+  actionType: string;
+  heldUntil: string;
+  holdSeconds: number;
+}> {
+  return request(params.callerUserId, "/agents/participate/hold", {
+    method: "POST",
+    body: JSON.stringify({ replyId: params.replyId }),
+  });
+}
+
+/** Release the acting user's own hold; `released: false` = there was none. */
+export function releaseOpportunity(params: { callerUserId: string; replyId: string }): Promise<{
+  success: boolean;
+  replyId: string;
+  released: boolean;
+}> {
+  return request(params.callerUserId, `/agents/participate/hold?replyId=${encodeURIComponent(params.replyId)}`, {
+    method: "DELETE",
   });
 }
 

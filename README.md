@@ -98,6 +98,8 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | Tool | What it does | Cost |
 |---|---|---|
 | `find_opportunities` | Browse unclaimed reply and quote-post drafts the user can post to earn (likes and reposts need a screenshot and stay in the web app) | free |
+| `hold_opportunity` | Hold the picked draft for 10 minutes so no one else posts it (one hold at a time); returns the draft text | free |
+| `release_opportunity` | Release a held draft the user decided to skip | free |
 | `submit_participation` | Submit the posted reply's URL (X, Reddit, YouTube, LinkedIn) — attributed to the user's linked handle for that platform, then points/credits are awarded | earns |
 | `find_open_campaigns` | Discover content & take-action campaigns the user can join — public ones plus their communities' | free |
 | `get_campaign_brief` | Read a campaign's full brief: what to create or do, judging criteria, rewards, deadline, remaining allowance | free |
@@ -119,6 +121,10 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `get_content_queue` | The queue as the user sees it: each draft with its score, verdict, and the reviewer's one-line fix | free |
 | `revise_content_draft` | Approve (`stage`), drop (`discard`), edit, or nudge a draft with a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — or a typed note; `fix` / `humanize` / `review` | stage · discard · edit free; rewrites & review 2 cr |
 | `teach_content_voice` | Turn a reaction into a standing rule in the brand's voice KB so every future draft honors it | 1 cr |
+| `get_quote_authority` <br>_(`/mcp` only)_ | Quote authority on a space: the people pinned to quote, the latest moments, the plan | free |
+| `suggest_quote_people` <br>_(`/mcp` only)_ | People on X the brand's audience already trusts, each checked against the X account lookup | first free, then 50 cr |
+| `find_quote_moments` <br>_(`/mcp` only)_ | One live X search for the pinned people's clearest claims (posts and clips) | first free, then 50 cr |
+| `draft_quote_post` <br>_(`/mcp` only)_ | Draft quote posts for one moment, with the user's take on top. The user quotes and posts it themselves | free |
 
 ### Credits
 
