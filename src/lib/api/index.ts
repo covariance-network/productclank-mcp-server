@@ -20,3 +20,4 @@ export * from "./scout.js";
 export * from "./growthAssistant.js";
 export * from "./quoteAuthority.js";
 export * from "./watchQuiz.js";
+export * from "./aiCreators.js";

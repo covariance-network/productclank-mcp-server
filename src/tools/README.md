@@ -18,6 +18,7 @@ src/
 │   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
 │   ├── scout.ts        getScoutDeals, claimScoutDeal, releaseScoutDeal, reportScoutDealProgress, rateScoutDeal, getScoutEarnings
+│   ├── aiCreators.ts   applyAiCreator, verifyAiCreator, getAiCreatorStatus
 │   ├── support.ts      reportIssue, getSupportTickets
 │   ├── quoteAuthority.ts getQuoteAuthority, suggestQuotePeople, findQuoteMoments, startQuoteDrafts, getQuoteDrafts
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
@@ -37,6 +38,7 @@ src/
     ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, get_growth_suggestions (full profile only)
     ├── quoteAuthority.ts registerQuoteAuthorityTools → get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post (full profile only)
     ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings (full profile only)
+    ├── aiCreators.ts   registerAiCreatorTools     → apply_ai_creator, verify_ai_creator, get_ai_creator_status (every profile)
     ├── support.ts      registerSupportTools       → report_issue, get_support_status
     ├── playbook.ts     registerPlaybook           → grow_product + setup_content_space prompts + productclank://capabilities resource
     └── index.ts        registerTools() — composes the above
@@ -87,6 +89,9 @@ src/
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
 | `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($9/month or $99/year subscription in the app) |
 | `get_growth_suggestions` | growthAssistant | `GET /agents/growth-assistant` | free |
+| `apply_ai_creator` | aiCreators | `POST /agents/ai-creators` | free |
+| `verify_ai_creator` | aiCreators | `POST /agents/ai-creators/{listingId}/verify` | free |
+| `get_ai_creator_status` | aiCreators | `GET /agents/ai-creators` | free |
 | `get_quote_authority` | quoteAuthority | `GET /agents/content/authority` | free |
 | `suggest_quote_people` | quoteAuthority | `POST /agents/content/authority/suggest` | first free, then 50 cr |
 | `find_quote_moments` | quoteAuthority | `POST /agents/content/authority` | first free (5 people), then 50 cr |
