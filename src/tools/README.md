@@ -13,6 +13,7 @@ src/
 │   ├── products.ts     searchProducts, createProduct
 │   ├── boost.ts        boostPost
 │   ├── watchQuiz.ts    createWatchQuiz, suggestQuizQuestions, getWatchQuizResults
+│   ├── aiVisibility.ts createAiVisibilityCheck, getAiVisibilityResults, generateAiVisibilityReport
 │   ├── content.ts      composeContentCampaign, createContentCampaign
 │   ├── contentStudio.ts listContentSpaces, getContentWorkspace, setupContentWorkspace, list/add/update/remove/suggestContentTopics, writeContentCandidates, getContentQueue, actOnContentDraft, teachContentVoice
 │   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
@@ -31,6 +32,7 @@ src/
     ├── boost.ts        registerBoostTools         → boost_post
     ├── watchQuiz.ts    registerWatchQuizTools     → create_watch_quiz, suggest_quiz_questions, get_watch_quiz_results (full profile only)
     ├── tiktokCampaign.ts registerTikTokCampaignTools → launch_tiktok_campaign (full profile only)
+    ├── aiVisibility.ts registerAiVisibilityTools   → create_ai_visibility_check, get_ai_visibility_results, generate_ai_visibility_report (full profile only)
     ├── content.ts      registerContentTools       → suggest_content_campaign, create_content_campaign
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
@@ -57,6 +59,9 @@ src/
 | `launch_tiktok_campaign` | tiktokCampaign | `boost` ×2 + `watch-quiz` (via boost `watch_quiz`) | likes 10 cr each (`likes_count` 1–300, default 30 = 300 cr) + replies 20 cr each up front; quiz 100 cr per correct answer (cap `quiz_answers` 0–1000, default 10); +40 cr if questions are suggested. Plan call free, `confirmed: true` creates |
 | `suggest_quiz_questions` | watchQuiz | `POST /agents/campaigns/watch-quiz/suggest-questions` | 40 cr (only on success) |
 | `get_watch_quiz_results` | watchQuiz | `GET /agents/campaigns/watch-quiz/{id}` | free |
+| `create_ai_visibility_check` | aiVisibility | `POST /agents/campaigns/ai-visibility` (`dry_run` first) | 1000 cr flat at create; report free |
+| `get_ai_visibility_results` | aiVisibility | `GET /agents/campaigns/ai-visibility/{id}` | free |
+| `generate_ai_visibility_report` | aiVisibility | `POST /agents/campaigns/ai-visibility/{id}/report` | free |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |
 | `create_content_campaign` | content | `POST /agents/campaigns/content` | 1000 cr |
 | `set_content_bounty` | content | `POST /agents/campaigns/content/{id}/bounty` (`dry_run` until `confirmed`) | free — the user deposits the pool at `fund_url` |

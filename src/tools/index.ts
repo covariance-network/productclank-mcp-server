@@ -23,6 +23,7 @@ import { registerScoutTools } from "./scout.js";
 import { registerGrowthAssistantTools } from "./growthAssistant.js";
 import { registerQuoteAuthorityTools } from "./quoteAuthority.js";
 import { registerWatchQuizTools } from "./watchQuiz.js";
+import { registerAiVisibilityTools } from "./aiVisibility.js";
 import { registerTikTokCampaignTools } from "./tiktokCampaign.js";
 import { registerAiCreatorTools } from "./aiCreators.js";
 import { registerPlaybook } from "./playbook.js";
@@ -65,6 +66,8 @@ export function registerTools(
   if (profile !== "creator") registerWatchQuizTools(server); // create_watch_quiz, suggest_quiz_questions, get_watch_quiz_results
   // Likes + replies + watch quiz on one TikTok in one ask — sells likes, so same rule.
   if (profile !== "creator") registerTikTokCampaignTools(server); // launch_tiktok_campaign
+  // Real people ask the AI assistants about the product — research, not commissioned content; full profile only.
+  if (profile !== "creator") registerAiVisibilityTools(server); // create_ai_visibility_check, get_ai_visibility_results, generate_ai_visibility_report
   registerContentTools(server); // suggest_content_campaign, create_content_campaign
   registerContentStudioTools(server); // list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
   registerCampaignTools(server, profile); // create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity/results, update_campaign, set_campaign_schedule, add_delegate

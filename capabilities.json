@@ -102,6 +102,27 @@
     },
     {
       "method": "POST",
+      "path": "/agents/campaigns/ai-visibility",
+      "mcp": "live",
+      "tool": "create_ai_visibility_check",
+      "note": "AI-visibility check: real people ask ChatGPT / Claude about the product from their own accounts. Flat 1000cr launch fee at create (dry_run free); the panel earns points; the report is free. Full profile only."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/ai-visibility/{campaignId}",
+      "mcp": "live",
+      "tool": "get_ai_visibility_results",
+      "note": "Free, read-only. State, submission counts, the report + its private URL once generated. Web-made checks the user owns too. Full profile only."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/ai-visibility/{campaignId}/report",
+      "mcp": "live",
+      "tool": "generate_ai_visibility_report",
+      "note": "Generate/regenerate the report from the submissions (free). Waits for the check to end unless allow_partial. Full profile only."
+    },
+    {
+      "method": "POST",
       "path": "/agents/campaigns/content",
       "mcp": "live",
       "tool": "create_content_campaign",

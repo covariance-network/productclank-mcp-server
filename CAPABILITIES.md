@@ -37,6 +37,9 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/watch-quiz` | ✅ | `create_watch_quiz` (100cr per correct answer, cap `max_answers` people; full profile only) · also `launch_tiktok_campaign` (likes + replies boosts + quiz on one TikTok, one ask) |
 | `POST /agents/campaigns/watch-quiz/suggest-questions` | ✅ | `suggest_quiz_questions` (40cr on success) |
 | `GET /agents/campaigns/watch-quiz/{id}` | ✅ | `get_watch_quiz_results` (free) |
+| `POST /agents/campaigns/ai-visibility` | ✅ | `create_ai_visibility_check` (flat 1000cr at create, `dry_run` first; the panel earns points, the report is free; full profile only) |
+| `GET /agents/campaigns/ai-visibility/{id}` | ✅ | `get_ai_visibility_results` (free) |
+| `POST /agents/campaigns/ai-visibility/{id}/report` | ✅ | `generate_ai_visibility_report` (free; waits for the check to end unless `allow_partial`) |
 | `POST /agents/campaigns/content` | ✅ | `suggest_content_campaign` (free preview) + `create_content_campaign` (1000cr) |
 | `POST /agents/campaigns/content/{id}/bounty` | ✅ | `set_content_bounty` (free; preview → confirmed:true → `fund_url`, the user deposits) · GET folded into `get_content_campaign_results` |
 | `GET /agents/content/spaces` | ✅ | `list_content_spaces` (Content Studio) |

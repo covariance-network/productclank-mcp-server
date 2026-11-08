@@ -54,6 +54,7 @@ const PLAYS: Record<ToolProfile, string> = {
   full: `Pick the play from the user's goal:
 - A launch or announcement post needs reach → boost_post on 1–2 anchor posts. Any count works: one reply, three quote posts, ten reposts.
 - Be in the conversations where buyers already talk → create_campaign (discovery). On LinkedIn and Reddit, run it private and have the user (or their team) post the drafts — that gets the best results there. Turn on set_campaign_schedule only once drafts are actually being posted.
+- "What does ChatGPT / Claude say about my product?" → create_ai_visibility_check (dry_run first; one flat fee, the report is free) → get_ai_visibility_results → generate_ai_visibility_report once it ends.
 - A video needs to be watched to the end → create_watch_quiz. A TikTok needing replies, likes and a quiz in one ask → launch_tiktok_campaign.
 - Creators making original content about the product → suggest_content_campaign (free dry-run) → create_content_campaign → set_content_bounty. Creators are paid from a cash bounty the user deposits (they pay it at the fund_url the tool returns), so budget the launch fee plus the pool.
 - The founder's own personal brand → setup_growth_assistant (a small dollar subscription with a free first run; price in pricing.subscriptions). The cheapest standing play for a solo founder.
