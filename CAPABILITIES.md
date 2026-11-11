@@ -66,11 +66,12 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/campaigns/{id}/schedule` | ✅ | `set_campaign_schedule` (free — the un-confirmed call is the read: changes nothing, returns the projection) |
 | `PUT /agents/campaigns/{id}/schedule` | ✅ | `set_campaign_schedule` (free to call; **authorizes unattended spend** — 12cr/post found, hourly, no human in the loop. Enabling requires `confirm:true` after showing the projection; the per-app daily spend cap is enforced here as a ceiling because scheduled runs never pass through it) |
 | `GET /agents/credits/history` | ✅ | `credit_history` (caller-scoped for trusted agents) |
-| `GET /agents/participate/feed` | ✅ | `find_opportunities` |
+| `GET /agents/participate/feed` | ✅ | `find_opportunities` (public network + the user's private spaces; a space item carries `campaign.space`) |
 | `POST /agents/participate/hold` | ✅ | `hold_opportunity` (10-min hold, one live hold per user, capped server-side) |
 | `DELETE /agents/participate/hold` | ✅ | `release_opportunity` (own hold only) |
 | `POST /agents/participate/submit` | ✅ | `submit_participation` (author-match vs the EARNING user's linked X handle) |
 | `GET /agents/participate/earnings` | ✅ | `get_earnings` (caller-scoped reply counts) |
+| `POST /agents/spaces/join` | ✅ | `join_space` (invite code → the acting user joins the space; idempotent) |
 | `GET /agents/participate/campaigns` | ✅ | `find_open_campaigns` (public + the user's community campaigns) |
 | `GET /agents/participate/campaigns/{id}` | ✅ | `get_campaign_brief` |
 | `POST /agents/participate/campaigns/{id}/submissions` | ✅ | `submit_campaign_work` (pending → owner review → Stars/points) |

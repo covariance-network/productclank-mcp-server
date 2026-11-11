@@ -371,6 +371,13 @@
       "note": "Free. Scoped to the acting user via their per-user agent key."
     },
     {
+      "method": "POST",
+      "path": "/agents/spaces/join",
+      "mcp": "live",
+      "tool": "join_space",
+      "note": "Free. The acting user joins a space by invite code (space code or group code). Idempotent (already_member). 404 invalid_code, 409 space_inactive."
+    },
+    {
       "method": "GET",
       "path": "/agents/participate/campaigns",
       "mcp": "live",

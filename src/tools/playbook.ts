@@ -259,6 +259,7 @@ export function registerPlaybook(
 | find_opportunities (reply drafts to post) | free |
 | hold_opportunity / release_opportunity (10-min hold, one at a time) | free |
 | submit_participation | free — EARNS points/credits for the user |
+| join_space (join a community's squad with an invite code) | free |
 | find_open_campaigns (content + take-action campaigns) | free |
 | get_campaign_brief | free |
 | submit_campaign_work | free — EARNS Stars/points on owner approval |
