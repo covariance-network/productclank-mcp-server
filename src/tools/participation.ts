@@ -31,16 +31,22 @@ export function registerParticipationTools(
     {
       title: "Find earning opportunities",
       description:
-        "Browse unclaimed drafts from active campaigns the connected user can earn from — the public network AND the private spaces (distribution squads) the user is a member of, in one list. An item from a space carries `campaign.space` (id, name): say which space it is from, and that it pays Stars inside that space. Each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: the user picks an opportunity → call hold_opportunity on it (a 10-minute hold so no one else posts the same draft; one hold at a time) → the user edits and approves the text and posts it from their own account → call submit_participation with the URL of what they posted. Drafts other members are holding are not listed; the user's own live hold carries `heldUntil`. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable." +
+        "Browse unclaimed drafts from active campaigns the connected user can earn from — the public network AND the private spaces (distribution squads) the user is a member of, in one list, newest first. To see ONE space, pass space_id: never conclude a space has no drafts from the unfiltered list, because its drafts can be past the first page. An item from a space carries `campaign.space` (id, name): say which space it is from, and that it pays Stars inside that space. Each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: the user picks an opportunity → call hold_opportunity on it (a 10-minute hold so no one else posts the same draft; one hold at a time) → the user edits and approves the text and posts it from their own account → call submit_participation with the URL of what they posted. Drafts other members are holding are not listed; the user's own live hold carries `heldUntil`. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable." +
         screenshotActions,
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
         offset: z.number().int().min(0).optional(),
         campaign_id: z.string().optional().describe("Restrict to one campaign"),
+        space_id: z
+          .string()
+          .optional()
+          .describe(
+            "Only this private space's drafts (space_id from join_space, or campaign.space.id on an item). Use it whenever the user asks about ONE space or squad: the unfiltered list is newest first across everything, so a space's older drafts can be past the first page."
+          ),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ limit, offset, campaign_id }, extra) => {
+    async ({ limit, offset, campaign_id, space_id }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -54,6 +60,7 @@ export function registerParticipationTools(
           limit,
           offset,
           campaignId: campaign_id,
+          spaceId: space_id,
         });
         return textResult({
           posts: result.posts,
@@ -63,6 +70,16 @@ export function registerParticipationTools(
           // case it exists for.
           matching: result.matching ?? result.posts.length,
           total: result.total,
+          // The list is one page. Say so, or a space whose drafts sit on a
+          // later page reads as "nothing there".
+          ...(result.total > (offset ?? 0) + (limit ?? 25)
+            ? {
+                more_available: true,
+                next_offset: (offset ?? 0) + (limit ?? 25),
+                paging_note:
+                  "This is one page, newest first. More items exist: call again with offset = next_offset, or pass space_id to see one space only.",
+              }
+            : {}),
           ...(result.posts.length === 0
             ? {
                 user_note:
@@ -186,7 +203,7 @@ export function registerParticipationTools(
           already_member: result.already_member,
           space_url: result.space_url,
           next_step:
-            "Show the user what this space is working on now: call find_opportunities (drafts from it carry campaign.space) and find_open_campaigns (campaigns from it carry is_community: true and this space_id).",
+            "Show the user what this space is working on now: call find_opportunities with this space_id (it returns only this space's drafts) and find_open_campaigns (campaigns from it carry is_community: true and this space_id). Do not say a space has no drafts from the unfiltered list alone.",
         });
       } catch (error) {
         return toolError(error, "Join failed");

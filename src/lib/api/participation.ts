@@ -50,12 +50,15 @@ export function getParticipationFeed(params: {
   limit?: number;
   offset?: number;
   campaignId?: string;
+  /** Only this private space's drafts (the user must be a member); no public posts. */
+  spaceId?: string;
   actionType?: "reply" | "quote" | "like" | "repost";
 }): Promise<{ success: boolean; posts: FeedPost[]; total: number; matching?: number }> {
   const qs = new URLSearchParams();
   if (params.limit != null) qs.set("limit", String(params.limit));
   if (params.offset != null) qs.set("offset", String(params.offset));
   if (params.campaignId) qs.set("campaignId", params.campaignId);
+  if (params.spaceId) qs.set("spaceId", params.spaceId);
   if (params.actionType) qs.set("actionType", params.actionType);
   const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
   return request(params.callerUserId, `/agents/participate/feed${suffix}`, {
