@@ -3,7 +3,8 @@
  *
  * find_opportunities (free) → hold_opportunity (10-min hold, one at a time) →
  * the user posts a drafted reply from their own X account → submit_participation (attributes + verifies + awards) →
- * get_earnings (free). The submitted reply must be posted by the user's linked
+ * get_earnings (free). join_space (free) puts the user in a community's space
+ * by invite code. The submitted reply must be posted by the user's linked
  * X handle — the backend author-matches it before awarding anything.
  */
 
@@ -30,7 +31,7 @@ export function registerParticipationTools(
     {
       title: "Find earning opportunities",
       description:
-        "Browse unclaimed drafts from active campaigns the connected user can earn from: each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: the user picks an opportunity → call hold_opportunity on it (a 10-minute hold so no one else posts the same draft; one hold at a time) → the user edits and approves the text and posts it from their own account → call submit_participation with the URL of what they posted. Drafts other members are holding are not listed; the user's own live hold carries `heldUntil`. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable." +
+        "Browse unclaimed drafts from active campaigns the connected user can earn from — the public network AND the private spaces (distribution squads) the user is a member of, in one list. An item from a space carries `campaign.space` (id, name): say which space it is from, and that it pays Stars inside that space. Each item is a real social post plus a pre-drafted text, with the `platform` it lives on (X, Reddit, YouTube, LinkedIn) and an `actionType` — `reply` (post it as a reply under the target post) or `quote` (X only: post it as a QUOTE of the target post, the text above the quoted post, from the user's own account). Free, read-only. Flow: the user picks an opportunity → call hold_opportunity on it (a 10-minute hold so no one else posts the same draft; one hold at a time) → the user edits and approves the text and posts it from their own account → call submit_participation with the URL of what they posted. Drafts other members are holding are not listed; the user's own live hold carries `heldUntil`. The user needs that platform's handle linked on their ProductClank profile for the reward to be attributable." +
         screenshotActions,
       inputSchema: {
         limit: z.number().int().min(1).max(100).optional().describe("Default 25"),
@@ -158,6 +159,37 @@ export function registerParticipationTools(
         });
       } catch (error) {
         return toolError(error, "Submission failed");
+      }
+    }
+  );
+
+  server.registerTool(
+    "join_space",
+    {
+      title: "Join a distribution squad with an invite code",
+      description:
+        "Join a ProductClank space (a community's distribution squad) for the connected user with the invite code its leader shared. Use it when the user says they were invited to a squad, a space or a community and gives a code. After the join, the space's work is listed for the user: reply and quote drafts in find_opportunities (campaign.space set) and content or take-action campaigns in find_open_campaigns (is_community: true). The user chooses which ones to help with. Calling it again for a space the user is already in is safe (already_member: true). Free. invalid_code means no space has that code: ask the user to check it with the person who invited them.",
+      inputSchema: {
+        invite_code: z.string().min(1).describe("The invite code the space leader shared (letters and digits; case does not matter)"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ invite_code }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.joinSpace({ callerUserId: userId, inviteCode: invite_code });
+        return textResult({
+          space_id: result.space_id,
+          space_name: result.space_name,
+          role: result.role,
+          already_member: result.already_member,
+          space_url: result.space_url,
+          next_step:
+            "Show the user what this space is working on now: call find_opportunities (drafts from it carry campaign.space) and find_open_campaigns (campaigns from it carry is_community: true and this space_id).",
+        });
+      } catch (error) {
+        return toolError(error, "Join failed");
       }
     }
   );

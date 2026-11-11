@@ -26,6 +26,8 @@ export interface FeedPost {
     campaignNumber: string | null;
     title: string | null;
     productId: string | null;
+    /** Set only for a campaign inside a private space the user is a member of. */
+    space?: { id: string; name: string } | null;
   } | null;
   platform: string | null;
   tweetId: string | null;
@@ -84,6 +86,21 @@ export function releaseOpportunity(params: { callerUserId: string; replyId: stri
 }> {
   return request(params.callerUserId, `/agents/participate/hold?replyId=${encodeURIComponent(params.replyId)}`, {
     method: "DELETE",
+  });
+}
+
+/** Join a space (a distribution squad) with an invite code. Idempotent. Free. */
+export function joinSpace(params: { callerUserId: string; inviteCode: string }): Promise<{
+  success: boolean;
+  space_id: string;
+  space_name: string;
+  role: string;
+  already_member: boolean;
+  space_url: string;
+}> {
+  return request(params.callerUserId, "/agents/spaces/join", {
+    method: "POST",
+    body: JSON.stringify({ invite_code: params.inviteCode }),
   });
 }
 

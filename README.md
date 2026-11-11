@@ -97,10 +97,11 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 
 | Tool | What it does | Cost |
 |---|---|---|
-| `find_opportunities` | Browse unclaimed reply and quote-post drafts the user can post to earn (likes and reposts need a screenshot and stay in the web app) | free |
+| `find_opportunities` | Browse unclaimed reply and quote-post drafts the user can post to earn, from the public network and from the private spaces they are a member of (likes and reposts need a screenshot and stay in the web app) | free |
 | `hold_opportunity` | Hold the picked draft for 10 minutes so no one else posts it (one hold at a time); returns the draft text | free |
 | `release_opportunity` | Release a held draft the user decided to skip | free |
 | `submit_participation` | Submit the posted reply's URL (X, Reddit, YouTube, LinkedIn) — attributed to the user's linked handle for that platform, then points/credits are awarded | earns |
+| `join_space` | Join a community's distribution squad (a space) with the invite code its leader shared | free |
 | `find_open_campaigns` | Discover content & take-action campaigns the user can join — public ones plus their communities' | free |
 | `get_campaign_brief` | Read a campaign's full brief: what to create or do, judging criteria, rewards, deadline, remaining allowance | free |
 | `submit_campaign_work` | Submit the user's work: a content or action-proof URL, a hosted image/video made for the task (`media_url` — links only, no uploads), and/or a description. X posts are author-verified. Pending → owner review → Stars/points | earns |
