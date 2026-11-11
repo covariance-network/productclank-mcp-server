@@ -27,7 +27,20 @@ function normalize(raw) {
   s = s.replace(/\?.*$/, ""); // strip query string
   s = s.replace(/^\/api\/v1/i, ""); // strip API version prefix
   if (s.startsWith("/participate")) s = "/agents" + s; // participation base
+  s = s.replace(/[.,;:]+$/, ""); // strip sentence punctuation after a path in prose
   s = s.replace(/\{[^}]+\}/g, "{id}"); // collapse path params
+  // Collapse example ids written into the docs (CAMPAIGN_ID, quiz-uuid, a real
+  // UUID) to {id}, so an example request is not read as a different endpoint.
+  s = s
+    .split("/")
+    .map((seg) =>
+      /^[A-Z][A-Z0-9]*_ID$/.test(seg) ||
+      /^[a-z0-9_-]*-?uuid$/i.test(seg) ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seg)
+        ? "{id}"
+        : seg
+    )
+    .join("/");
   s = s.replace(/\/+$/, ""); // strip trailing slash
   return s;
 }

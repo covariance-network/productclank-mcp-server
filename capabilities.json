@@ -614,6 +614,42 @@
       "mcp": "live",
       "tool": "get_scout_earnings",
       "note": "Approved scouts only (403 not_a_scout / scout_not_approved). Free. Full profile only. Pipeline, commissions, monthly pool rank."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/participate/campaigns/{campaignId}/intro-leads",
+      "mcp": "planned",
+      "note": "Intro bounties: read the intros the user proposed on a campaign. Free. No tool yet; intro bounties run in the web app."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/campaigns/{campaignId}/intro-leads",
+      "mcp": "planned",
+      "note": "Intro bounties: propose a warm intro on a campaign. No tool yet; intro bounties run in the web app."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/spaces",
+      "mcp": "excluded",
+      "note": "Partner storefront: create a client space pre-seeded with proven creators. Needs the operator-granted partner_spaces_allowed entitlement; partners call it from their own integration, not the end-user connector."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/webhooks",
+      "mcp": "excluded",
+      "note": "Curated partners only (Agent.webhooks_allowed). Server-to-server push to a partner's own HTTPS endpoint; a chat connector cannot receive webhooks."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/webhooks",
+      "mcp": "excluded",
+      "note": "Curated partners only (Agent.webhooks_allowed). Registers the partner's HTTPS endpoint; a chat connector cannot receive webhooks."
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/webhooks",
+      "mcp": "excluded",
+      "note": "Curated partners only. Removes the partner's webhook endpoint."
     }
   ]
 }
