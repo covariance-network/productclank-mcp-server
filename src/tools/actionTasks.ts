@@ -30,7 +30,7 @@ An action campaign is a list of tasks. Each task is ONE action in ONE place, don
 
 ## 2. Write a draft per destination
 - Native to that place: its tone, its length, its format. Value first (what the reader gets), the product second.
-- A link only where the place allows links — the member uses their tracked link there.
+- A link only where the place allows links: write {{TRACKED_LINK}} there and the member gets the draft with their own tracked link in its place.
 - The draft is a starting point. The member is told to rewrite it in their own words; never ask them to paste it as is.
 
 ## 3. Exclusive or open
