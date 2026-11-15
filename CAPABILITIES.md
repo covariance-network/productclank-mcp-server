@@ -37,6 +37,13 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/campaigns/watch-quiz` | ✅ | `create_watch_quiz` (100cr per correct answer, cap `max_answers` people; full profile only) · also `launch_tiktok_campaign` (likes + replies boosts + quiz on one TikTok, one ask) |
 | `POST /agents/campaigns/watch-quiz/suggest-questions` | ✅ | `suggest_quiz_questions` (40cr on success) |
 | `GET /agents/campaigns/watch-quiz/{id}` | ✅ | `get_watch_quiz_results` (free) |
+| `POST /agents/campaigns/actions` | ✅ | `create_action_campaign` (dry run free; confirmed = held, free) |
+| `POST /agents/campaigns/actions/{id}/publish` | ✅ | `publish_action_tasks` (20cr per task opened) |
+| `PATCH /agents/campaigns/actions/{id}/tasks` | ✅ | `update_action_tasks` (free) |
+| `GET /agents/campaigns/actions/{id}` | ✅ | `get_action_campaign_results` (free) |
+| `POST /agents/campaigns/{id}/submissions/{sid}/review` | ✅ | `review_submissions` (free; approve pays the task reward) |
+| `POST /agents/participate/campaigns/{id}/tasks/{taskId}/claim` · `/release` | ✅ | `claim_task` · `release_task` (free) |
+| `POST /agents/participate/proof-upload` | ✅ | `upload_proof_screenshot` (free) |
 | `POST /agents/campaigns/ai-visibility` | ✅ | `create_ai_visibility_check` (flat 1000cr at create, `dry_run` first; the panel earns points, the report is free; full profile only) |
 | `GET /agents/campaigns/ai-visibility/{id}` | ✅ | `get_ai_visibility_results` (free) |
 | `POST /agents/campaigns/ai-visibility/{id}/report` | ✅ | `generate_ai_visibility_report` (free; waits for the check to end unless `allow_partial`) |

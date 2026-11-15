@@ -262,7 +262,7 @@ export function registerParticipationTools(
     {
       title: "Submit campaign participation proof",
       description:
-        "Submit the user's work for a campaign. Three ways to prove it, and any one is enough: proof_url (content they published or an action they took), media_url (a hosted image or video made for the task — the ad-hoc creative case: a demo clip, a mockup, a designed asset), and description (max 500 chars). Media must already be hosted somewhere public and reachable — this API takes links, never uploads; a direct image link is shown to the reviewer inline, anything else (a video, a Loom) is shown as a link they open. If a URL is an X post it must be published by the user's linked X handle (author-verified); other URLs are accepted as-is. Lands as PENDING — the campaign owner reviews and rewards ship on approval (community campaigns pay Stars, public ones leaderboard points). Duplicate URLs are rejected. Check status afterward with get_my_submissions.",
+        "Submit the user's work for a campaign. Three ways to prove it, and any one is enough: proof_url (content they published or an action they took), media_url (a hosted image or video made for the task — the ad-hoc creative case: a demo clip, a mockup, a designed asset), and description (max 500 chars). Media must already be hosted somewhere public and reachable — this API takes links, never uploads; a direct image link is shown to the reviewer inline, anything else (a video, a Loom) is shown as a link they open. If a URL is an X post it must be published by the user's linked X handle (author-verified); other URLs are accepted as-is. Lands as PENDING — the campaign owner reviews and rewards ship on approval (community campaigns pay Stars, public ones leaderboard points). Duplicate URLs are rejected. Check status afterward with get_my_submissions. ACTION CAMPAIGNS (get_campaign_brief shows kind 'action_tasks' and a tasks list): pass task_id — an exclusive task must be claimed first (claim_task) — and the proof the task asks for: proof_url (a link to the post / listing / comment) and/or screenshot_url (from upload_proof_screenshot).",
       inputSchema: {
         campaign_id: z.string(),
         proof_url: z
@@ -282,10 +282,16 @@ export function registerParticipationTools(
           .max(500)
           .optional()
           .describe("What was done, or context for the reviewer"),
+        task_id: z.string().optional().describe("Action campaigns only (required there): the task this proof is for"),
+        screenshot_url: z
+          .string()
+          .url()
+          .optional()
+          .describe("Action campaigns: a screenshot from upload_proof_screenshot"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    async ({ campaign_id, proof_url, media_url, description }, extra) => {
+    async ({ campaign_id, proof_url, media_url, description, task_id, screenshot_url }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -295,6 +301,8 @@ export function registerParticipationTools(
           castUrl: proof_url,
           mediaUrl: media_url,
           description,
+          taskId: task_id,
+          screenshotUrl: screenshot_url,
         });
         return textResult(result.data);
       } catch (error) {

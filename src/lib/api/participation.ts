@@ -226,6 +226,10 @@ export function submitCampaignWork(params: {
    *  the API stores URLs, it never accepts uploads. */
   mediaUrl?: string;
   description?: string;
+  /** Action campaigns: the task this proof is for (required there). */
+  taskId?: string;
+  /** Action campaigns: a screenshot from upload_proof_screenshot. */
+  screenshotUrl?: string;
 }): Promise<{
   success: boolean;
   data: { submission: Record<string, unknown>; message: string };
@@ -236,6 +240,8 @@ export function submitCampaignWork(params: {
       ...(params.castUrl ? { cast_url: params.castUrl } : {}),
       ...(params.mediaUrl ? { media_url: params.mediaUrl } : {}),
       ...(params.description ? { description: params.description } : {}),
+      ...(params.taskId ? { task_id: params.taskId } : {}),
+      ...(params.screenshotUrl ? { screenshot_url: params.screenshotUrl } : {}),
     }),
   });
 }

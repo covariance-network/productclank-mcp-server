@@ -393,10 +393,66 @@
     },
     {
       "method": "POST",
+      "path": "/agents/campaigns/actions",
+      "mcp": "live",
+      "tool": "create_action_campaign",
+      "note": "Action campaign = tasks, one action in one place, done by a member from their own account. Dry run free (validation, 14-day cooldown, pricing); confirmed:true creates HELD (drafts), nothing charged. Cash tasks → prizePool + fund_url (user deposits). Every profile."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/campaigns/actions/{campaignId}",
+      "mcp": "live",
+      "tool": "get_action_campaign_results",
+      "note": "Free. Task states, holders, proofs (pending first), clicks (bots excluded) + sign-ups per task, cash pool."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/actions/{campaignId}/publish",
+      "mcp": "live",
+      "tool": "publish_action_tasks",
+      "note": "Draft → open. 20 cr per task opened (CREDIT_COSTS action-task-publish); cooldown-blocked tasks free; 402 until a cash pool is funded."
+    },
+    {
+      "method": "PATCH",
+      "path": "/agents/campaigns/actions/{campaignId}/tasks",
+      "mcp": "live",
+      "tool": "update_action_tasks",
+      "note": "Free. add / edit / close; locked fields while held; funded pool immutable."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/campaigns/{campaignId}/submissions/{submissionId}/review",
+      "mcp": "live",
+      "tool": "review_submissions",
+      "note": "Free. Approve (pays the task reward) / reject (reopens). v1 task proofs only. Tool loops up to 20 decisions."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/campaigns/{campaignId}/tasks/{taskId}/claim",
+      "mcp": "live",
+      "tool": "claim_task",
+      "note": "Free. Hold an exclusive task (attest_member + profile_url); returns draft + tracked link."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/campaigns/{campaignId}/tasks/{taskId}/release",
+      "mcp": "live",
+      "tool": "release_task",
+      "note": "Free. Drop the user's hold."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/participate/proof-upload",
+      "mcp": "live",
+      "tool": "upload_proof_screenshot",
+      "note": "Free. Screenshot (base64) into the acting user's proof folder → screenshot_url for submit_campaign_work."
+    },
+    {
+      "method": "POST",
       "path": "/agents/participate/campaigns/{id}/submissions",
       "mcp": "live",
       "tool": "submit_campaign_work",
-      "note": "Free — EARNS on approval (community→Stars, public→points). Lands PENDING in CampaignSubmissions. cast_url and/or media_url and/or description; media_url = hosted image/video for ad-hoc creative tasks (LINKS ONLY, no uploads) — direct-image/X URLs go to image_url and render inline in the owner review modal, everything else stays a link. Guards: URL validity, campaign-wide duplicate proof, X-post author-match vs the acting user's linked handle, per-agent daily cap."
+      "note": "Free — EARNS on approval (community→Stars, public→points). Lands PENDING in CampaignSubmissions. cast_url and/or media_url and/or description; media_url = hosted image/video for ad-hoc creative tasks (LINKS ONLY, no uploads) — direct-image/X URLs go to image_url and render inline in the owner review modal, everything else stays a link. Guards: URL validity, campaign-wide duplicate proof, X-post author-match vs the acting user's linked handle, per-agent daily cap. Action campaigns: task_id (required) + screenshot_url."
     },
     {
       "method": "GET",
