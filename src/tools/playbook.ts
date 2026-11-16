@@ -28,6 +28,7 @@ Product to grow: {{product}}
    - **Conversations play** — first READ THE PRODUCT'S SITE: fetch its website (and anything else the user pointed at) and derive the keywords and search_context from who the audience actually is and the phrases they use when they have the problem — not from the product's name. That derivation is your work, done here, free; if you cannot browse from this client, say so and either build it from what the user tells you or call analyze_url (3 credits, charged only when a brief comes back). Then create_campaign with 3–8 focused keywords and the platform the audience is actually on — twitter (default), linkedin, reddit or youtube; for reddit/youtube also pass target_subreddits / target_youtube_channels (PRIVATE by default — ask before making it public: public drafts are posted by the network and bill the user per reply; the create result carries real posted-reply links as examples. On LinkedIn and Reddit, keep it private and have the user (or their team) post the drafts — that gets the best results there). Research auto-runs at create (~30s) — read it with get_research (FREE); its expanded keywords feed the next discovery run automatically. Then generate_posts, get_posts, review_posts (dry_run first), regenerate_replies where drafts miss the tone, edit_reply (free) for one draft's wording. On a private campaign, publish_posts releases the drafts the user approved to the community — it turns on per-posted-reply billing, so only with their yes. Manage anytime in the workbench via the campaign's admin_url.
 {{moment_play}}
    - **Content play** — the user wants the community creating content: suggest_content_campaign (FREE dry-run) → create_content_campaign once they approve the 1000-credit spend → set_content_bounty: creators are paid from a cash bounty the user deposits, and that is what brings submissions in, so plan the launch fee AND the pool from the start (preview the numbers, confirm, then hand the user fund_url to deposit) → get_content_campaign_results (FREE) to see what was actually published. Straight after launch it reads state 'processing' with zero submissions — that is the brief still generating, not a failure.
+   - **Community play** — the buyers gather in specific communities, newsletters or directories, and a member posting there beats an ad: create_action_campaign. Read productclank://guides/action-campaign first, then plan the task list WITH the user — one action in one place per task, a native draft per place, the place's self-promo rules checked. Dry run (free) → their yes → confirmed:true (held, free) → cash tasks: fund_url → publish_action_tasks (credits per task) → get_action_campaign_results over the following days → review_submissions only with the user's decision per proof. Start with ~5 tasks.
 {{assistant_play}}
    - **Own-content play** — the user wants to publish their OWN posts: that is the Content Studio, not a campaign. Use the setup_content_space prompt (free interview → calibrated space → first drafts → approve / tweak / teach loop).
 4. **Close the loop.** After each paid step: get_campaign_results for conversations/moment campaigns and get_content_campaign_results for content campaigns (submissions, live links to what was published, approved vs pending), credit_history for the ledger, and report both to the user with what you'd do next. Hand long-running campaigns to the human with add_delegate so they can manage them at app.productclank.com/my-campaigns.
@@ -239,6 +240,14 @@ export function registerPlaybook(
 | suggest_content_campaign | free (dry-run) |
 | create_content_campaign | 1000 |
 | set_content_bounty (cash prize pool creators compete for; preview, then confirmed:true → fund_url where the user deposits) | free — the pool + a platform fee is paid by the user at fund_url |
+
+## Action campaigns (tasks: one action in one place, by members from their own accounts)
+| Tool | Cost |
+|---|---|
+| create_action_campaign (read productclank://guides/action-campaign first; dry run, then confirmed:true → held) | free |
+| publish_action_tasks | 20 per task opened — cash tasks also need the user's deposit at fund_url (+10%) |
+| update_action_tasks / get_action_campaign_results / review_submissions | free (approving pays the task's reward) |
+| claim_task / release_task / upload_proof_screenshot (participant) | free |
 | get_content_campaign_results | free |
 
 ## Content Studio (the user's OWN pipeline — drafts they approve; nothing publishes)

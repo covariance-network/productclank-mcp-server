@@ -64,6 +64,13 @@ src/
 | `generate_ai_visibility_report` | aiVisibility | `POST /agents/campaigns/ai-visibility/{id}/report` | free |
 | `suggest_content_campaign` | content | `POST /agents/campaigns/content` (`dry_run`) | free |
 | `create_content_campaign` | content | `POST /agents/campaigns/content` | 1000 cr |
+| `create_action_campaign` | actionTasks | `POST /agents/campaigns/actions` (dry run until `confirmed`) | free — tasks are charged at publish |
+| `publish_action_tasks` | actionTasks | `POST /agents/campaigns/actions/{id}/publish` | 20 cr per task opened |
+| `update_action_tasks` | actionTasks | `PATCH /agents/campaigns/actions/{id}/tasks` | free |
+| `get_action_campaign_results` | actionTasks | `GET /agents/campaigns/actions/{id}` | free |
+| `review_submissions` | actionTasks | `POST /agents/campaigns/{id}/submissions/{sid}/review` | free (approve pays the task reward) |
+| `claim_task` / `release_task` | actionTasks | `POST /agents/participate/campaigns/{id}/tasks/{taskId}/claim` · `/release` | free |
+| `upload_proof_screenshot` | actionTasks | `POST /agents/participate/proof-upload` | free |
 | `set_content_bounty` | content | `POST /agents/campaigns/content/{id}/bounty` (`dry_run` until `confirmed`) | free — the user deposits the pool at `fund_url` |
 | `list_content_spaces` | contentStudio | `GET /agents/content/spaces` | free |
 | `get_content_workspace` | contentStudio | `GET /agents/content/workspace` | free |
