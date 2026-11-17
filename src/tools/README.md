@@ -34,7 +34,7 @@ src/
     ├── tiktokCampaign.ts registerTikTokCampaignTools → launch_tiktok_campaign (full profile only)
     ├── aiVisibility.ts registerAiVisibilityTools   → create_ai_visibility_check, get_ai_visibility_results, generate_ai_visibility_report (full profile only)
     ├── content.ts      registerContentTools       → suggest_content_campaign, create_content_campaign
-    ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
+    ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, get_content_draft, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings, join_space, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
     ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, get_growth_suggestions (full profile only)
@@ -78,6 +78,7 @@ src/
 | `manage_content_topics` | contentStudio | `GET/POST/PATCH/DELETE /agents/content/topics`, `POST …/topics/suggest` | free |
 | `write_content_candidates` | contentStudio | `POST /agents/content/candidates` | free |
 | `get_content_queue` | contentStudio | `GET /agents/content/queue` | free |
+| `get_content_draft` | contentStudio | `GET /agents/content/drafts` | free |
 | `revise_content_draft` | contentStudio | `PATCH /agents/content/drafts` | free / 2 cr |
 | `teach_content_voice` | contentStudio | `POST /agents/content/feedback` | 1 cr |
 | `create_campaign` | campaigns | `POST /agents/campaigns` | 10 cr |

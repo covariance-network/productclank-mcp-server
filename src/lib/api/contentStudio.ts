@@ -241,7 +241,14 @@ export function suggestContentTopics(
   });
 }
 
-export type ContentQueueStatus = "active" | "pending" | "reviewed" | "staged" | "discarded";
+export type ContentQueueStatus =
+  | "active"
+  | "pending"
+  | "reviewed"
+  | "staged"
+  | "scheduled"
+  | "discarded"
+  | "all";
 
 export interface ContentDraftShape {
   id: string;
@@ -254,15 +261,36 @@ export interface ContentDraftShape {
   review: { score: number | null; verdict: string; summary: string | null; notes: string | null };
   starred: boolean;
   tags: string[];
+  planned_at: string | null;
+  /** Older app deploys omit the three blocks below. */
+  media?: { image_url: string | null; video_url: string | null };
+  reference?: { url: string | null; network: string | null; attach: boolean };
+  schedule?: {
+    scheduled_at: string | null;
+    account: string | null;
+    scheduler_url: string | null;
+    published_url: string | null;
+    published_at: string | null;
+  };
   created_at: string;
+}
+
+export interface ContentQueueFilters {
+  status?: ContentQueueStatus;
+  limit?: number;
+  tag?: string;
+  platform?: string;
+  plannedFrom?: string;
+  plannedTo?: string;
 }
 
 export interface ContentQueueResult {
   success: boolean;
   space_id: string;
   status: ContentQueueStatus;
+  filters?: { tag: string | null; platform: string | null; planned_from: string | null; planned_to: string | null };
   review_threshold: number;
-  counts: { pending: number; reviewed: number; staged: number; discarded: number };
+  counts: { pending: number; reviewed: number; staged: number; scheduled?: number; discarded: number };
   drafts: ContentDraftShape[];
   review_url: string;
   note?: string;
@@ -271,13 +299,49 @@ export interface ContentQueueResult {
 export function getContentQueue(
   userId: string,
   spaceId: string,
-  status?: ContentQueueStatus,
-  limit?: number
+  f: ContentQueueFilters = {}
 ): Promise<ContentQueueResult> {
   const qs = new URLSearchParams({ space_id: spaceId });
-  if (status) qs.set("status", status);
-  if (limit) qs.set("limit", String(limit));
+  if (f.status) qs.set("status", f.status);
+  if (f.limit) qs.set("limit", String(f.limit));
+  if (f.tag) qs.set("tag", f.tag);
+  if (f.platform) qs.set("platform", f.platform);
+  if (f.plannedFrom) qs.set("planned_from", f.plannedFrom);
+  if (f.plannedTo) qs.set("planned_to", f.plannedTo);
   return request(userId, `/agents/content/queue?${qs.toString()}`, { method: "GET" });
+}
+
+export interface ContentDraftVersionShape {
+  version_id: string;
+  text: string;
+  platform: string | null;
+  template: string | null;
+  review_score: number | null;
+  review_verdict: string;
+  replaced_by: string;
+  actor: string;
+  saved_at: string;
+}
+
+export interface ContentDraftDetailResult {
+  success: boolean;
+  draft: ContentDraftShape & {
+    review_breakdown: Record<string, number | null> | null;
+    previous_score: number | null;
+    versions: ContentDraftVersionShape[];
+  };
+  locked: boolean;
+  locked_reason?: string;
+  review_url: string;
+}
+
+export function getContentDraft(
+  userId: string,
+  spaceId: string,
+  draftId: string
+): Promise<ContentDraftDetailResult> {
+  const qs = new URLSearchParams({ space_id: spaceId, draft_id: draftId });
+  return request(userId, `/agents/content/drafts?${qs.toString()}`, { method: "GET" });
 }
 
 export type ContentDraftAction =
@@ -287,7 +351,9 @@ export type ContentDraftAction =
   | "humanize"
   | "review"
   | "stage"
-  | "discard";
+  | "discard"
+  | "plan"
+  | "restore";
 
 export const REVISE_PRESETS = [
   "shorter",
@@ -308,6 +374,7 @@ export interface ContentDraftActionResult {
   credits_charged: number;
   draft: ContentDraftShape;
   review_url: string;
+  previous_version_saved?: boolean;
   note?: string;
 }
 
@@ -320,6 +387,9 @@ export function actOnContentDraft(
     text?: string;
     preset?: RevisePreset;
     instruction?: string;
+    /** plan: ISO date/datetime; null unplans. undefined = not sent. */
+    plannedAt?: string | null;
+    versionId?: string;
   }
 ): Promise<ContentDraftActionResult> {
   return request(userId, "/agents/content/drafts", {
@@ -331,6 +401,8 @@ export function actOnContentDraft(
       text: p.text,
       preset: p.preset,
       instruction: p.instruction,
+      ...(p.plannedAt !== undefined ? { planned_at: p.plannedAt } : {}),
+      version_id: p.versionId,
     }),
   });
 }

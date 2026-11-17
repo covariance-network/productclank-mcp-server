@@ -258,7 +258,8 @@ export function registerPlaybook(
 | manage_content_topics (list / add / update / remove / suggest) | free |
 | write_content_candidates (drafts in the brand voice, auto-scored) | free |
 | get_content_queue (drafts + reviewer scores) | free |
-| revise_content_draft — stage / discard / edit | free |
+| get_content_draft (one draft + earlier versions) | free |
+| revise_content_draft — stage / discard / edit / plan / restore | free |
 | revise_content_draft — revise (presets) / fix / humanize / review | 2 each |
 | teach_content_voice (reaction → standing KB rule) | 1 |
 

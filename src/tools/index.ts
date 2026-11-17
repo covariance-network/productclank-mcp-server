@@ -72,7 +72,7 @@ export function registerTools(
   registerContentTools(server); // suggest_content_campaign, create_content_campaign
   // Members post ORIGINAL content in places they already belong to — every profile.
   registerActionTaskTools(server); // create_action_campaign, publish_action_tasks, update_action_tasks, get_action_campaign_results, review_submissions, claim_task, release_task, upload_proof_screenshot (+ resource productclank://guides/action-campaign)
-  registerContentStudioTools(server); // list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, revise_content_draft, teach_content_voice
+  registerContentStudioTools(server); // list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, get_content_draft, revise_content_draft, teach_content_voice
   registerCampaignTools(server, profile); // create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity/results, update_campaign, set_campaign_schedule, add_delegate
   registerParticipationTools(server, profile); // find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings, join_space, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
   // Scout BD outreach — not commissioned content, so not in the creator profile.

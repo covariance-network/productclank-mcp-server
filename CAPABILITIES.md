@@ -55,7 +55,8 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/content/workspace` | ✅ | `setup_content_space` (Content Studio onboarding — free by fields, 5cr for a pasted brand_doc) |
 | `GET/POST/PATCH/DELETE /agents/content/topics`, `POST /agents/content/topics/suggest` | ✅ | `manage_content_topics` (Content Studio — free) |
 | `GET /agents/content/queue` | ✅ | `get_content_queue` (Content Studio — drafts + scores; free) |
-| `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit free; revise presets / fix / humanize / review 2cr) |
+| `GET /agents/content/drafts` | ✅ | `get_content_draft` (Content Studio — one draft: per-axis score + earlier versions; free) |
+| `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit/plan/restore free; revise presets / fix / humanize / review 2cr) |
 | `POST /agents/content/feedback` | ✅ | `teach_content_voice` (Content Studio — reaction → KB rule, 1cr) |
 | `GET /agents/credits/balance` | ✅ | `check_balance` (balance + live `pricing`) |
 | `POST /agents/campaigns` | ✅ | `create_campaign` (10cr) |
