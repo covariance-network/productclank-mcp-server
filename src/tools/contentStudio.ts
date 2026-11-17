@@ -11,11 +11,12 @@
  * - setup_content_space      → POST /agents/content/workspace   (onboarding: turn content on)
  * - manage_content_topics    → GET/POST/PATCH/DELETE /agents/content/topics (+ /suggest)
  * - write_content_candidates → POST /agents/content/candidates  (draft IN the voice)
- * - get_content_queue        → GET  /agents/content/queue       (drafts + reviewer scores)
- * - revise_content_draft     → PATCH /agents/content/drafts     (approve / chips / teach-by-edit)
+ * - get_content_queue        → GET  /agents/content/queue       (drafts + reviewer scores; filters)
+ * - get_content_draft        → GET  /agents/content/drafts      (one draft: breakdown + versions)
+ * - revise_content_draft     → PATCH /agents/content/drafts     (approve / chips / edit / plan / restore)
  * - teach_content_voice      → POST /agents/content/feedback    (reaction → standing KB rule)
  *
- * Drafting, setup, topics and the queue are FREE; rewrites / reviews cost 2, a KB
+ * Drafting, setup, topics, the queue, edit, plan and restore are FREE; rewrites / reviews cost 2, a KB
  * rule 1, a pasted brand doc 5. Nothing is ever published from here — the user
  * stages drafts in the web tool; publishing is their step.
  */
@@ -321,22 +322,34 @@ export function registerContentStudioTools(server: McpServer): void {
     {
       title: "Read the content queue with scores",
       description:
-        "The space's drafts as the user sees them in 'All Content': text, platform, status, and the reviewer's score / verdict / one-line fix. FREE. Use it to present drafts for approval one by one (show the text, the score against review_threshold, and the reviewer's summary), and after write_content_candidates to read back how your drafts scored. status: active (default — pending + reviewed + staged), pending, reviewed, staged (approved by the user, awaiting publish), discarded.",
+        "The space's drafts as the user sees them: text, platform, status, tags, planned date, media (image/video), the post it quotes, schedule state, and the reviewer's score / verdict / one-line fix. FREE. Use it to present drafts one by one, to read back how drafts scored, and to pull a slice of the content plan: filter by tag (e.g. a campaign week), platform, or planned date window (planned_from / planned_to, YYYY-MM-DD; orders by planned date). status: active (default — pending + reviewed + staged), pending, reviewed, staged (approved, awaiting publish), scheduled (already in the user's scheduler — read-only), discarded, all (everything but discarded). counts are space-wide totals. Call get_content_draft for one draft's per-axis score and earlier versions.",
       inputSchema: {
         space_id: z.string(),
-        status: z.enum(["active", "pending", "reviewed", "staged", "discarded"]).optional(),
+        status: z.enum(["active", "pending", "reviewed", "staged", "scheduled", "discarded", "all"]).optional(),
+        tag: z.string().optional().describe("Only drafts with this tag (exact), e.g. \"Communities week\"."),
+        platform: z.string().optional().describe("Only this platform label (exact), e.g. \"Lior X\"."),
+        planned_from: z.string().optional().describe("Planned on or after this date (YYYY-MM-DD) or ISO time."),
+        planned_to: z.string().optional().describe("Planned on or before this date (whole day) or ISO time."),
         limit: z.number().int().min(1).max(100).optional(),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ space_id, status, limit }, extra) => {
+    async ({ space_id, status, tag, platform, planned_from, planned_to, limit }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
-        const r = await api.getContentQueue(userId, space_id, status, limit);
+        const r = await api.getContentQueue(userId, space_id, {
+          status,
+          limit,
+          tag,
+          platform,
+          plannedFrom: planned_from,
+          plannedTo: planned_to,
+        });
         return textResult({
           space_id: r.space_id,
           status: r.status,
+          filters: r.filters,
           review_threshold: r.review_threshold,
           counts: r.counts,
           drafts: r.drafts,
@@ -349,20 +362,56 @@ export function registerContentStudioTools(server: McpServer): void {
     }
   );
 
-  // ─── revise_content_draft (approve / chips / edit / discard) ──────────────
+  // ─── get_content_draft (read) ─────────────────────────────────────────────
+  server.registerTool(
+    "get_content_draft",
+    {
+      title: "Read one draft in full",
+      description:
+        "One draft with everything needed to iterate on it: text, media, the post it quotes, schedule state, the reviewer's per-axis breakdown, the score before the last rewrite, and its earlier versions (newest first). FREE. Each version has a version_id — pass it to revise_content_draft action:\"restore\" to bring that text back (e.g. \"the first hook was better\"). locked:true means it is already scheduled or live: do not try to change it; tell the user where to change it (locked_reason).",
+      inputSchema: {
+        space_id: z.string(),
+        draft_id: z.string().describe("From get_content_queue."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ space_id, draft_id }, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const r = await api.getContentDraft(userId, space_id, draft_id);
+        return textResult({
+          draft: r.draft,
+          locked: r.locked,
+          ...(r.locked_reason ? { locked_reason: r.locked_reason } : {}),
+          review_url: r.review_url,
+        });
+      } catch (error) {
+        return toolError(error, "Failed to read the draft");
+      }
+    }
+  );
+
+  // ─── revise_content_draft (approve / chips / edit / plan / restore) ───────
   server.registerTool(
     "revise_content_draft",
     {
-      title: "Approve, revise, or discard a draft",
+      title: "Approve, revise, plan, restore, or discard a draft",
       description:
-        "Act on one draft in the user's queue. `stage` = the user approved it (mark ready to publish; publishing itself happens in the web tool). `discard` drops it. `revise` rewrites it in the brand voice per a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — and/or a typed instruction (2 credits). `fix` makes the surgical change the reviewer's notes asked for (2). `humanize` strips the AI feel and keeps everything else (2). `review` scores it against the brand voice (2). `edit` replaces the text with what the user wrote (free). Any text change clears the old score. Stage and discard are the USER's decisions — act on their say-so, never on your own judgment. If the user's reaction should apply to every future draft (not just this one), use teach_content_voice instead.",
+        "Act on one draft in the user's queue. `stage` = the user approved it (mark ready to publish; publishing itself happens in the web tool). `discard` drops it. `revise` rewrites it in the brand voice per a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — and/or a typed instruction (2 credits). `fix` makes the surgical change the reviewer's notes asked for (2). `humanize` strips the AI feel and keeps everything else (2). `review` scores it against the brand voice (2). `edit` replaces the text with what you or the user wrote (free) — when you can write the better version yourself, prefer edit over revise. `plan` puts it on the calendar for planned_at (YYYY-MM-DD or ISO time; null unplans; free; a plan, not a schedule). `restore` brings back an earlier version by version_id from get_content_draft (free; its old score returns when the filing is unchanged). Every text change saves the previous text as a version, so any step can be undone with restore. Any text change clears the old score. A scheduled or live draft cannot be changed (error draft_locked) — tell the user to change it in their scheduler. Stage and discard are the USER's decisions — act on their say-so, never on your own judgment. If the user's reaction should apply to every future draft (not just this one), use teach_content_voice instead.",
       inputSchema: {
         space_id: z.string(),
         draft_id: z.string().describe("From get_content_queue or a write_content_candidates result."),
-        action: z.enum(["stage", "discard", "revise", "fix", "humanize", "review", "edit"]),
+        action: z.enum(["stage", "discard", "revise", "fix", "humanize", "review", "edit", "plan", "restore"]),
         preset: z.enum(api.REVISE_PRESETS).optional().describe("revise: the calibration chip the user clicked."),
         instruction: z.string().optional().describe("revise / fix / humanize: the user's note in their words."),
         text: z.string().optional().describe("edit: the replacement text."),
+        planned_at: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("plan: the day (YYYY-MM-DD) or ISO time to plan it for; null removes it from the calendar."),
+        version_id: z.string().optional().describe("restore: a version_id from get_content_draft."),
       },
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
@@ -373,6 +422,12 @@ export function registerContentStudioTools(server: McpServer): void {
         return errorResult(`revise needs a preset (${api.REVISE_PRESETS.join(", ")}) or an instruction.`);
       }
       if (args.action === "edit" && !args.text) return errorResult("edit needs `text`.");
+      if (args.action === "plan" && args.planned_at === undefined) {
+        return errorResult("plan needs `planned_at` (YYYY-MM-DD, an ISO time, or null to unplan).");
+      }
+      if (args.action === "restore" && !args.version_id) {
+        return errorResult("restore needs `version_id` — read the versions with get_content_draft.");
+      }
       try {
         const r = await api.actOnContentDraft(userId, {
           spaceId: args.space_id,
@@ -381,18 +436,21 @@ export function registerContentStudioTools(server: McpServer): void {
           preset: args.preset,
           instruction: args.instruction,
           text: args.text,
+          plannedAt: args.action === "plan" ? (args.planned_at ?? null) : undefined,
+          versionId: args.version_id,
         });
         return textResult({
           action: r.action,
           credits_charged: r.credits_charged,
           draft: r.draft,
           review_url: r.review_url,
+          ...(r.previous_version_saved !== undefined ? { previous_version_saved: r.previous_version_saved } : {}),
           note: r.note,
           user_note:
             r.action === "stage"
               ? "Approved. It is staged in the content tool; the user publishes from there (publishing from the connector is coming later)."
-              : r.action === "revise" || r.action === "fix" || r.action === "humanize"
-                ? "Show the user the new text and ask: keep it, nudge again, or approve?"
+              : r.action === "revise" || r.action === "fix" || r.action === "humanize" || r.action === "edit"
+                ? "Show the user the new text and ask: keep it, nudge again, go back (restore), or approve?"
                 : undefined,
         });
       } catch (error) {

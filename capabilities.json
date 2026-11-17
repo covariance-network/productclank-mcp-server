@@ -203,14 +203,21 @@
       "path": "/agents/content/queue",
       "mcp": "live",
       "tool": "get_content_queue",
-      "note": "Content Studio: the space's drafts with reviewer score/verdict/summary. Free."
+      "note": "Content Studio: the space's drafts with reviewer score/verdict/summary, media, schedule state; filters tag / platform / planned date. Free."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/content/drafts",
+      "mcp": "live",
+      "tool": "get_content_draft",
+      "note": "Content Studio: one draft with per-axis score breakdown and earlier versions (for restore). Free."
     },
     {
       "method": "PATCH",
       "path": "/agents/content/drafts",
       "mcp": "live",
       "tool": "revise_content_draft",
-      "note": "Content Studio: stage / discard / edit (free); revise (presets: shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal) / fix / humanize / review (2cr). Never publishes."
+      "note": "Content Studio: stage / discard / edit / plan / restore (free); revise (presets: shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal) / fix / humanize / review (2cr). Scheduled or live drafts are read-only. Never publishes."
     },
     {
       "method": "POST",
