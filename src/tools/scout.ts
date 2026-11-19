@@ -313,7 +313,7 @@ export function registerScoutTools(server: McpServer): void {
     {
       title: "Get my scout invite link",
       description:
-        "For approved scouts: their personal link to invite other scouts (https://www.productclank.com/scouts?invite=<code>), plus who joined through it and where each one is (building / pending / approved / declined; active = approved and has sent a deal reply). Free, read-only. Invited scouts are reviewed like everyone else. Someone they invite can also apply from their own assistant with apply_as_scout and the invite code.",
+        "For approved scouts: their personal link to invite other scouts (https://www.productclank.com/scouts?invite=<code>) and share_message, a ready-to-paste invite (the link, plus how to apply from Claude with their code). When the user wants to invite someone, give them share_message verbatim so they can paste it into a chat. Also returns who joined through it and where each one is (building / pending / approved / declined; active = approved and has sent a deal reply). Free, read-only. Invited scouts are reviewed like everyone else. Someone they invite can also apply from their own assistant with apply_as_scout and the invite code.",
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },

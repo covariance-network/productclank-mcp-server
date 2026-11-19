@@ -133,6 +133,8 @@ export interface ScoutInvitesResult {
   success: boolean;
   code: string;
   link: string;
+  /** Ready to paste into a friend's chat: the web link + how to apply from Claude with the code. */
+  share_message: string;
   counts: { total: number; pending: number; approved: number; active: number };
   invitees: { name: string | null; handle: string | null; status: string; active: boolean; invited_at: string }[];
   rule: string;

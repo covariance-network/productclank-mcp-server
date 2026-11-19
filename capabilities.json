@@ -683,7 +683,7 @@
       "path": "/agents/scout/invites",
       "mcp": "live",
       "tool": "get_scout_invite_link",
-      "note": "Approved scouts only. Free. Full profile only. Invite link (/scouts?invite=<code>) + invitees with review status and active flag."
+      "note": "Approved scouts only. Free. Full profile only. Invite link (/scouts?invite=<code>) + share_message (ready-to-paste invite) + invitees with review status and active flag."
     },
     {
       "method": "POST",
