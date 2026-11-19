@@ -18,7 +18,7 @@ src/
 │   ├── contentStudio.ts listContentSpaces, getContentWorkspace, setupContentWorkspace, list/add/update/remove/suggestContentTopics, writeContentCandidates, getContentQueue, actOnContentDraft, teachContentVoice
 │   ├── campaigns.ts    create/list/getCampaign, run/getResearch, generate/getPosts, reviewPosts, regenerateReplies, updateCampaign, getCampaignActivity, getCampaignResults, addDelegate
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
-│   ├── scout.ts        getScoutDeals, claimScoutDeal, releaseScoutDeal, reportScoutDealProgress, rateScoutDeal, getScoutEarnings
+│   ├── scout.ts        getScoutDeals, claimScoutDeal, releaseScoutDeal, reportScoutDealProgress, rateScoutDeal, getScoutEarnings, startScoutApplication, getScoutApplication, submitScoutApplication, getScoutInvites
 │   ├── aiCreators.ts   applyAiCreator, verifyAiCreator, getAiCreatorStatus
 │   ├── support.ts      reportIssue, getSupportTickets
 │   ├── quoteAuthority.ts getQuoteAuthority, suggestQuotePeople, findQuoteMoments, startQuoteDrafts, getQuoteDrafts
@@ -39,7 +39,7 @@ src/
     ├── participation.ts registerParticipationTools → find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings, join_space, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
     ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, get_growth_suggestions (full profile only)
     ├── quoteAuthority.ts registerQuoteAuthorityTools → get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post (full profile only)
-    ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings (full profile only)
+    ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings, apply_as_scout, get_scout_application, submit_scout_application, get_scout_invite_link (full profile only)
     ├── aiCreators.ts   registerAiCreatorTools     → apply_ai_creator, verify_ai_creator, get_ai_creator_status (every profile)
     ├── support.ts      registerSupportTools       → report_issue, get_support_status
     ├── playbook.ts     registerPlaybook           → grow_product + setup_content_space prompts + productclank://capabilities resource
@@ -116,6 +116,10 @@ src/
 | `report_deal_progress` | scout | `POST /agents/scout/deals/{dealId}/progress` | free |
 | `rate_deal` | scout | `POST /agents/scout/deals/{dealId}/rating` | free |
 | `get_scout_earnings` | scout | `GET /agents/scout/earnings` | free |
+| `get_scout_invite_link` | scout | `GET /agents/scout/invites` | free |
+| `apply_as_scout` | scout | `POST` + `GET /agents/scout/application` | free |
+| `get_scout_application` | scout | `GET /agents/scout/application` | free |
+| `submit_scout_application` | scout | `PUT /agents/scout/application` | free |
 | `report_issue` | support | `POST /agents/support` | free |
 | `get_support_status` | support | `GET /agents/support` | free |
 

@@ -89,8 +89,11 @@ const SCOUT_SECTION: Record<ToolProfile, string> = {
 | claim_deal (hold a deal 72h before posting) / release_deal | free |
 | report_deal_progress (sent + reply URL → Stars; then replied / call_booked / closed_won / lost) | free |
 | rate_deal / get_scout_earnings | free |
+| get_scout_invite_link (invite other scouts; see who joined) | free |
 
-A matched deal waits 12h for its scout, then opens to every scout. The user posts the reply from their own X account; you never post. Not a scout yet? They apply at https://www.productclank.com/scouts.`,
+A matched deal waits 12h for its scout, then opens to every scout. The user posts the reply from their own X account; you never post.
+
+**Not a scout yet?** Apply here, free: apply_as_scout (their X handle or LinkedIn, plus an invite code if they have one) → show the drafted profile and take edits → submit_scout_application. A person reviews every scout; deals start after approval. get_scout_application resumes an application.`,
   creator: "",
 };
 

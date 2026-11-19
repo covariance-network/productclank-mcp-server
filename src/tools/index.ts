@@ -76,7 +76,7 @@ export function registerTools(
   registerCampaignTools(server, profile); // create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity/results, update_campaign, set_campaign_schedule, add_delegate
   registerParticipationTools(server, profile); // find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings, join_space, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
   // Scout BD outreach — not commissioned content, so not in the creator profile.
-  if (profile !== "creator") registerScoutTools(server); // get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings
+  if (profile !== "creator") registerScoutTools(server); // scout deals + earnings, apply_as_scout / get_scout_application / submit_scout_application, get_scout_invite_link
   // Personal brand for the user — reply suggestions they post themselves, not commissioned content.
   if (profile !== "creator") registerGrowthAssistantTools(server); // setup_growth_assistant, get_growth_suggestions
   // Commissioned original content from openly-AI creators — every profile.
