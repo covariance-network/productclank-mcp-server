@@ -680,6 +680,34 @@
     },
     {
       "method": "GET",
+      "path": "/agents/scout/invites",
+      "mcp": "live",
+      "tool": "get_scout_invite_link",
+      "note": "Approved scouts only. Free. Full profile only. Invite link (/scouts?invite=<code>) + invitees with review status and active flag."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/scout/application",
+      "mcp": "live",
+      "tool": "apply_as_scout",
+      "note": "Anyone (no approval gate). Free; 3 builds/user/day. 202 researching (background, ~30-150s); the tool polls GET up to ~75s. Optional invite_code."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/scout/application",
+      "mcp": "live",
+      "tool": "get_scout_application",
+      "note": "Anyone. Free. Stage none/researching/draft/pending_review/approved/declined + drafted profile + next step."
+    },
+    {
+      "method": "PUT",
+      "path": "/agents/scout/application",
+      "mcp": "live",
+      "tool": "submit_scout_application",
+      "note": "Anyone with a draft. Free. Partial profile edits + boundaries (required first time) → pending_review; joins the onboarding space."
+    },
+    {
+      "method": "GET",
       "path": "/agents/participate/campaigns/{campaignId}/intro-leads",
       "mcp": "planned",
       "note": "Intro bounties: read the intros the user proposed on a campaign. Free. No tool yet; intro bounties run in the web app."

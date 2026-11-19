@@ -82,3 +82,62 @@ export function rateScoutDeal(
 export function getScoutEarnings(callerUserId: string): Promise<Record<string, unknown> & { success: boolean }> {
   return request(callerUserId, "/agents/scout/earnings", { method: "GET" });
 }
+
+/* ── Applying (anyone; no approved-scout gate) — /agents/scout/application ── */
+
+export type ScoutApplicationStage = "none" | "researching" | "draft" | "pending_review" | "approved" | "declined";
+
+export interface ScoutApplicationResult {
+  success: boolean;
+  stage: ScoutApplicationStage;
+  next_step: string;
+  invited_by: { name: string | null; handle: string | null } | null;
+  research_runs_left_today: number;
+  profile: Record<string, unknown> | null;
+  boundaries: { channels: string[]; dealsPerDay: number } | null;
+  boundary_options: { channels: string[]; dealsPerDay: number[] };
+  found: Record<string, unknown> | null;
+  submitted_at: string | null;
+  review: { status: string; reviewedAt: string | null } | null;
+  web_url: string;
+  first_submit?: boolean;
+}
+
+export interface StartScoutApplicationInput {
+  x_handle?: string;
+  linkedin_url?: string;
+  site_url?: string;
+  references?: string;
+  invite_code?: string;
+}
+
+export function startScoutApplication(
+  callerUserId: string,
+  input: StartScoutApplicationInput
+): Promise<{ success: boolean; stage: "researching"; invite_accepted: boolean; next_step: string }> {
+  return request(callerUserId, "/agents/scout/application", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function getScoutApplication(callerUserId: string): Promise<ScoutApplicationResult> {
+  return request(callerUserId, "/agents/scout/application", { method: "GET" });
+}
+
+export function submitScoutApplication(
+  callerUserId: string,
+  input: { profile?: Record<string, unknown>; boundaries?: { channels: string[]; dealsPerDay: number } }
+): Promise<ScoutApplicationResult> {
+  return request(callerUserId, "/agents/scout/application", { method: "PUT", body: JSON.stringify(input) });
+}
+
+export interface ScoutInvitesResult {
+  success: boolean;
+  code: string;
+  link: string;
+  counts: { total: number; pending: number; approved: number; active: number };
+  invitees: { name: string | null; handle: string | null; status: string; active: boolean; invited_at: string }[];
+  rule: string;
+}
+
+export function getScoutInvites(callerUserId: string): Promise<ScoutInvitesResult> {
+  return request(callerUserId, "/agents/scout/invites", { method: "GET" });
+}
