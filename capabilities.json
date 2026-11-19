@@ -704,7 +704,7 @@
       "path": "/agents/scout/application",
       "mcp": "live",
       "tool": "submit_scout_application",
-      "note": "Anyone with a draft. Free. Partial profile edits + boundaries (required first time) → pending_review; joins the onboarding space."
+      "note": "Anyone with a draft. Free. Partial profile edits + boundaries (required first time) → pending_review. Approval (not submit) adds the scout to the squad."
     },
     {
       "method": "GET",

@@ -279,7 +279,7 @@ export function registerScoutTools(server: McpServer): void {
     {
       title: "Submit my scout application",
       description:
-        "Submit the drafted scout profile for ProductClank's review, with the user's edits. Free. Only call it after the user has seen the draft and said it is right. profile = only the fields they changed. boundaries = how they want to work: channels (public_replies, dms, intros) and dealsPerDay (1, 3 or 5); required the first time. After it, tell the user a person reviews every scout and deals start once approved; they also joined the scouts' community space (Amplify HQ) where they can earn while they wait.",
+        "Submit the drafted scout profile for ProductClank's review, with the user's edits. Free. Only call it after the user has seen the draft and said it is right. profile = only the fields they changed. boundaries = how they want to work: channels (public_replies, dms, intros) and dealsPerDay (1, 3 or 5); required the first time. After it, tell the user a person reviews every scout; on approval they join the ProductClank Scouts squad and their deals start.",
       inputSchema: {
         profile: profileEdits,
         boundaries: z
