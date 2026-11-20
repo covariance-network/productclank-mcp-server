@@ -67,6 +67,12 @@ Combine plays when the budget allows. Before every paid call, tell the user what
 Before every paid call, tell the user what it costs in credits and dollars and get a yes.`,
 };
 
+// Field test (2026-11-20, shared Claude chat): a new person sent "Apply me as a
+// ProductClank scout" and the model web-searched them, hit LinkedIn's block and
+// drafted a profile by hand. People who want to EARN must not fall into the
+// builder diagnosis above. Scout tools are only in the full profile.
+const SCOUTS = `People who want to earn as a ProductClank scout (they say "apply me as a scout", "become a scout", or give a scout invite code like ERAN-7K2Q) are not founders: skip the growth questions above. Ask for their X handle or LinkedIn URL, then call apply_as_scout (pass invite_code if they have one). The tool reads their public profiles and drafts the profile itself — never research them on the web or draft a profile by hand. Show the draft, take their edits, then submit_scout_application. Call get_scout_application first if they may have applied before. Approved scouts: get_scout_deals for today's deals, get_scout_invite_link to invite others.`;
+
 export function serverInstructions(profile: ToolProfile): string {
   return `ProductClank grows products through their community: real people reply to, share and create content about the product from their own accounts.
 
@@ -77,6 +83,6 @@ ${DIAGNOSE[profile]}
 ${PLAYS[profile]}
 
 ${BUDGET}
-
+${profile === "creator" ? "" : `\n${SCOUTS}\n`}
 Stuck or a tool fails without a clear reason? Call report_issue (free) instead of retrying.`;
 }
