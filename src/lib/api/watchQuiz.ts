@@ -72,7 +72,7 @@ export interface WatchQuizResults {
 
 export function createWatchQuiz(
   callerUserId: string,
-  body: WatchQuizInput & { video_url: string; product_id?: string }
+  body: WatchQuizInput & { video_url: string; product_id?: string; space_id?: string }
 ): Promise<CreateWatchQuizResult> {
   return request(callerUserId, "/agents/campaigns/watch-quiz", { method: "POST", body: JSON.stringify(body) });
 }

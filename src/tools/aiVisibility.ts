@@ -31,10 +31,11 @@ export function registerAiVisibilityTools(server: McpServer): void {
         days: z.number().int().min(1).max(14).optional().describe("How long the panel has to ask (default 4)."),
         max_participants: z.number().int().min(1).max(200).optional().describe("Panel size: people who may submit an answer (default 40)."),
         dry_run: z.boolean().optional().describe("true = return the brief and the price, create nothing, charge nothing. Do this first."),
+        space_id: z.string().optional().describe("Optional — run it MEMBERS-ONLY in this space (id from list_spaces): only that space's members see and do it, they earn Stars, nothing reaches the public network. Ask the user \"public network or only <space>'s members?\" when list_spaces shows a space. Omit for the public network."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    async ({ product_id, questions, models, days, max_participants, dry_run }, extra) => {
+    async ({ product_id, questions, models, days, max_participants, dry_run, space_id }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -45,6 +46,7 @@ export function registerAiVisibilityTools(server: McpServer): void {
           ...(days !== undefined ? { days } : {}),
           ...(max_participants !== undefined ? { max_participants } : {}),
           ...(dry_run !== undefined ? { dry_run } : {}),
+          ...(space_id ? { space_id } : {}),
         });
         if (r.dry_run) {
           return textResult({

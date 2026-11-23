@@ -18,6 +18,8 @@ export interface AiVisibilityCheckInput {
   /** Panel size, 1–200, default 40. */
   max_participants?: number;
   dry_run?: boolean;
+  /** Members-only in this space (from listCampaignSpaces). Omit = the public network. */
+  space_id?: string;
 }
 
 export interface AiVisibilityCampaign {

@@ -81,6 +81,7 @@ export function registerTikTokCampaignTools(server: McpServer): void {
         post_text: z.string().optional().describe("Optional — the video caption, if known. Skips the wait on a TikTok posted under a minute ago."),
         spread_over_hours: z.number().int().min(2).max(72).optional().describe("Optional — pace each boost over this many hours instead of all at once. Same price."),
         product_id: z.string().optional().describe("Optional product UUID (from search_products) to tailor the replies and name the quiz."),
+        space_id: z.string().optional().describe("Optional — run it MEMBERS-ONLY in this space (id from list_spaces): only that space's members see and do it, they earn Stars, nothing reaches the public network. Ask the user \"public network or only <space>'s members?\" when list_spaces shows a space. Omit for the public network."),
         confirmed: z.boolean().optional().describe("Set true only after the user approved the plan and its credit totals. Omit to get the free plan."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
@@ -181,6 +182,7 @@ export function registerTikTokCampaignTools(server: McpServer): void {
               postText: args.post_text,
               spreadOverHours: args.spread_over_hours,
               watchQuiz: withQuiz,
+              spaceId: args.space_id,
             });
             if (withQuiz) quizAttached = true;
             results.push({
@@ -201,7 +203,12 @@ export function registerTikTokCampaignTools(server: McpServer): void {
         let quizOnly: Record<string, unknown> | undefined;
         if (quiz && !quizAttached) {
           try {
-            const q = await api.createWatchQuiz(userId, { video_url: args.video_url, ...quiz, ...(args.product_id ? { product_id: args.product_id } : {}) });
+            const q = await api.createWatchQuiz(userId, {
+              video_url: args.video_url,
+              ...quiz,
+              ...(args.product_id ? { product_id: args.product_id } : {}),
+              ...(args.space_id ? { space_id: args.space_id } : {}),
+            });
             quizOnly = { ok: true, quiz_url: q.campaign.public_url, ends_at: q.campaign.ends_at, max_credits: q.watch_quiz.max_credits };
           } catch (error) {
             quizOnly = { ok: false, error: errorText(error) };

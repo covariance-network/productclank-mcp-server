@@ -21,6 +21,8 @@ export interface BoostParams {
   spreadOverHours?: number;
   /** "Watch & answer" on a TikTok / YouTube / Instagram Reel: a linked 24h watch quiz. */
   watchQuiz?: WatchQuizInput;
+  /** Members-only in this space (from listCampaignSpaces). Omit = the public network. */
+  spaceId?: string;
 }
 
 export interface BoostResult {
@@ -31,9 +33,14 @@ export interface BoostResult {
     platform: string;
     action_type: string;
     is_reboost: boolean;
+    /** "community" = members-only in space_id; "public" = the network. */
+    reach?: "community" | "public";
+    space_id?: string | null;
     url: string;
     admin_url: string;
   };
+  /** A space boost sized down to the space's member count (one slot per member). */
+  capped_to_members?: { count: number; message: string };
   post: { url: string; author: string; platform: string; text: string };
   items_generated: number;
   items_expected?: number;
@@ -65,6 +72,7 @@ export function boostPost(params: BoostParams): Promise<BoostResult> {
         ? { spread_over_hours: params.spreadOverHours }
         : {}),
       ...(params.watchQuiz ? { watch_quiz: params.watchQuiz } : {}),
+      ...(params.spaceId ? { space_id: params.spaceId } : {}),
     }),
   });
 }

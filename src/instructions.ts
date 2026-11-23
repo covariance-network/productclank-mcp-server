@@ -50,21 +50,29 @@ const BUDGET = `Turning a budget into a plan:
 - Show the plan as a short list: play, size, what it does, credits and dollars, then the reserve.
 - Where a play has "expect", use its summary to say what the user can expect (typical ranges from recent public campaigns). Present it as typical, never as a promise. A play without "expect" has no figures — do not invent any, and never quote results for private campaigns: those depend on the user.`;
 
+// Field test (2026-11-23): a user asked for a boost "in my Algarve space"; boost_post
+// had no space option, so the model picked create_action_campaign (the only tool
+// with space_id) and its one-task-per-place rule refused all ten tasks. Every
+// create tool now takes space_id; the model must ask where a campaign runs.
+const WHERE_IT_RUNS = `Where a campaign runs: before creating ANY campaign, call list_spaces (free). If the user has a space, ask "the public network, or only <space name>'s members?" — a campaign cannot move between the two later. For members-only, pass the space's id as space_id (create_campaign: space_id + members_only: true). Members earn Stars; nothing reaches the public network. A space with 0 members cannot run a campaign yet.`;
+
 const PLAYS: Record<ToolProfile, string> = {
   full: `Pick the play from the user's goal:
-- A launch or announcement post needs reach → boost_post on 1–2 anchor posts. Any count works: one reply, three quote posts, ten reposts.
+- A launch or announcement post needs reach → boost_post on 1–2 anchor posts. Any count works: one reply, three quote posts, ten reposts. Several people replying to, quoting or reposting ONE post is ALWAYS boost_post — never an action campaign (it allows one task per place and would refuse the rest).
 - Be in the conversations where buyers already talk → create_campaign (discovery). On LinkedIn and Reddit, run it private and have the user (or their team) post the drafts — that gets the best results there. Turn on set_campaign_schedule only once drafts are actually being posted.
 - "What does ChatGPT / Claude say about my product?" → create_ai_visibility_check (dry_run first; one flat fee, the report is free) → get_ai_visibility_results → generate_ai_visibility_report once it ends.
 - A video needs to be watched to the end → create_watch_quiz. A TikTok needing replies, likes and a quiz in one ask → launch_tiktok_campaign.
 - Creators making original content about the product → suggest_content_campaign (free dry-run) → create_content_campaign → set_content_bounty. Creators are paid from a cash bounty the user deposits (they pay it at the fund_url the tool returns), so budget the launch fee plus the pool.
 - The founder's own personal brand → setup_growth_assistant (a small dollar subscription with a free first run; price in pricing.subscriptions). The cheapest standing play for a solo founder.
 - The brand's own posts → the setup_content_space prompt.
-Combine plays when the budget allows. Before every paid call, tell the user what it costs in credits and dollars and get a yes.`,
+Combine plays when the budget allows. Before every paid call, tell the user what it costs in credits and dollars and get a yes.
+${WHERE_IT_RUNS}`,
   creator: `Pick the play from the user's goal:
 - Be in the conversations where buyers already talk → create_campaign (discovery); creators write their own replies from their own accounts. On LinkedIn and Reddit, run it private and have the user (or their team) post the drafts — that gets the best results there.
 - Creators making original content about the product → suggest_content_campaign (free dry-run) → create_content_campaign → set_content_bounty. Creators are paid from a cash bounty the user deposits (they pay it at the fund_url the tool returns), so budget the launch fee plus the pool.
 - The brand's own posts → the setup_content_space prompt.
-Before every paid call, tell the user what it costs in credits and dollars and get a yes.`,
+Before every paid call, tell the user what it costs in credits and dollars and get a yes.
+${WHERE_IT_RUNS}`,
 };
 
 // Field test (2026-11-20, shared Claude chat): a new person sent "Apply me as a

@@ -53,10 +53,11 @@ export function registerWatchQuizTools(server: McpServer): void {
         duration_sec: quizDurationSchema,
         max_answers: quizMaxAnswersSchema,
         product_id: z.string().optional().describe("Optional product UUID (from search_products) to name the quiz after."),
+        space_id: z.string().optional().describe("Optional — run it MEMBERS-ONLY in this space (id from list_spaces): only that space's members see and do it, they earn Stars, nothing reaches the public network. Ask the user \"public network or only <space>'s members?\" when list_spaces shows a space. Omit for the public network."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    async ({ video_url, questions, duration_sec, max_answers, product_id }, extra) => {
+    async ({ video_url, questions, duration_sec, max_answers, product_id, space_id }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -66,6 +67,7 @@ export function registerWatchQuizTools(server: McpServer): void {
           ...(duration_sec !== undefined ? { duration_sec } : {}),
           ...(max_answers !== undefined ? { max_answers } : {}),
           ...(product_id ? { product_id } : {}),
+          ...(space_id ? { space_id } : {}),
         });
         return textResult({
           quiz_id: r.campaign.id,

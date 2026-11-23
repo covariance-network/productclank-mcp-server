@@ -23,3 +23,4 @@ export * from "./watchQuiz.js";
 export * from "./aiVisibility.js";
 export * from "./aiCreators.js";
 export * from "./actionTasks.js";
+export * from "./spaces.js";
