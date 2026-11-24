@@ -16,6 +16,23 @@ export interface FeedReply {
   actionType: string;
   /** Only on the user's own live hold (ISO). */
   heldUntil?: string;
+  /** ProductClank page that opens the claim dialog for this draft. */
+  appUrl?: string;
+  /** What this draft pays the user (null = not known right now). Absent on an older backend. */
+  reward?: FeedReward | null;
+}
+
+export interface FeedReward {
+  /** Stars inside the space (0 on the public network). */
+  stars: number;
+  /** Public leaderboard points (0 inside a space). */
+  points: number;
+  /** $PRO per accepted claim; 0 = none. */
+  pro: number;
+  /** Why the user earns nothing here; null when the reward applies. */
+  withheld: "owner_self_claim" | "unfunded_campaign" | "peer_funded" | null;
+  /** One short line to show the user, e.g. "2 Stars". */
+  label: string;
 }
 
 export interface FeedPost {
@@ -28,7 +45,11 @@ export interface FeedPost {
     productId: string | null;
     /** Set only for a campaign inside a private space the user is a member of. */
     space?: { id: string; name: string } | null;
+    /** When the campaign stops taking claims (ISO); null = no end date. */
+    endsAt?: string | null;
   } | null;
+  /** ProductClank page to take this opportunity — share this, never tweetUrl. */
+  appUrl?: string;
   platform: string | null;
   tweetId: string | null;
   tweetUrl: string | null;
