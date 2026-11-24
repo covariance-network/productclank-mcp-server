@@ -43,6 +43,12 @@ export interface ContentCandidateInput {
   platform?: string;
   /** Content template, e.g. "Build-in-Public", "Proof Point". */
   template?: string;
+  /** Labels for this one post (merged with the call-level tags). */
+  tags?: string[];
+  /** Media in ProductClank's own Supabase public storage only. */
+  image_url?: string;
+  video_url?: string;
+  hls_url?: string;
 }
 
 export interface WriteContentCandidatesParams {
@@ -52,6 +58,10 @@ export interface WriteContentCandidatesParams {
   spaceId: string;
   /** 1–25 draft candidates. */
   candidates: ContentCandidateInput[];
+  /** Labels stamped on every candidate, e.g. a series name. */
+  tags?: string[];
+  /** "skill" when an operator's own Claude skill wrote the batch. */
+  source?: "agent" | "skill";
 }
 
 export interface WriteContentCandidatesResult {
@@ -73,6 +83,8 @@ export function writeContentCandidates(
     body: JSON.stringify({
       space_id: params.spaceId,
       candidates: params.candidates,
+      ...(params.tags?.length ? { tags: params.tags } : {}),
+      ...(params.source ? { source: params.source } : {}),
     }),
   });
 }
@@ -291,6 +303,8 @@ export interface ContentQueueResult {
   filters?: { tag: string | null; platform: string | null; planned_from: string | null; planned_to: string | null };
   review_threshold: number;
   counts: { pending: number; reviewed: number; staged: number; scheduled?: number; discarded: number };
+  /** The space's tag vocabulary, most-used first. */
+  tags_in_use?: { tag: string; count: number }[];
   drafts: ContentDraftShape[];
   review_url: string;
   note?: string;
@@ -345,6 +359,7 @@ export function getContentDraft(
 }
 
 export type ContentDraftAction =
+  | "tag"
   | "edit"
   | "revise"
   | "fix"
@@ -390,6 +405,10 @@ export function actOnContentDraft(
     /** plan: ISO date/datetime; null unplans. undefined = not sent. */
     plannedAt?: string | null;
     versionId?: string;
+    /** tag: the full list (replaces). */
+    tags?: string[];
+    addTags?: string[];
+    removeTags?: string[];
   }
 ): Promise<ContentDraftActionResult> {
   return request(userId, "/agents/content/drafts", {
@@ -403,6 +422,9 @@ export function actOnContentDraft(
       instruction: p.instruction,
       ...(p.plannedAt !== undefined ? { planned_at: p.plannedAt } : {}),
       version_id: p.versionId,
+      tags: p.tags,
+      add_tags: p.addTags,
+      remove_tags: p.removeTags,
     }),
   });
 }
