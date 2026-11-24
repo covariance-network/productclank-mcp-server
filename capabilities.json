@@ -137,6 +137,13 @@
     },
     {
       "method": "GET",
+      "path": "/agents/spaces",
+      "mcp": "live",
+      "tool": "list_spaces",
+      "note": "Spaces the acting user can run a members-only campaign in, with member counts. Feeds space_id on every campaign create tool. Free."
+    },
+    {
+      "method": "GET",
       "path": "/agents/content/spaces",
       "mcp": "live",
       "tool": "list_content_spaces",

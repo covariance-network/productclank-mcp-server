@@ -85,6 +85,12 @@ export function registerBoostTools(server: McpServer): void {
           .describe(
             "Optional 'Watch & answer' on a TikTok / YouTube / Instagram Reel video: a linked 24h watch quiz. Billed 100 credits per correct answer (default cap 20 = 2,000 credits), separate from credits_used. Get the questions and answers from the user, or from suggest_quiz_questions."
           ),
+        space_id: z
+          .string()
+          .optional()
+          .describe(
+            "Optional — run the boost MEMBERS-ONLY in this space (id from list_spaces): only its members see and take the slots, they earn Stars, and the space is pinged; nothing reaches the public network. `count` is capped at the space's member count (one slot per member) and billed for that size — the result says so in capped_to_members. Ask the user \"public network or only <space>'s members?\" when list_spaces shows a space. Omit for the public network."
+          ),
       },
       annotations: {
         readOnlyHint: false,
@@ -95,7 +101,7 @@ export function registerBoostTools(server: McpServer): void {
         openWorldHint: true,
       },
     },
-    async ({ post_url, product_id, action_type, reply_guidelines, count, post_text, spread_over_hours, watch_quiz }, extra) => {
+    async ({ post_url, product_id, action_type, reply_guidelines, count, post_text, spread_over_hours, watch_quiz, space_id }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -109,6 +115,7 @@ export function registerBoostTools(server: McpServer): void {
           postText: post_text,
           spreadOverHours: spread_over_hours,
           watchQuiz: watch_quiz,
+          spaceId: space_id,
         });
         return textResult({
           campaign_url: result.campaign.url,
@@ -120,6 +127,8 @@ export function registerBoostTools(server: McpServer): void {
           credits_used: result.credits.credits_used,
           credits_remaining: result.credits.credits_remaining,
           is_reboost: result.campaign.is_reboost,
+          reach: result.campaign.space_id ? "space members only" : "public network",
+          ...(result.capped_to_members && { capped_to_members: result.capped_to_members }),
           ...(result.delivery?.mode === "paced" && { delivery: result.delivery }),
           ...(result.watch_quiz && { watch_quiz: result.watch_quiz }),
           ...bookmarksTip(result.campaign.platform, result.campaign.action_type),

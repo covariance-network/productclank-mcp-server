@@ -35,7 +35,7 @@ src/
     ├── aiVisibility.ts registerAiVisibilityTools   → create_ai_visibility_check, get_ai_visibility_results, generate_ai_visibility_report (full profile only)
     ├── content.ts      registerContentTools       → suggest_content_campaign, create_content_campaign
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, get_content_draft, revise_content_draft, teach_content_voice
-    ├── campaigns.ts    registerCampaignTools      → create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
+    ├── campaigns.ts    registerCampaignTools      → list_spaces, create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings, join_space, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
     ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, get_growth_suggestions (full profile only)
     ├── quoteAuthority.ts registerQuoteAuthorityTools → get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post (full profile only)
@@ -81,7 +81,8 @@ src/
 | `get_content_draft` | contentStudio | `GET /agents/content/drafts` | free |
 | `revise_content_draft` | contentStudio | `PATCH /agents/content/drafts` | free / 2 cr |
 | `teach_content_voice` | contentStudio | `POST /agents/content/feedback` | 1 cr |
-| `create_campaign` | campaigns | `POST /agents/campaigns` | 10 cr |
+| `list_spaces` | campaigns | `GET /agents/spaces` | free |
+| `create_campaign` | campaigns | `POST /agents/campaigns` (`space_id` + `members_only` = members-only in a space) | 10 cr |
 | `list_campaigns` / `get_campaign` / `get_posts` | campaigns | `GET /agents/campaigns{,/{id},/{id}/posts}` | free |
 | `run_research` / `get_research` | campaigns | `POST/GET /agents/campaigns/{id}/research` | free |
 | `generate_posts` | campaigns | `POST /agents/campaigns/{id}/generate-posts` | 12 cr/post |

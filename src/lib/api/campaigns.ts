@@ -57,6 +57,9 @@ export interface CreateCampaignParams {
   targetYoutubeChannels?: string[];
   /** Amplify space to file the campaign under (`owner_space_id`). Omit = the user's oldest space. */
   ownerSpaceId?: string;
+  /** AUDIENCE: run members-only in this space (`space_id`) — Stars, never the
+   *  public network. Not the same as ownerSpaceId (filing only). */
+  spaceId?: string;
 }
 
 /**
@@ -150,7 +153,11 @@ export function createCampaign(params: CreateCampaignParams): Promise<{
       ...(params.targetYoutubeChannels
         ? { target_youtube_channels: params.targetYoutubeChannels }
         : {}),
-      ...(params.ownerSpaceId ? { owner_space_id: params.ownerSpaceId } : {}),
+      ...(params.spaceId
+        ? { space_id: params.spaceId }
+        : params.ownerSpaceId
+          ? { owner_space_id: params.ownerSpaceId }
+          : {}),
     }),
   });
 }

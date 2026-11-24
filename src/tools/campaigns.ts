@@ -217,6 +217,33 @@ export function registerCampaignTools(
   const campaignKinds = profile === "creator" ? "discovery" : "discovery/boost";
 
   server.registerTool(
+    "list_spaces",
+    {
+      title: "List the spaces a campaign can run in",
+      description:
+        "The user's spaces (communities) where a campaign can run MEMBERS-ONLY: spaces they own, may create campaigns in, or run as a delegate, with each space's member count. Free. Call it BEFORE creating any campaign (boost_post, create_campaign, create_content_campaign, create_action_campaign, create_watch_quiz, create_ai_visibility_check, launch_tiktok_campaign): if it lists a space, ask the user \"public network, or only <space name>'s members?\" — a campaign cannot move between the two after it is created. A space with member_count 0 cannot run a campaign yet. Then pass the chosen id as space_id (on create_campaign: space_id + members_only: true).",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    },
+    async (_args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const result = await api.listCampaignSpaces(userId);
+        return textResult({
+          spaces: result.spaces,
+          next_step:
+            result.spaces.length > 0
+              ? "Ask the user where this campaign should run: the public network (omit space_id) or one of these spaces (members only, they earn Stars). Pass the chosen id as space_id."
+              : "The user has no space: campaigns run on the public network (omit space_id).",
+        });
+      } catch (error) {
+        return toolError(error, "Listing spaces failed");
+      }
+    }
+  );
+
+  server.registerTool(
     "analyze_url",
     {
       title: "Derive a campaign brief from a product URL",
@@ -276,7 +303,7 @@ export function registerCampaignTools(
     {
       title: "Create a discovery campaign",
       description:
-        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies for them. BEFORE calling: the keywords and search_context are YOURS to derive, and deriving them well is most of the campaign's quality — actually fetch and read the product's website (and any docs or pages the user pointed at), work out who the audience is and the phrases they use when they have the problem the product solves, and build keywords + search_context from that. Do it in this conversation, for free — it is not billed, and you can iterate with the user before anything is spent. If you cannot browse the web from this client, SAY SO to the user and build from what they tell you instead — never silently guess from the product's name alone. Credits pay only for what you cannot do here: scraping the platforms, real community members posting, and proof verification. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. On X, also ask what the replies are for (reply_approach): awareness (the product and its site in the thread) or sales (flag each post to the brand/founder as a lead, tagging the accounts they choose in reply_tag_accounts). Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. When the user works in a specific brand space (an agency running several brands, or a space setup_content_space just made), pass that space as space_id so the campaign shows under it in their dashboard — omitted, it lands in their oldest space. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
+        "Create a Communiply discovery campaign: it continuously finds relevant social posts (by keyword) and drafts replies for them. BEFORE calling: the keywords and search_context are YOURS to derive, and deriving them well is most of the campaign's quality — actually fetch and read the product's website (and any docs or pages the user pointed at), work out who the audience is and the phrases they use when they have the problem the product solves, and build keywords + search_context from that. Do it in this conversation, for free — it is not billed, and you can iterate with the user before anything is spent. If you cannot browse the web from this client, SAY SO to the user and build from what they tell you instead — never silently guess from the product's name alone. Credits pay only for what you cannot do here: scraping the platforms, real community members posting, and proof verification. Costs 10 credits to create; discovering posts is billed separately via generate_posts (12 credits/post). Needs a product_id (search_products / create_product). Two ways to run it, and the user picks: PRIVATE (the default here) keeps drafts in their workbench to review and post themselves — reversible, no further cost; PUBLIC puts the drafts in the ProductClank earn feed so community members post them from their own accounts — that is the reach the platform exists for, and each network-posted reply bills the user extra credits. Default to private when the user has not said, and relay the decision_offer in the result so they can choose. On X, also ask what the replies are for (reply_approach): awareness (the product and its site in the thread) or sales (flag each post to the brand/founder as a lead, tagging the accounts they choose in reply_tag_accounts). Pick the `platform` the product's audience actually talks on — X (default), LinkedIn, Reddit or YouTube — and for Reddit/YouTube narrow it with target_subreddits / target_youtube_channels. space_id has two uses: (1) with members_only: true the campaign runs MEMBERS-ONLY in that space (from list_spaces) — drafts go only to its members, who earn Stars; nothing reaches the public network, and visibility / post_visibility do not apply; (2) without members_only it only FILES the campaign under that brand space in the dashboard (an agency running several brands, or a space setup_content_space just made) and the audience is still set by visibility — omitted, it lands in their oldest space. Ask the user \"public network or only <space>'s members?\" when list_spaces shows a space. Topic research auto-runs in the background at create (~30s); read it with get_research before spending on generate_posts. Confirm the credit cost with the user before calling.",
       inputSchema: {
         product_id: z.string().describe("Product UUID (from search_products or create_product)"),
         title: z.string().describe("Campaign title, e.g. 'Grow Acme — AI devtools conversations'"),
@@ -354,7 +381,13 @@ export function registerCampaignTools(
           .string()
           .optional()
           .describe(
-            "The brand space to file this campaign under (from list_content_spaces, or the space_id setup_content_space returned) — the space the user's dashboard shows it in. Not an audience: who sees the drafts is still `visibility`. The user must be able to create campaigns in that space, or the call is rejected. Omit and it lands in the user's oldest space."
+            "A space id (from list_spaces / list_content_spaces, or the space_id setup_content_space returned). With members_only: true the campaign runs members-only there. Without it, it only FILES the campaign under that space in the dashboard; who sees the drafts is still `visibility`. The user must be able to create campaigns in that space, or the call is rejected. Omit and it lands in the user's oldest space."
+          ),
+        members_only: z
+          .boolean()
+          .optional()
+          .describe(
+            "true = run the campaign MEMBERS-ONLY in space_id: drafts reach only that space's members (Stars), never the public network; visibility / post_visibility are ignored and there is no held mode (drafts reach members as soon as generate_posts makes them). Requires space_id. Default false."
           ),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
@@ -362,6 +395,10 @@ export function registerCampaignTools(
     async (args, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
+      if (args.members_only && !args.space_id) {
+        return errorResult("members_only needs space_id — call list_spaces and ask the user which space.");
+      }
+      const membersOnly = args.members_only === true;
       try {
         const result = await api.createCampaign({
           callerUserId: userId,
@@ -380,8 +417,23 @@ export function registerCampaignTools(
           platform: args.platform,
           targetSubreddits: args.target_subreddits,
           targetYoutubeChannels: args.target_youtube_channels,
-          ownerSpaceId: args.space_id,
+          ...(membersOnly ? { spaceId: args.space_id } : { ownerSpaceId: args.space_id }),
         });
+        if (membersOnly) {
+          return textResult({
+            campaign: result.campaign,
+            credits: result.credits,
+            reach: "space members only",
+            platform: args.platform ?? "twitter",
+            ...(result.platform_note ? { platform_note: result.platform_note } : {}),
+            ...(result.targeting_notes ? { targeting_notes: result.targeting_notes } : {}),
+            ...(result.warnings?.length ? { warnings: result.warnings } : {}),
+            next_step:
+              "Topic research is computing in the background (~30s). Call get_research, then generate_posts when the user is ready — drafts go to the space's members as soon as they exist.",
+            user_note:
+              "This campaign runs ONLY for the space's members: they see the drafted replies, post them from their own accounts and earn Stars. Nothing reaches the public network.",
+          });
+        }
         const isPublic = (args.visibility ?? "private") === "public";
         const evidence = await getNetworkEvidence();
         return textResult({
