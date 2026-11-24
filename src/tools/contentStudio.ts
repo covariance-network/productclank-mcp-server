@@ -41,7 +41,14 @@ const candidateSchema = z.object({
     .describe(
       'Content template, e.g. "Build-in-Public" or "Proof Point". Defaults to Build-in-Public.'
     ),
+  tags: z
+    .array(z.string())
+    .optional()
+    .describe("Labels for this one post, added to the call-level tags."),
 });
+
+const TAG_GUIDANCE =
+  "Tags are the user's labels in the web Queue's tag filter (e.g. a series or campaign week). Read tags_in_use from get_content_queue first and REUSE an existing tag when the posts belong to it; only make a new one for a genuinely new series, and use one clear, human name for it (e.g. \"Communities week\", not \"communities-week-2026-series\"). Spelling is matched case-insensitively to the existing tag.";
 
 const topicInputSchema = z.object({
   label: z.string().describe("The theme, e.g. 'Why distribution beats building'."),
@@ -110,7 +117,7 @@ export function registerContentStudioTools(server: McpServer): void {
     {
       title: "Draft content candidates",
       description:
-        "Draft one or more posts into a ProductClank content space. FREE. Call get_content_workspace FIRST and write in that brand's voice, post types and topics — the drafts are scored against exactly that voice by the reviewer a moment after they land, and the scores show in get_content_queue. `platform` must be one of the space's platforms (omit it to use the first). Candidates land in the user's 'All Content' queue for approval; nothing is auto-published. Up to 25 per call. This drafts into the user's OWN content pipeline — it is NOT a community content campaign (use create_content_campaign for that).",
+        "Draft one or more posts into a ProductClank content space. FREE. Call get_content_workspace FIRST and write in that brand's voice, post types and topics — the drafts are scored against exactly that voice by the reviewer a moment after they land, and the scores show in get_content_queue. `platform` must be one of the space's platforms (omit it to use the first). Candidates land in the user's 'All Content' queue for approval; nothing is auto-published. Up to 25 per call. This drafts into the user's OWN content pipeline — it is NOT a community content campaign (use create_content_campaign for that). When the posts form a series, pass the series name in `tags` so every post carries it. " + TAG_GUIDANCE,
       inputSchema: {
         space_id: z.string().describe("Target content space UUID from list_content_spaces."),
         candidates: z
@@ -118,10 +125,15 @@ export function registerContentStudioTools(server: McpServer): void {
           .min(1)
           .max(MAX_CANDIDATES)
           .describe(`1–${MAX_CANDIDATES} draft candidates to write.`),
+        tags: z
+          .array(z.string())
+          .max(20)
+          .optional()
+          .describe("Labels stamped on EVERY candidate in this call — e.g. the series name. Max 20, 40 chars each."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ space_id, candidates }, extra) => {
+    async ({ space_id, candidates, tags }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -129,9 +141,11 @@ export function registerContentStudioTools(server: McpServer): void {
           callerUserId: userId,
           spaceId: space_id,
           candidates,
+          tags,
         });
         return textResult({
           created: result.created,
+          ...(tags?.length ? { tags } : {}),
           draft_ids: result.draft_ids,
           space_id: result.space_id,
           review_url: result.review_url,
@@ -322,11 +336,11 @@ export function registerContentStudioTools(server: McpServer): void {
     {
       title: "Read the content queue with scores",
       description:
-        "The space's drafts as the user sees them: text, platform, status, tags, planned date, media (image/video), the post it quotes, schedule state, and the reviewer's score / verdict / one-line fix. FREE. Use it to present drafts one by one, to read back how drafts scored, and to pull a slice of the content plan: filter by tag (e.g. a campaign week), platform, or planned date window (planned_from / planned_to, YYYY-MM-DD; orders by planned date). status: active (default — pending + reviewed + staged), pending, reviewed, staged (approved, awaiting publish), scheduled (already in the user's scheduler — read-only), discarded, all (everything but discarded). counts are space-wide totals. Call get_content_draft for one draft's per-axis score and earlier versions.",
+        "The space's drafts as the user sees them: text, platform, status, tags, planned date, media (image/video), the post it quotes, schedule state, and the reviewer's score / verdict / one-line fix. FREE. Use it to present drafts one by one, to read back how drafts scored, and to pull a slice of the content plan: filter by tag (e.g. a campaign week), platform, or planned date window (planned_from / planned_to, YYYY-MM-DD; orders by planned date). status: active (default — pending + reviewed + staged), pending, reviewed, staged (approved, awaiting publish), scheduled (already in the user's scheduler — read-only), discarded, all (everything but discarded). counts are space-wide totals. tags_in_use lists every tag the space uses (most-used first) — check it before tagging a series. Call get_content_draft for one draft's per-axis score and earlier versions.",
       inputSchema: {
         space_id: z.string(),
         status: z.enum(["active", "pending", "reviewed", "staged", "scheduled", "discarded", "all"]).optional(),
-        tag: z.string().optional().describe("Only drafts with this tag (exact), e.g. \"Communities week\"."),
+        tag: z.string().optional().describe("Only drafts with this tag (case-insensitive), e.g. \"Communities week\"."),
         platform: z.string().optional().describe("Only this platform label (exact), e.g. \"Lior X\"."),
         planned_from: z.string().optional().describe("Planned on or after this date (YYYY-MM-DD) or ISO time."),
         planned_to: z.string().optional().describe("Planned on or before this date (whole day) or ISO time."),
@@ -352,6 +366,7 @@ export function registerContentStudioTools(server: McpServer): void {
           filters: r.filters,
           review_threshold: r.review_threshold,
           counts: r.counts,
+          tags_in_use: r.tags_in_use ?? [],
           drafts: r.drafts,
           review_url: r.review_url,
           note: r.note,
@@ -396,13 +411,13 @@ export function registerContentStudioTools(server: McpServer): void {
   server.registerTool(
     "revise_content_draft",
     {
-      title: "Approve, revise, plan, restore, or discard a draft",
+      title: "Approve, revise, plan, tag, restore, or discard a draft",
       description:
-        "Act on one draft in the user's queue. `stage` = the user approved it (mark ready to publish; publishing itself happens in the web tool). `discard` drops it. `revise` rewrites it in the brand voice per a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — and/or a typed instruction (2 credits). `fix` makes the surgical change the reviewer's notes asked for (2). `humanize` strips the AI feel and keeps everything else (2). `review` scores it against the brand voice (2). `edit` replaces the text with what you or the user wrote (free) — when you can write the better version yourself, prefer edit over revise. `plan` puts it on the calendar for planned_at (YYYY-MM-DD or ISO time; null unplans; free; a plan, not a schedule). `restore` brings back an earlier version by version_id from get_content_draft (free; its old score returns when the filing is unchanged). Every text change saves the previous text as a version, so any step can be undone with restore. Any text change clears the old score. A scheduled or live draft cannot be changed (error draft_locked) — tell the user to change it in their scheduler. Stage and discard are the USER's decisions — act on their say-so, never on your own judgment. If the user's reaction should apply to every future draft (not just this one), use teach_content_voice instead.",
+        "Act on one draft in the user's queue. `stage` = the user approved it (mark ready to publish; publishing itself happens in the web tool). `discard` drops it. `revise` rewrites it in the brand voice per a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — and/or a typed instruction (2 credits). `fix` makes the surgical change the reviewer's notes asked for (2). `humanize` strips the AI feel and keeps everything else (2). `review` scores it against the brand voice (2). `edit` replaces the text with what you or the user wrote (free) — when you can write the better version yourself, prefer edit over revise. `plan` puts it on the calendar for planned_at (YYYY-MM-DD or ISO time; null unplans; free; a plan, not a schedule). `restore` brings back an earlier version by version_id from get_content_draft (free; its old score returns when the filing is unchanged). Every text change saves the previous text as a version, so any step can be undone with restore. Any text change clears the old score. `tag` sets the draft's labels (free): `tags` replaces the list ([] clears), or `add_tags` / `remove_tags` change it in place — use add_tags to put existing posts into a series without dropping their other tags. " + TAG_GUIDANCE + " A scheduled or live draft cannot be changed except for tags (error draft_locked) — tell the user to change it in their scheduler. Stage and discard are the USER's decisions — act on their say-so, never on your own judgment. If the user's reaction should apply to every future draft (not just this one), use teach_content_voice instead.",
       inputSchema: {
         space_id: z.string(),
         draft_id: z.string().describe("From get_content_queue or a write_content_candidates result."),
-        action: z.enum(["stage", "discard", "revise", "fix", "humanize", "review", "edit", "plan", "restore"]),
+        action: z.enum(["stage", "discard", "revise", "fix", "humanize", "review", "edit", "plan", "restore", "tag"]),
         preset: z.enum(api.REVISE_PRESETS).optional().describe("revise: the calibration chip the user clicked."),
         instruction: z.string().optional().describe("revise / fix / humanize: the user's note in their words."),
         text: z.string().optional().describe("edit: the replacement text."),
@@ -412,6 +427,9 @@ export function registerContentStudioTools(server: McpServer): void {
           .optional()
           .describe("plan: the day (YYYY-MM-DD) or ISO time to plan it for; null removes it from the calendar."),
         version_id: z.string().optional().describe("restore: a version_id from get_content_draft."),
+        tags: z.array(z.string()).optional().describe("tag: the full tag list (replaces; [] clears)."),
+        add_tags: z.array(z.string()).optional().describe("tag: tags to add, keeping the others."),
+        remove_tags: z.array(z.string()).optional().describe("tag: tags to remove."),
       },
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
@@ -424,6 +442,9 @@ export function registerContentStudioTools(server: McpServer): void {
       if (args.action === "edit" && !args.text) return errorResult("edit needs `text`.");
       if (args.action === "plan" && args.planned_at === undefined) {
         return errorResult("plan needs `planned_at` (YYYY-MM-DD, an ISO time, or null to unplan).");
+      }
+      if (args.action === "tag" && !args.tags && !args.add_tags && !args.remove_tags) {
+        return errorResult("tag needs `tags` (replaces the list) or `add_tags` / `remove_tags`.");
       }
       if (args.action === "restore" && !args.version_id) {
         return errorResult("restore needs `version_id` — read the versions with get_content_draft.");
@@ -438,6 +459,9 @@ export function registerContentStudioTools(server: McpServer): void {
           text: args.text,
           plannedAt: args.action === "plan" ? (args.planned_at ?? null) : undefined,
           versionId: args.version_id,
+          ...(args.action === "tag"
+            ? { tags: args.tags, addTags: args.add_tags, removeTags: args.remove_tags }
+            : {}),
         });
         return textResult({
           action: r.action,

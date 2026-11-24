@@ -56,7 +56,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET/POST/PATCH/DELETE /agents/content/topics`, `POST /agents/content/topics/suggest` | ✅ | `manage_content_topics` (Content Studio — free) |
 | `GET /agents/content/queue` | ✅ | `get_content_queue` (Content Studio — drafts + scores; free) |
 | `GET /agents/content/drafts` | ✅ | `get_content_draft` (Content Studio — one draft: per-axis score + earlier versions; free) |
-| `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit/plan/restore free; revise presets / fix / humanize / review 2cr) |
+| `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit/plan/tag/restore free; revise presets / fix / humanize / review 2cr) |
 | `POST /agents/content/feedback` | ✅ | `teach_content_voice` (Content Studio — reaction → KB rule, 1cr) |
 | `GET /agents/credits/balance` | ✅ | `check_balance` (balance + live `pricing`) |
 | `POST /agents/campaigns` | ✅ | `create_campaign` (10cr) |
