@@ -45,6 +45,12 @@ const candidateSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Labels for this one post, added to the call-level tags."),
+  image_url: z
+    .string()
+    .optional()
+    .describe("Still / poster image. Must be an https public URL in ProductClank's Supabase storage (…/storage/v1/object/public/…)."),
+  video_url: z.string().optional().describe("Short .mp4 clip; same storage rule as image_url."),
+  hls_url: z.string().optional().describe("HLS (.m3u8) transcode of the clip, for inline Farcaster video; same storage rule."),
 });
 
 const TAG_GUIDANCE =
@@ -130,10 +136,14 @@ export function registerContentStudioTools(server: McpServer): void {
           .max(20)
           .optional()
           .describe("Labels stamped on EVERY candidate in this call — e.g. the series name. Max 20, 40 chars each."),
+        source: z
+          .enum(["agent", "skill"])
+          .optional()
+          .describe("Who drafted it. Default agent; use skill when an operator's own Claude skill (e.g. /content, /clip) wrote the batch."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    async ({ space_id, candidates, tags }, extra) => {
+    async ({ space_id, candidates, tags, source }, extra) => {
       const userId = getUserId(extra as ToolExtra);
       if (!userId) return errorResult(NOT_AUTHED);
       try {
@@ -142,6 +152,7 @@ export function registerContentStudioTools(server: McpServer): void {
           spaceId: space_id,
           candidates,
           tags,
+          source,
         });
         return textResult({
           created: result.created,

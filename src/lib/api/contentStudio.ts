@@ -45,6 +45,10 @@ export interface ContentCandidateInput {
   template?: string;
   /** Labels for this one post (merged with the call-level tags). */
   tags?: string[];
+  /** Media in ProductClank's own Supabase public storage only. */
+  image_url?: string;
+  video_url?: string;
+  hls_url?: string;
 }
 
 export interface WriteContentCandidatesParams {
@@ -56,6 +60,8 @@ export interface WriteContentCandidatesParams {
   candidates: ContentCandidateInput[];
   /** Labels stamped on every candidate, e.g. a series name. */
   tags?: string[];
+  /** "skill" when an operator's own Claude skill wrote the batch. */
+  source?: "agent" | "skill";
 }
 
 export interface WriteContentCandidatesResult {
@@ -78,6 +84,7 @@ export function writeContentCandidates(
       space_id: params.spaceId,
       candidates: params.candidates,
       ...(params.tags?.length ? { tags: params.tags } : {}),
+      ...(params.source ? { source: params.source } : {}),
     }),
   });
 }
