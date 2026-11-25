@@ -52,6 +52,7 @@ export interface GrowthHandoffResult {
   preview: {
     post_url: string;
     post_text: string;
+    /** handle is empty on LinkedIn (no @handle there). */
     author: { name: string | null; handle: string; followers: number };
     likes: number;
     replies: number;
@@ -75,6 +76,7 @@ export function prepareGrowthAssistant(
     per_day?: 3 | 5;
     preview?: boolean;
     scout_code?: string;
+    space_id?: string;
   }
 ): Promise<GrowthHandoffResult> {
   return request(callerUserId, "/agents/growth-assistant/handoffs", { method: "POST", body: JSON.stringify(body) });

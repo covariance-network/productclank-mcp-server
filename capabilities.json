@@ -586,7 +586,7 @@
       "path": "/agents/growth-assistant/handoffs",
       "mcp": "live",
       "tool": "prepare_growth_assistant",
-      "note": "For a chat agent helping SOMEONE ELSE (e.g. a WhatsApp community agent): stores a growth assistant setup under a secret link (7 days) that the person opens, signs in to and confirms; creates nothing on any account until then and never takes a phone or user id. Optional preview (X only, default on): up to 3 real posts from the last 3 days with drafts, about 1 credit per post from the agent's account. Optional goal (clients | job | hire | partners | audience) and scout_code (signup attribution). Full profile only."
+      "note": "For a chat agent helping SOMEONE ELSE (e.g. a WhatsApp community agent): stores a growth assistant setup under a secret link (7 days) that the person opens, signs in to and confirms; creates nothing on any account until then and never takes a phone or user id. Optional preview (X and LinkedIn, default on): up to 3 real posts with drafts, about 1 credit per post from the agent's account. Optional goal (clients | job | hire | partners | audience), scout_code (signup attribution) and space_id (a space the agent manages: the person can join it on the same page). Full profile only."
     },
     {
       "method": "POST",

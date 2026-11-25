@@ -103,7 +103,7 @@ src/
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
 | `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($9/month or $99/year subscription in the app) |
-| `prepare_growth_assistant` | growthAssistant | `POST /agents/growth-assistant/handoffs` | free to prepare; optional X preview ≈ 1 credit per post returned (agent's account). For a chat agent helping SOMEONE ELSE: returns a link the person signs in to and confirms |
+| `prepare_growth_assistant` | growthAssistant | `POST /agents/growth-assistant/handoffs` | free to prepare; optional X/LinkedIn preview ≈ 1 credit per post returned (agent's account). For a chat agent helping SOMEONE ELSE: returns a link the person signs in to and confirms |
 | `get_growth_suggestions` | growthAssistant | `GET /agents/growth-assistant` | free |
 | `apply_ai_creator` | aiCreators | `POST /agents/ai-creators` | free |
 | `verify_ai_creator` | aiCreators | `POST /agents/ai-creators/{listingId}/verify` | free |
