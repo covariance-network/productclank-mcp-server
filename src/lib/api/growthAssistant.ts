@@ -41,3 +41,43 @@ export function setupGrowthAssistant(
 ): Promise<GrowthAssistantResult> {
   return request(callerUserId, "/agents/growth-assistant", { method: "POST", body: JSON.stringify(body) });
 }
+
+/** What the person wants from being visible. Shapes which posts count and how drafts read. */
+export type GrowthGoal = "clients" | "job" | "hire" | "partners" | "audience";
+
+export interface GrowthHandoffResult {
+  success: boolean;
+  link: string;
+  expires_at: string;
+  preview: {
+    post_url: string;
+    post_text: string;
+    /** handle is empty on LinkedIn (no @handle there). */
+    author: { name: string | null; handle: string; followers: number };
+    likes: number;
+    replies: number;
+    posted_at: string | null;
+    draft_reply: string;
+  }[];
+  preview_note: string | null;
+  next_step: string;
+}
+
+/** A chat agent prepares an assistant for SOMEONE ELSE; the person confirms via `link`. */
+export function prepareGrowthAssistant(
+  callerUserId: string,
+  body: {
+    network: GrowthNetwork;
+    topics: GrowthTopic[];
+    about: string;
+    voice?: string;
+    goal?: GrowthGoal;
+    name?: string;
+    per_day?: 3 | 5;
+    preview?: boolean;
+    scout_code?: string;
+    space_id?: string;
+  }
+): Promise<GrowthHandoffResult> {
+  return request(callerUserId, "/agents/growth-assistant/handoffs", { method: "POST", body: JSON.stringify(body) });
+}

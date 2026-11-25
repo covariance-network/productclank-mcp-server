@@ -64,6 +64,52 @@ export function registerGrowthAssistantTools(server: McpServer): void {
   );
 
   server.registerTool(
+    "prepare_growth_assistant",
+    {
+      title: "Prepare a growth assistant for someone in a chat",
+      description:
+        "For an agent that helps SOMEONE ELSE in a group or private chat (for example a WhatsApp community agent), not the signed-in user. Prepares that person's personal growth assistant and returns a link they open to sign in and start it. It creates nothing on any account until the person confirms with their own sign-in, so never ask for or pass a phone number, email or user id. Before calling: ask the person what they want (goal: clients, a job, hires, partners or a following) and their X or LinkedIn handle; draft 2-4 topics with search phrases and one or two sentences about them, and confirm. Let the person pick the network (X or LinkedIn). With preview (X and LinkedIn, on by default) it returns up to 3 real posts with a draft reply each: show them in the chat first (author, the post in one line, the draft, the link), then send the link. If you pass space_id (the community space you serve, which your account must manage), the same page lets the person also join that space, so they get opportunities from other members too; mention that in your message. Preview costs about 1 credit per post returned, from YOUR account. For the signed-in user's own assistant, use setup_growth_assistant instead.",
+      inputSchema: {
+        network: z.enum(["twitter", "linkedin", "reddit", "youtube"]).describe("The ONE network where the person wants to be visible: ask them (X or LinkedIn). The chat preview works on twitter (X) and linkedin."),
+        goal: z
+          .enum(["clients", "job", "hire", "partners", "audience"])
+          .optional()
+          .describe("What the person wants: clients (find clients), job (find a job), hire (hire people), partners (find partners), audience (grow a following)."),
+        topics: z.array(topic).min(1).max(4).describe("1-4 topics the person wants to be known for."),
+        about: z.string().min(1).max(600).describe("Who the person is and the angle they add, 1-2 sentences."),
+        voice: z.string().max(1200).optional().describe("How their replies should read, one rule per line."),
+        name: z.string().max(40).optional().describe("Optional short name for the assistant, e.g. 'Hiring'."),
+        per_day: z.union([z.literal(3), z.literal(5)]).optional().describe("Posts per day (default 5)."),
+        preview: z.boolean().optional().describe("Search now and return up to 3 posts with drafts (X and LinkedIn). Default true."),
+        space_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("The community space you serve (your account must manage it). The person can join it on the same page."),
+        scout_code: z.string().max(64).optional().describe("A live scout code: the link then credits that scout when the person signs up and pays. Only the code you were configured with."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    },
+    async (args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        const r = await api.prepareGrowthAssistant(userId, { ...args });
+        return textResult({
+          link: r.link,
+          expires_at: r.expires_at,
+          preview: r.preview,
+          preview_note: r.preview_note,
+          next_step: r.next_step,
+          user_note: `Open ${r.link} to start. You sign in once, check the setup, and the first run is free. After that, new posts every morning are $9/month. You post every reply yourself.`,
+        });
+      } catch (error) {
+        return toolError(error, "Could not prepare the growth assistant");
+      }
+    }
+  );
+
+  server.registerTool(
     "get_growth_suggestions",
     {
       title: "Get today's posts to reply to",

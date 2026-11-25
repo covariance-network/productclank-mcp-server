@@ -78,7 +78,7 @@ export function registerTools(
   // Scout BD outreach — not commissioned content, so not in the creator profile.
   if (profile !== "creator") registerScoutTools(server); // scout deals + earnings, apply_as_scout / get_scout_application / submit_scout_application, get_scout_invite_link
   // Personal brand for the user — reply suggestions they post themselves, not commissioned content.
-  if (profile !== "creator") registerGrowthAssistantTools(server); // setup_growth_assistant, get_growth_suggestions
+  if (profile !== "creator") registerGrowthAssistantTools(server); // setup_growth_assistant, prepare_growth_assistant, get_growth_suggestions
   // Commissioned original content from openly-AI creators — every profile.
   registerAiCreatorTools(server); // apply_ai_creator, verify_ai_creator, get_ai_creator_status
   // The user's own quote posts on X (borrowed authority) — not commissioned content.

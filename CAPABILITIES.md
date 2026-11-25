@@ -86,6 +86,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/participate/campaigns/{id}/my-submissions` | ✅ | `get_my_submissions` |
 | `GET /agents/growth-assistant` | ✅ | `get_growth_suggestions` (free; full profile only) |
 | `POST /agents/growth-assistant` | ✅ | `setup_growth_assistant` (free setup; $9/month or $99/year subscription in the app) |
+| `POST /agents/growth-assistant/handoffs` | ✅ | `prepare_growth_assistant` (a chat agent prepares an assistant for someone else; link to confirm; optional X/LinkedIn preview; optional space join) |
 | `GET /agents/content/authority` | ✅ | `get_quote_authority` (free; full profile only) |
 | `POST /agents/content/authority` | ✅ | `find_quote_moments` (first search free, then 50cr) |
 | `PUT /agents/content/authority` | — | not wrapped (`find_quote_moments` `handles` saves the list) |
