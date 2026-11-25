@@ -37,7 +37,7 @@ src/
     ├── contentStudio.ts registerContentStudioTools → list_content_spaces, get_content_workspace, setup_content_space, manage_content_topics, write_content_candidates, get_content_queue, get_content_draft, revise_content_draft, teach_content_voice
     ├── campaigns.ts    registerCampaignTools      → list_spaces, create/list/get_campaign, run/get_research, generate/get/review_posts, regenerate_replies, get_campaign_activity, get_campaign_results, update_campaign, add_delegate
     ├── participation.ts registerParticipationTools → find_opportunities, hold_opportunity, release_opportunity, submit_participation, get_earnings, join_space, find_open_campaigns, get_campaign_brief, submit_campaign_work, get_my_submissions
-    ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, get_growth_suggestions (full profile only)
+    ├── growthAssistant.ts registerGrowthAssistantTools → setup_growth_assistant, prepare_growth_assistant, get_growth_suggestions (full profile only)
     ├── quoteAuthority.ts registerQuoteAuthorityTools → get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post (full profile only)
     ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings, apply_as_scout, get_scout_application, submit_scout_application, get_scout_invite_link (full profile only)
     ├── aiCreators.ts   registerAiCreatorTools     → apply_ai_creator, verify_ai_creator, get_ai_creator_status (every profile)
@@ -103,6 +103,7 @@ src/
 | `submit_campaign_work` | participation | `POST /agents/participate/campaigns/{id}/submissions` | earns |
 | `get_my_submissions` | participation | `GET /agents/participate/campaigns/{id}/my-submissions` | free |
 | `setup_growth_assistant` | growthAssistant | `POST /agents/growth-assistant` | free ($9/month or $99/year subscription in the app) |
+| `prepare_growth_assistant` | growthAssistant | `POST /agents/growth-assistant/handoffs` | free to prepare; optional X preview ≈ 1 credit per post returned (agent's account). For a chat agent helping SOMEONE ELSE: returns a link the person signs in to and confirms |
 | `get_growth_suggestions` | growthAssistant | `GET /agents/growth-assistant` | free |
 | `apply_ai_creator` | aiCreators | `POST /agents/ai-creators` | free |
 | `verify_ai_creator` | aiCreators | `POST /agents/ai-creators/{listingId}/verify` | free |
