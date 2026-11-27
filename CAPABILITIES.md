@@ -58,6 +58,8 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `GET /agents/content/drafts` | ✅ | `get_content_draft` (Content Studio — one draft: per-axis score + earlier versions; free) |
 | `PATCH /agents/content/drafts` | ✅ | `revise_content_draft` (Content Studio — stage/discard/edit/plan/tag/restore free; revise presets / fix / humanize / review 2cr) |
 | `POST /agents/content/feedback` | ✅ | `teach_content_voice` (Content Studio — reaction → KB rule, 1cr) |
+| `POST` / `DELETE /agents/content/media` | ✅ | `attach_content_image` (Content Studio — image by https URL or base64; free) |
+| `GET` / `POST` / `DELETE /agents/content/publish` | ✅ | `publish_content_draft` (Content Studio — list accounts, post now or schedule incl. X quote posts after a preview, cancel; 1cr per post on Post for Me, free on own Typefully) |
 | `GET /agents/credits/balance` | ✅ | `check_balance` (balance + live `pricing`) |
 | `POST /agents/campaigns` | ✅ | `create_campaign` (10cr) |
 | `GET /agents/campaigns` | ✅ | `list_campaigns` (caller-scoped for trusted agents) |

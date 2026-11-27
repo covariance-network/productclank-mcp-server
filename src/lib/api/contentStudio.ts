@@ -450,3 +450,122 @@ export function teachContentVoice(
     }),
   });
 }
+
+// ── Images + publishing ───────────────────────────────────────────────────────
+// POST/DELETE /agents/content/media  — attach (URL or base64) / detach a draft's image
+// GET/POST/DELETE /agents/content/publish — channels / publish now or schedule / cancel
+
+export interface AttachContentImageResult {
+  success: boolean;
+  image_url: string;
+  draft?: ContentDraftShape;
+  review_url?: string;
+  note?: string;
+}
+
+export function attachContentImage(
+  userId: string,
+  p: { spaceId: string; draftId: string; imageUrl?: string; imageBase64?: string }
+): Promise<AttachContentImageResult> {
+  return request(userId, "/agents/content/media", {
+    method: "POST",
+    body: JSON.stringify({
+      space_id: p.spaceId,
+      draft_id: p.draftId,
+      image_url: p.imageUrl,
+      image_base64: p.imageBase64,
+    }),
+  });
+}
+
+export function removeContentMedia(
+  userId: string,
+  p: { spaceId: string; draftId: string; kind: "image" | "video" }
+): Promise<{ success: boolean; removed: string; draft?: ContentDraftShape }> {
+  return request(userId, "/agents/content/media", {
+    method: "DELETE",
+    body: JSON.stringify({ space_id: p.spaceId, draft_id: p.draftId, kind: p.kind }),
+  });
+}
+
+export interface PublishChannel {
+  account_id: string;
+  network: string;
+  handle: string;
+  name: string;
+  label: string;
+  provider: "postforme" | "typefully";
+  cost_credits: number;
+}
+
+export interface PublishChannelsResult {
+  success: boolean;
+  channels: PublishChannel[];
+  needs_reconnect: string[];
+  next_step?: string;
+  review_url?: string;
+}
+
+export function listPublishChannels(userId: string, spaceId: string): Promise<PublishChannelsResult> {
+  return request(userId, `/agents/content/publish?space_id=${encodeURIComponent(spaceId)}`, { method: "GET" });
+}
+
+export interface PublishPreview {
+  account: string;
+  network: string;
+  provider: string;
+  text: string;
+  image_url: string | null;
+  video_url: string | null;
+  quote_url: string | null;
+  publish_at: string;
+  cost_credits: number;
+}
+
+export interface PublishDraftResult {
+  success: boolean;
+  status: "live" | "publishing" | "scheduled" | "failed";
+  account: string;
+  scheduled_at: string;
+  live_url: string | null;
+  scheduler_url: string | null;
+  credits_charged: number;
+  draft: ContentDraftShape;
+  review_url: string;
+  note: string;
+}
+
+export function publishContentDraft(
+  userId: string,
+  p: {
+    spaceId: string;
+    draftId: string;
+    accountId: string;
+    /** "now" or an ISO time. */
+    publishAt?: string;
+    quoteUrl?: string;
+    confirm: boolean;
+  }
+): Promise<PublishDraftResult> {
+  return request(userId, "/agents/content/publish", {
+    method: "POST",
+    body: JSON.stringify({
+      space_id: p.spaceId,
+      draft_id: p.draftId,
+      account_id: p.accountId,
+      publish_at: p.publishAt,
+      quote_url: p.quoteUrl,
+      confirm: p.confirm,
+    }),
+  });
+}
+
+export function cancelScheduledContentPost(
+  userId: string,
+  p: { spaceId: string; draftId: string }
+): Promise<{ success: boolean; draft: ContentDraftShape; also_unscheduled: string[] }> {
+  return request(userId, "/agents/content/publish", {
+    method: "DELETE",
+    body: JSON.stringify({ space_id: p.spaceId, draft_id: p.draftId }),
+  });
+}

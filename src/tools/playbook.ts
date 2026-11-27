@@ -145,12 +145,12 @@ Read the calibration back in a compact summary (voice paragraph, platforms, post
 Offer to draft 3–5 posts now. Call get_content_workspace if you have not already, write IN that voice on the topics they picked (one platform each, template from post_types), and call write_content_candidates. Then get_content_queue and present each draft: the text, its score vs review_threshold, the reviewer's one-line fix.
 
 ## Step 4 — the approval loop
-For each draft, ask: approve, tweak, or drop? Tweaks are one click — revise_content_draft with a preset (shorter · longer · punchier · deeper · simpler · more_specific · less_salesy · more_casual · more_formal) or their words. When a reaction should apply to every future draft ("always shorter", "never say leverage"), call teach_content_voice so it becomes a rule, and say in one line what was learned. Stage only what they approve. Approved drafts wait in the web tool at review_url; publishing is their step there for now.
+For each draft, ask: approve, tweak, or drop? Tweaks are one click — revise_content_draft with a preset (shorter · longer · punchier · deeper · simpler · more_specific · less_salesy · more_casual · more_formal) or their words. When a reaction should apply to every future draft ("always shorter", "never say leverage"), call teach_content_voice so it becomes a rule, and say in one line what was learned. Stage only what they approve. Approved drafts wait in the web tool at review_url. If they want one posted from here, attach_content_image adds a photo, and publish_content_draft lists their connected accounts, previews the post, and posts it (now or scheduled) only after their yes.
 
 ## Rules
 - One question per message during the interview. Never dump a form.
 - Free before paid: setup, drafting, topics and the queue are free; rewrites and reviews are 2 credits, a rule is 1. Say so the first time you spend.
-- Stage and discard are the user's decisions. Never publish, never claim you did.
+- Stage, discard and publish are the user's decisions. Publish only after they said yes to the exact preview, and never claim a post went live without the live link.
 - If a call says content is not enabled or the space is unknown, go back to setup — do not invent a space_id.`;
 
 export function registerPlaybook(
@@ -265,6 +265,8 @@ export function registerPlaybook(
 | revise_content_draft — stage / discard / edit / plan / restore | free |
 | revise_content_draft — revise (presets) / fix / humanize / review | 2 each |
 | teach_content_voice (reaction → standing KB rule) | 1 |
+| attach_content_image (photo by link or bytes) | free |
+| publish_content_draft (post now / schedule / quote; preview first) | 1 per post on Post for Me, free on own Typefully |
 
 ## Earn (participant persona)
 | Tool | Cost |
