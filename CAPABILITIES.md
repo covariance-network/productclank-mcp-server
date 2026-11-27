@@ -102,6 +102,7 @@ Legend: ✅ live · 🔜 planned (tier) · 🚫 excluded
 | `POST /agents/scout/application` | ✅ | `apply_as_scout` (anyone; free; background research, polled) |
 | `GET /agents/scout/application` | ✅ | `get_scout_application` (anyone; free) |
 | `PUT /agents/scout/application` | ✅ | `submit_scout_application` (anyone; free) |
+| `POST /agents/posts/replies` | ✅ | `get_post_replies` (1cr per page of ≤100 replies read; X only; full profile only) |
 | `POST /agents/support` | ✅ | `report_issue` (free; files a Support Center ticket, returns `self_help` for known error codes; every profile) |
 | `GET /agents/support` | ✅ | `get_support_status` (free; the agent's own tickets + sent replies) |
 | `POST /agents/participate/claim-signature` | 🚫 T3 | $PRO pays agent wallet + ERC-8004/allowlist; no user-wallet path yet |
