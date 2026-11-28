@@ -270,6 +270,14 @@
     },
     {
       "method": "POST",
+      "path": "/agents/posts/replies",
+      "mcp": "live",
+      "tool": "get_post_replies",
+      "profiles": ["full"],
+      "note": "The public replies under one X post with author, text and engagement. Monid twitterdata.io upstream. 1 credit per page of up to 100 replies actually read; cursor pagination."
+    },
+    {
+      "method": "POST",
       "path": "/agents/campaigns/analyze-url",
       "mcp": "live",
       "tool": "analyze_url"

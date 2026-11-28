@@ -223,6 +223,7 @@ export function registerPlaybook(
 |---|---|
 | search_products / create_product | free |
 | analyze_url (derive keywords + search context from a site — only when you cannot browse) | 3 |
+| get_post_replies (the replies under any X post: author, text, engagement) | 1 per 100 replies read |
 | create_campaign | 10 |
 | run_research / get_research | free |
 | generate_posts | 12 per post discovered |
