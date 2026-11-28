@@ -27,6 +27,7 @@ import { registerAiVisibilityTools } from "./aiVisibility.js";
 import { registerTikTokCampaignTools } from "./tiktokCampaign.js";
 import { registerAiCreatorTools } from "./aiCreators.js";
 import { registerActionTaskTools } from "./actionTasks.js";
+import { registerPostTools } from "./posts.js";
 import { registerPlaybook } from "./playbook.js";
 import { instrumentTools } from "./instrument.js";
 
@@ -83,6 +84,8 @@ export function registerTools(
   registerAiCreatorTools(server); // apply_ai_creator, verify_ai_creator, get_ai_creator_status
   // The user's own quote posts on X (borrowed authority) — not commissioned content.
   if (profile !== "creator") registerQuoteAuthorityTools(server); // get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post
+  // Reads public replies under a post (research, not commissioned content) — full profile only.
+  if (profile !== "creator") registerPostTools(server); // get_post_replies
   registerSupportTools(server); // report_issue, get_support_status (every profile)
   registerPlaybook(rawServer, profile); // grow_product + setup_content_space prompts + productclank://capabilities resource
 }

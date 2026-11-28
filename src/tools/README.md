@@ -20,6 +20,7 @@ src/
 │   ├── participation.ts getParticipationFeed, submitParticipation, getEarnings, getCreditHistory
 │   ├── scout.ts        getScoutDeals, claimScoutDeal, releaseScoutDeal, reportScoutDealProgress, rateScoutDeal, getScoutEarnings, startScoutApplication, getScoutApplication, submitScoutApplication, getScoutInvites
 │   ├── aiCreators.ts   applyAiCreator, verifyAiCreator, getAiCreatorStatus
+│   ├── posts.ts        getPostReplies
 │   ├── support.ts      reportIssue, getSupportTickets
 │   ├── quoteAuthority.ts getQuoteAuthority, suggestQuotePeople, findQuoteMoments, startQuoteDrafts, getQuoteDrafts
 │   ├── authorize.ts    authorizeUser (server-side, OAuth callback)
@@ -41,6 +42,7 @@ src/
     ├── quoteAuthority.ts registerQuoteAuthorityTools → get_quote_authority, suggest_quote_people, find_quote_moments, draft_quote_post (full profile only)
     ├── scout.ts        registerScoutTools         → get_scout_deals, claim_deal, release_deal, report_deal_progress, rate_deal, get_scout_earnings, apply_as_scout, get_scout_application, submit_scout_application, get_scout_invite_link (full profile only)
     ├── aiCreators.ts   registerAiCreatorTools     → apply_ai_creator, verify_ai_creator, get_ai_creator_status (every profile)
+    ├── posts.ts        registerPostTools          → get_post_replies (full profile only)
     ├── support.ts      registerSupportTools       → report_issue, get_support_status
     ├── playbook.ts     registerPlaybook           → grow_product + setup_content_space prompts + productclank://capabilities resource
     └── index.ts        registerTools() — composes the above
@@ -122,6 +124,7 @@ src/
 | `apply_as_scout` | scout | `POST` + `GET /agents/scout/application` | free |
 | `get_scout_application` | scout | `GET /agents/scout/application` | free |
 | `submit_scout_application` | scout | `PUT /agents/scout/application` | free |
+| `get_post_replies` | posts | `POST /agents/posts/replies` | 1 cr per page of up to 100 replies read (`limit` 1–500, default 100); X only |
 | `report_issue` | support | `POST /agents/support` | free |
 | `get_support_status` | support | `GET /agents/support` | free |
 
