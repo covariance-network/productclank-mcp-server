@@ -15,10 +15,13 @@
  * - get_content_draft        → GET  /agents/content/drafts      (one draft: breakdown + versions)
  * - revise_content_draft     → PATCH /agents/content/drafts     (approve / chips / edit / plan / restore)
  * - teach_content_voice      → POST /agents/content/feedback    (reaction → standing KB rule)
+ * - attach_content_image     → POST/DELETE /agents/content/media (image by URL or base64)
+ * - publish_content_draft    → GET/POST/DELETE /agents/content/publish (channels / post now or
+ *                              schedule, incl. X quote posts / cancel)
  *
- * Drafting, setup, topics, the queue, edit, plan and restore are FREE; rewrites / reviews cost 2, a KB
- * rule 1, a pasted brand doc 5. Nothing is ever published from here — the user
- * stages drafts in the web tool; publishing is their step.
+ * Drafting, setup, topics, the queue, edit, plan, restore and images are FREE; rewrites / reviews
+ * cost 2, a KB rule 1, a pasted brand doc 5, a post on a Post for Me account 1. Publishing
+ * goes out only through publish_content_draft, after a preview the user said yes to.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -48,8 +51,8 @@ const candidateSchema = z.object({
   image_url: z
     .string()
     .optional()
-    .describe("Still / poster image. Must be an https public URL in ProductClank's Supabase storage (…/storage/v1/object/public/…)."),
-  video_url: z.string().optional().describe("Short .mp4 clip; same storage rule as image_url."),
+    .describe("Still image: any public https image URL (ProductClank copies it into its own storage; up to 3 external images per call). For bytes, attach afterwards with attach_content_image."),
+  video_url: z.string().optional().describe("Short .mp4 clip. Must be an https public URL in ProductClank's Supabase storage (…/storage/v1/object/public/…)."),
   hls_url: z.string().optional().describe("HLS (.m3u8) transcode of the clip, for inline Farcaster video; same storage rule."),
 });
 
@@ -424,7 +427,7 @@ export function registerContentStudioTools(server: McpServer): void {
     {
       title: "Approve, revise, plan, tag, restore, or discard a draft",
       description:
-        "Act on one draft in the user's queue. `stage` = the user approved it (mark ready to publish; publishing itself happens in the web tool). `discard` drops it. `revise` rewrites it in the brand voice per a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — and/or a typed instruction (2 credits). `fix` makes the surgical change the reviewer's notes asked for (2). `humanize` strips the AI feel and keeps everything else (2). `review` scores it against the brand voice (2). `edit` replaces the text with what you or the user wrote (free) — when you can write the better version yourself, prefer edit over revise. `plan` puts it on the calendar for planned_at (YYYY-MM-DD or ISO time; null unplans; free; a plan, not a schedule). `restore` brings back an earlier version by version_id from get_content_draft (free; its old score returns when the filing is unchanged). Every text change saves the previous text as a version, so any step can be undone with restore. Any text change clears the old score. `tag` sets the draft's labels (free): `tags` replaces the list ([] clears), or `add_tags` / `remove_tags` change it in place — use add_tags to put existing posts into a series without dropping their other tags. " + TAG_GUIDANCE + " A scheduled or live draft cannot be changed except for tags (error draft_locked) — tell the user to change it in their scheduler. Stage and discard are the USER's decisions — act on their say-so, never on your own judgment. If the user's reaction should apply to every future draft (not just this one), use teach_content_voice instead.",
+        "Act on one draft in the user's queue. `stage` = the user approved it (mark ready to publish; to actually post it use publish_content_draft). `discard` drops it. `revise` rewrites it in the brand voice per a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — and/or a typed instruction (2 credits). `fix` makes the surgical change the reviewer's notes asked for (2). `humanize` strips the AI feel and keeps everything else (2). `review` scores it against the brand voice (2). `edit` replaces the text with what you or the user wrote (free) — when you can write the better version yourself, prefer edit over revise. `plan` puts it on the calendar for planned_at (YYYY-MM-DD or ISO time; null unplans; free; a plan, not a schedule). `restore` brings back an earlier version by version_id from get_content_draft (free; its old score returns when the filing is unchanged). Every text change saves the previous text as a version, so any step can be undone with restore. Any text change clears the old score. `tag` sets the draft's labels (free): `tags` replaces the list ([] clears), or `add_tags` / `remove_tags` change it in place — use add_tags to put existing posts into a series without dropping their other tags. " + TAG_GUIDANCE + " A scheduled or live draft cannot be changed except for tags (error draft_locked) — tell the user to change it in their scheduler. Stage and discard are the USER's decisions — act on their say-so, never on your own judgment. If the user's reaction should apply to every future draft (not just this one), use teach_content_voice instead.",
       inputSchema: {
         space_id: z.string(),
         draft_id: z.string().describe("From get_content_queue or a write_content_candidates result."),
@@ -483,13 +486,155 @@ export function registerContentStudioTools(server: McpServer): void {
           note: r.note,
           user_note:
             r.action === "stage"
-              ? "Approved. It is staged in the content tool; the user publishes from there (publishing from the connector is coming later)."
+              ? "Approved. It is staged in the content tool. To post it, use publish_content_draft (it shows a preview first)."
               : r.action === "revise" || r.action === "fix" || r.action === "humanize" || r.action === "edit"
                 ? "Show the user the new text and ask: keep it, nudge again, go back (restore), or approve?"
                 : undefined,
         });
       } catch (error) {
         return toolError(error, "Failed to update the draft");
+      }
+    }
+  );
+
+  // ─── attach_content_image (image by URL or base64) ─────────────────────────
+  server.registerTool(
+    "attach_content_image",
+    {
+      title: "Attach an image to a draft",
+      description:
+        "Attach a photo to one draft (replaces its current image), so it goes out with the post. Pass EXACTLY one of image_url (a public https link to a JPEG / PNG / WebP / GIF — ProductClank downloads it and keeps its own copy) or image_base64 (the image bytes, base64 or a data: URL; keep it under ~3MB). Max 15MB by URL. FREE. remove:true detaches the image instead (kind:'video' detaches a video — a draft with a video posts the video, not the image). A scheduled or live draft can't be changed (draft_locked). Then publish it with publish_content_draft.",
+      inputSchema: {
+        space_id: z.string(),
+        draft_id: z.string().describe("From get_content_queue or a write_content_candidates result."),
+        image_url: z.string().url().optional().describe("Public https image URL."),
+        image_base64: z.string().optional().describe("The image bytes, base64 (or a data:image/...;base64, URL)."),
+        remove: z.boolean().optional().describe("true = detach instead of attach."),
+        kind: z.enum(["image", "video"]).optional().describe("With remove: which attachment (default image)."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async (args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        if (args.remove) {
+          const r = await api.removeContentMedia(userId, {
+            spaceId: args.space_id,
+            draftId: args.draft_id,
+            kind: args.kind ?? "image",
+          });
+          return textResult({ removed: r.removed, draft: r.draft });
+        }
+        if (Boolean(args.image_url) === Boolean(args.image_base64)) {
+          return errorResult("Pass exactly one of image_url (public https) or image_base64.");
+        }
+        const r = await api.attachContentImage(userId, {
+          spaceId: args.space_id,
+          draftId: args.draft_id,
+          imageUrl: args.image_url,
+          imageBase64: args.image_base64,
+        });
+        return textResult({
+          image_url: r.image_url,
+          draft: r.draft,
+          note: r.note,
+          next_step: "Show the user the draft with its image. To post it, call publish_content_draft (it previews first).",
+        });
+      } catch (error) {
+        return toolError(error, "Failed to attach the image");
+      }
+    }
+  );
+
+  // ─── publish_content_draft (post now / schedule / quote / cancel) ──────────
+  server.registerTool(
+    "publish_content_draft",
+    {
+      title: "Publish a draft now or schedule it",
+      description:
+        "Post one draft (its text + attached image or video) to one of the social accounts connected to the content space — immediately (publish_at 'now', the default) or at a future ISO time. quote_url (an X post link) posts it as a quote of that post. Steps: (1) call WITHOUT account_id to list the space's accounts (channels: account_id, network, handle, provider, cost_credits); (2) call with account_id and WITHOUT confirmed → a free preview, nothing is posted; show the user exactly what will go out, where and when, and the cost; (3) only after the user says yes, call again with confirmed:true. Cost: 1 credit per post on a Post for Me account (provider postforme), free on the space's own Typefully. This posts PUBLICLY from the user's own account — never post without their explicit yes to that preview. Post now usually returns the live link within ~20s (status live); otherwise status publishing and the link appears on the draft (get_content_draft) a few minutes later. A post the platform rejects goes back to Approved and the credit is refunded. cancel:true cancels a SCHEDULED post (free). No accounts? The user connects one in the content tool (Venues → Scheduling).",
+      inputSchema: {
+        space_id: z.string(),
+        draft_id: z.string().optional().describe("The draft to post. Not needed to list accounts."),
+        account_id: z.string().optional().describe("From the channels list. Omit to list the space's accounts."),
+        publish_at: z.string().optional().describe("'now' (default) or a future ISO datetime, e.g. 2026-12-01T09:00:00Z."),
+        quote_url: z.string().url().optional().describe("X post URL to quote (makes this a quote post)."),
+        confirmed: z.boolean().optional().describe("true ONLY after the user approved the preview. Omit for a free preview."),
+        cancel: z.boolean().optional().describe("true = cancel this draft's scheduled post."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+    },
+    async (args, extra) => {
+      const userId = getUserId(extra as ToolExtra);
+      if (!userId) return errorResult(NOT_AUTHED);
+      try {
+        if (args.cancel) {
+          if (!args.draft_id) return errorResult("cancel needs draft_id.");
+          const r = await api.cancelScheduledContentPost(userId, { spaceId: args.space_id, draftId: args.draft_id });
+          return textResult({
+            cancelled: true,
+            draft: r.draft,
+            ...(r.also_unscheduled.length ? { also_unscheduled: r.also_unscheduled } : {}),
+            user_note: "Cancelled. The draft is back in Approved.",
+          });
+        }
+        if (!args.account_id) {
+          const r = await api.listPublishChannels(userId, args.space_id);
+          return textResult({
+            channels: r.channels,
+            ...(r.needs_reconnect.length ? { needs_reconnect: r.needs_reconnect } : {}),
+            next_step: r.channels.length
+              ? "Ask the user which account to post from (if more than one), then call again with account_id and draft_id for a preview."
+              : (r.next_step ?? "No connected accounts. The user connects one in the content tool: Venues → Scheduling."),
+          });
+        }
+        if (!args.draft_id) return errorResult("Publishing needs draft_id.");
+        const r = await api.publishContentDraft(userId, {
+          spaceId: args.space_id,
+          draftId: args.draft_id,
+          accountId: args.account_id,
+          publishAt: args.publish_at,
+          quoteUrl: args.quote_url,
+          confirm: args.confirmed === true,
+        });
+        return textResult({
+          status: r.status,
+          account: r.account,
+          live_url: r.live_url,
+          scheduled_at: r.scheduled_at,
+          credits_charged: r.credits_charged,
+          draft: r.draft,
+          note: r.note,
+          user_note:
+            r.status === "live"
+              ? `Posted to ${r.account}: ${r.live_url}`
+              : r.status === "failed"
+                ? r.note
+                : r.status === "scheduled"
+                  ? `Scheduled on ${r.account} for ${r.scheduled_at}.`
+                  : `Sent to ${r.account}. The link will show on the draft in a few minutes.`,
+        });
+      } catch (error) {
+        // The preview is a DECISION, not a failure: show it and ask.
+        if (
+          error instanceof api.ApiError &&
+          error.status === 400 &&
+          typeof error.body === "object" &&
+          error.body !== null &&
+          (error.body as { error?: unknown }).error === "confirmation_required"
+        ) {
+          const preview = (error.body as { preview?: api.PublishPreview }).preview;
+          return textResult({
+            status: "confirmation_required",
+            nothing_posted: true,
+            preview,
+            user_note: preview
+              ? `Nothing has been posted yet. This would post ${preview.publish_at === "now" ? "right now" : `at ${preview.publish_at}`} to ${preview.account}${preview.quote_url ? `, quoting ${preview.quote_url}` : ""}${preview.image_url ? ", with the attached image" : preview.video_url ? ", with the attached video" : ""}, for ${preview.cost_credits ? `${preview.cost_credits} credit` : "free"}. Show the user the exact text and ask for a yes; then call again with confirmed:true.`
+              : "Nothing has been posted yet. Ask the user to confirm, then call again with confirmed:true.",
+          });
+        }
+        return toolError(error, "Failed to publish the draft");
       }
     }
   );

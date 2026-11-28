@@ -123,6 +123,8 @@ Works in any MCP client that supports remote servers with OAuth (Claude web/desk
 | `get_content_draft` | One draft in full: per-axis score and its earlier versions, for undo | free |
 | `revise_content_draft` | Approve (`stage`), drop (`discard`), edit, plan on the calendar, `tag` (add to a series), `restore` an earlier version, or nudge a draft with a one-click preset — shorter, longer, punchier, deeper, simpler, more_specific, less_salesy, more_casual, more_formal — or a typed note; `fix` / `humanize` / `review`. Every text change can be undone | stage · discard · edit · plan · tag · restore free; rewrites & review 2 cr |
 | `teach_content_voice` | Turn a reaction into a standing rule in the brand's voice KB so every future draft honors it | 1 cr |
+| `attach_content_image` | Attach a photo to a draft — a public https image link or the image bytes (base64); ProductClank keeps its own copy | free |
+| `publish_content_draft` | List the space's connected accounts, then post a draft (text + image/video) now or at a set time, optionally as a quote of an X post — after a preview the user approves. Also cancels a scheduled post | 1 cr per post on Post for Me; free on your own Typefully |
 | `get_quote_authority` <br>_(`/mcp` only)_ | Quote authority on a space: the people pinned to quote, the latest moments, the plan | free |
 | `suggest_quote_people` <br>_(`/mcp` only)_ | People on X the brand's audience already trusts, each checked against the X account lookup | first free, then 50 cr |
 | `find_quote_moments` <br>_(`/mcp` only)_ | One live X search for the pinned people's clearest claims (posts and clips) | first free, then 50 cr |

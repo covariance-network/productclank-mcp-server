@@ -235,6 +235,41 @@
     },
     {
       "method": "POST",
+      "path": "/agents/content/media",
+      "mcp": "live",
+      "tool": "attach_content_image",
+      "note": "Content Studio: attach an image to a draft by public https URL (copied into ProductClank storage) or base64. Free."
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/content/media",
+      "mcp": "live",
+      "tool": "attach_content_image",
+      "note": "Content Studio: detach a draft's image or video (remove:true). Free."
+    },
+    {
+      "method": "GET",
+      "path": "/agents/content/publish",
+      "mcp": "live",
+      "tool": "publish_content_draft",
+      "note": "Content Studio: the space's postable accounts (Post for Me managed + own Typefully). Free."
+    },
+    {
+      "method": "POST",
+      "path": "/agents/content/publish",
+      "mcp": "live",
+      "tool": "publish_content_draft",
+      "note": "Content Studio: post a draft now or schedule it (quote_url = X quote post). Preview without confirm; 1cr per post on Post for Me, free on own Typefully. Scope content:publish."
+    },
+    {
+      "method": "DELETE",
+      "path": "/agents/content/publish",
+      "mcp": "live",
+      "tool": "publish_content_draft",
+      "note": "Content Studio: cancel a scheduled post (cancel:true). Free."
+    },
+    {
+      "method": "POST",
       "path": "/agents/posts/replies",
       "mcp": "live",
       "tool": "get_post_replies",
